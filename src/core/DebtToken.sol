@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.20;
 
-import { OFT, IERC20, ERC20 } from "@layerzerolabs/solidity-examples/contracts/token/oft/OFT.sol";
+// import { OFT, IERC20, ERC20 } from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
+import { IERC20, ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC3156FlashBorrower } from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "../interfaces/IPrismaCore.sol";
 
@@ -12,7 +13,7 @@ import "../interfaces/IPrismaCore.sol";
             This contract has a 1:n relationship with multiple deployments of `TroveManager`,
             each of which hold one collateral type which may be used to mint this token.
  */
-contract DebtToken is OFT {
+contract DebtToken is ERC20{
     string public constant version = "1";
 
     // --- ERC 3156 Data ---
@@ -54,11 +55,12 @@ contract DebtToken is OFT {
         address _stabilityPoolAddress,
         address _borrowerOperationsAddress,
         IPrismaCore prismaCore_,
-        address _layerZeroEndpoint,
+        // address _layerZeroEndpoint,
         address _factory,
         address _gasPool,
         uint256 _gasCompensation
-    ) OFT(_name, _symbol, _layerZeroEndpoint) {
+    // ) OFT(_name, _symbol, _layerZeroEndpoint) {
+    ) ERC20(_name, _symbol) {
         stabilityPoolAddress = _stabilityPoolAddress;
         _prismaCore = prismaCore_;
         borrowerOperationsAddress = _borrowerOperationsAddress;
@@ -121,7 +123,7 @@ contract DebtToken is OFT {
 
     // --- External functions ---
 
-    function transfer(address recipient, uint256 amount) public override(IERC20, ERC20) returns (bool) {
+    function transfer(address recipient, uint256 amount) public override(ERC20) returns (bool) {
         _requireValidRecipient(recipient);
         return super.transfer(recipient, amount);
     }
@@ -130,7 +132,7 @@ contract DebtToken is OFT {
         address sender,
         address recipient,
         uint256 amount
-    ) public override(IERC20, ERC20) returns (bool) {
+    ) public override(ERC20) returns (bool) {
         _requireValidRecipient(recipient);
         return super.transferFrom(sender, recipient, amount);
     }

@@ -5,6 +5,9 @@ libs = ["lib"]
 evm_version = "paris"
 solc_version = "0.8.20"
 
-remappings = ["@openzeppelin/contracts=lib/openzeppelin-contracts/contracts"]
+remappings = [
+  "@openzeppelin/contracts=lib/openzeppelin-contracts/contracts",
+  "@layerzerolabs/solidity-examples=lib/solidity-examples",
+  ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
