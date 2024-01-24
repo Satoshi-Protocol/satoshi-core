@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.20;
 
-// import { OFT, IERC20, ERC20 } from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
-import { IERC20, ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { OFTV2, IERC20, ERC20 } from "@layerzerolabs/solidity-examples/contracts/token/oft/v2/OFTV2.sol";
+// import { IERC20, ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC3156FlashBorrower } from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "../interfaces/IPrismaCore.sol";
 
@@ -13,7 +13,7 @@ import "../interfaces/IPrismaCore.sol";
             This contract has a 1:n relationship with multiple deployments of `TroveManager`,
             each of which hold one collateral type which may be used to mint this token.
  */
-contract DebtToken is ERC20{
+contract DebtToken is OFTV2 {
     string public constant version = "1";
 
     // --- ERC 3156 Data ---
@@ -55,12 +55,12 @@ contract DebtToken is ERC20{
         address _stabilityPoolAddress,
         address _borrowerOperationsAddress,
         IPrismaCore prismaCore_,
-        // address _layerZeroEndpoint,
+        uint8 _sharedDecimals, // https://layerzero.gitbook.io/docs/evm-guides/oft-walkthrough
+        address _layerZeroEndpoint,
         address _factory,
         address _gasPool,
         uint256 _gasCompensation
-    // ) OFT(_name, _symbol, _layerZeroEndpoint) {
-    ) ERC20(_name, _symbol) {
+    ) OFTV2(_name, _symbol, _sharedDecimals, _layerZeroEndpoint) {
         stabilityPoolAddress = _stabilityPoolAddress;
         _prismaCore = prismaCore_;
         borrowerOperationsAddress = _borrowerOperationsAddress;
