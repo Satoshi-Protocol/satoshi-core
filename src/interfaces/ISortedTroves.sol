@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.20;
 
 interface ISortedTroves {
     event NodeAdded(address _id, uint256 _NICR);

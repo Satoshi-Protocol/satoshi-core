@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 import "../interfaces/IAggregatorV3Interface.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../dependencies/PrismaMath.sol";

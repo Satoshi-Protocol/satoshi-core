@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.20;
 
 interface IPriceFeed {
     event NewOracleRegistered(address token, address chainlinkAggregator, bool isEthIndexed);
