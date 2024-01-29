@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IPrismaCore} from "../src/interfaces/IPrismaCore.sol";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -34,7 +34,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     uint32 public lastUpdate;
     uint32 public periodFinish;
 
-    mapping(IERC20 collateral => uint256 index) public indexByCollateral;
+    // collateral => index
+    mapping(IERC20 => uint256) public indexByCollateral;
     IERC20[] public collateralTokens;
 
     // Tracker for Debt held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
@@ -46,9 +47,11 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     // index values are mapped against the values within `collateralTokens`
     mapping(address => uint256[256]) public depositSums; // depositor address -> sums
 
-    mapping(address depositor => uint80[256] gains) public collateralGainsByDepositor;
+    // depositor => gains
+    mapping(address => uint80[256]) public collateralGainsByDepositor;
 
-    mapping(address depositor => uint256 rewards) private storedPendingReward;
+    // depositor => rewards
+    mapping(address => uint256) private storedPendingReward;
 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
      * after a series of liquidations have occurred, each of which cancel some debt with the deposit.

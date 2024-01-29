@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IStabilityPool.sol";
@@ -43,7 +43,8 @@ contract LiquidationManager is PrismaBase {
 
     uint256 private constant _100pct = 1000000000000000000; // 1e18 == 100%
 
-    mapping(ITroveManager troveManager => bool enabled) internal _enabledTroveManagers;
+    // troveManager => enabled
+    mapping(ITroveManager => bool) internal _enabledTroveManagers;
 
     /*
      * --- Variable container structs for liquidations ---

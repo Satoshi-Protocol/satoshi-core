@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.13;
 
 /**
  * @title Prisma Delegated Operations
@@ -19,7 +19,8 @@ pragma solidity 0.8.20;
 contract DelegatedOps {
     event DelegateApprovalSet(address indexed caller, address indexed delegate, bool isApproved);
 
-    mapping(address owner => mapping(address caller => bool isApproved)) public isApprovedDelegate;
+    // owner => caller => isApproved
+    mapping(address => mapping(address => bool)) public isApprovedDelegate;
 
     modifier callerOrDelegated(address _account) {
         require(msg.sender == _account || isApprovedDelegate[_account][msg.sender], "Delegate not approved");

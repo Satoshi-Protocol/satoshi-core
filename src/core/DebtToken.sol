@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.13;
 
 import {OFT, IERC20, ERC20} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";

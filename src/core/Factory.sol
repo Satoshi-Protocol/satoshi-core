@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../dependencies/PrismaOwnable.sol";
