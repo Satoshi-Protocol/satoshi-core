@@ -27,9 +27,9 @@ import {
     DEBT_TOKEN_LAYER_ZERO_END_POINT,
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION
-} from "./DeployConfig.sol";
+} from "./DeploySetupConfig.sol";
 
-contract DeployScript is Script {
+contract DeploySetupScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
     address internal deployer;
     uint64 internal nonce;
