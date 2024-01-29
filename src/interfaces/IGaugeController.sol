@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: MIT
+// // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.20;
+// pragma solidity 0.8.20;
 
-interface IGaugeController {
-    function vote_for_gauge_weights(address gauge, uint weight) external;
+// interface IGaugeController {
+//     function vote_for_gauge_weights(address gauge, uint weight) external;
 
-    function get_gauge_weight(address gauge) external view returns (uint256);
-}
+//     function get_gauge_weight(address gauge) external view returns (uint256);
+// }
