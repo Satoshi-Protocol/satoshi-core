@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
-import {IPrismaVault} from "../src/interfaces/IVault.sol";
 import {IPrismaCore} from "../src/interfaces/IPrismaCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/IDebtToken.sol";
@@ -27,8 +26,7 @@ import {
     DEBT_TOKEN_SYMBOL,
     DEBT_TOKEN_LAYER_ZERO_END_POINT,
     BO_MIN_NET_DEBT,
-    GAS_COMPENSATION,
-    VAULT_ADDRESS
+    GAS_COMPENSATION
 } from "./DeployConfig.sol";
 
 contract DeployScript is Script {
@@ -145,7 +143,6 @@ contract DeployScript is Script {
         stabilityPool = new StabilityPool(
             computedPrismaCoreAddr,
             IDebtToken(computedDebtTokenAddr),
-            IPrismaVault(VAULT_ADDRESS),
             computedFactoryAddr,
             computedLiquidationManagerAddr
         );
@@ -159,7 +156,6 @@ contract DeployScript is Script {
             computedGasPoolAddr,
             computedDebtTokenAddr,
             computedBorrowerOperationsAddr,
-            VAULT_ADDRESS,
             computedLiquidationManagerAddr,
             GAS_COMPENSATION
         );

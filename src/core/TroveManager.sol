@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../interfaces/IBorrowerOperations.sol";
 import "../interfaces/IDebtToken.sol";
 import "../interfaces/ISortedTroves.sol";
-import "../interfaces/IVault.sol";
 import "../interfaces/IPriceFeed.sol";
 import "../dependencies/SystemStart.sol";
 import "../dependencies/PrismaBase.sol";
@@ -36,7 +35,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     address public immutable liquidationManager;
     address immutable gasPoolAddress;
     IDebtToken public immutable debtToken;
-    IPrismaVault public immutable vault;
 
     IPriceFeed public priceFeed;
     IERC20 public collateralToken;
@@ -234,14 +232,12 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         address _gasPoolAddress,
         address _debtTokenAddress,
         address _borrowerOperationsAddress,
-        address _vault,
         address _liquidationManager,
         uint256 _gasCompensation
     ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) SystemStart(_prismaCore) {
         gasPoolAddress = _gasPoolAddress;
         debtToken = IDebtToken(_debtTokenAddress);
         borrowerOperationsAddress = _borrowerOperationsAddress;
-        vault = IPrismaVault(_vault);
         liquidationManager = _liquidationManager;
     }
 
@@ -255,17 +251,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         sunsetting = false;
         activeInterestIndex = INTEREST_PRECISION;
         lastActiveIndexUpdate = block.timestamp;
-    }
-
-    function notifyRegisteredId(uint256[] calldata _assignedIds) external returns (bool) {
-        require(msg.sender == address(vault));
-        require(emissionId.debt == 0, "Already assigned");
-        uint256 length = _assignedIds.length;
-        require(length == 2, "Incorrect ID count");
-        emissionId = EmissionId({debt: uint16(_assignedIds[0]), minting: uint16(_assignedIds[1])});
-        periodFinish = uint32(((block.timestamp / 1 weeks) + 1) * 1 weeks);
-
-        return true;
     }
 
     /**
@@ -832,141 +817,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         collateralToken.safeTransfer(_receiver, claimableColl);
     }
 
-    // --- Reward Claim functions ---
-
-    function claimReward(address receiver) external returns (uint256) {
-        uint256 amount = _claimReward(msg.sender);
-
-        if (amount > 0) {
-            vault.transferAllocatedTokens(msg.sender, receiver, amount);
-        }
-        emit RewardClaimed(msg.sender, receiver, amount);
-        return amount;
-    }
-
-    function vaultClaimReward(address claimant, address) external returns (uint256) {
-        require(msg.sender == address(vault));
-
-        return _claimReward(claimant);
-    }
-
-    function _claimReward(address account) internal returns (uint256) {
-        require(emissionId.debt > 0, "Rewards not active");
-        // update active debt rewards
-        _applyPendingRewards(account);
-        uint256 amount = storedPendingReward[account];
-        if (amount > 0) storedPendingReward[account] = 0;
-
-        // add pending mint awards
-        uint256 mintAmount = _getPendingMintReward(account);
-        if (mintAmount > 0) {
-            amount += mintAmount;
-            delete accountLatestMint[account];
-        }
-
-        return amount;
-    }
-
-    function claimableReward(address account) external view returns (uint256) {
-        // previously calculated rewards
-        uint256 amount = storedPendingReward[account];
-
-        // pending active debt rewards
-        uint256 updated = periodFinish;
-        if (updated > block.timestamp) updated = block.timestamp;
-        uint256 duration = updated - lastUpdate;
-        uint256 integral = rewardIntegral;
-        if (duration > 0) {
-            uint256 supply = totalActiveDebt;
-            if (supply > 0) {
-                integral += (duration * rewardRate * 1e18) / supply;
-            }
-        }
-        uint256 integralFor = rewardIntegralFor[account];
-
-        if (integral > integralFor) {
-            amount += (Troves[account].debt * (integral - integralFor)) / 1e18;
-        }
-
-        // pending mint rewards
-        amount += _getPendingMintReward(account);
-
-        return amount;
-    }
-
-    function _getPendingMintReward(address account) internal view returns (uint256 amount) {
-        VolumeData memory data = accountLatestMint[account];
-        if (data.amount > 0) {
-            (uint256 week, uint256 day) = getWeekAndDay();
-            if (data.day != day || data.week != week) {
-                return (dailyMintReward[data.week] * data.amount) / totalMints[data.week][data.day];
-            }
-        }
-    }
-
-    function _updateIntegrals(address account, uint256 balance, uint256 supply) internal {
-        uint256 integral = _updateRewardIntegral(supply);
-        _updateIntegralForAccount(account, balance, integral);
-    }
-
-    function _updateIntegralForAccount(address account, uint256 balance, uint256 currentIntegral) internal {
-        uint256 integralFor = rewardIntegralFor[account];
-
-        if (currentIntegral > integralFor) {
-            storedPendingReward[account] += (balance * (currentIntegral - integralFor)) / 1e18;
-            rewardIntegralFor[account] = currentIntegral;
-        }
-    }
-
-    function _updateRewardIntegral(uint256 supply) internal returns (uint256 integral) {
-        uint256 _periodFinish = periodFinish;
-        uint256 updated = _periodFinish;
-        if (updated > block.timestamp) updated = block.timestamp;
-        uint256 duration = updated - lastUpdate;
-        integral = rewardIntegral;
-        if (duration > 0) {
-            lastUpdate = uint32(updated);
-            if (supply > 0) {
-                integral += (duration * rewardRate * 1e18) / supply;
-                rewardIntegral = integral;
-            }
-        }
-        _fetchRewards(_periodFinish);
-
-        return integral;
-    }
-
-    function _fetchRewards(uint256 _periodFinish) internal {
-        EmissionId memory id = emissionId;
-        if (id.debt == 0) return;
-        uint256 currentWeek = getWeek();
-        if (currentWeek < (_periodFinish - startTime) / 1 weeks) return;
-        uint256 previousWeek = (_periodFinish - startTime) / 1 weeks - 1;
-
-        // active debt rewards
-        uint256 amount = vault.allocateNewEmissions(id.debt);
-        if (block.timestamp < _periodFinish) {
-            uint256 remaining = _periodFinish - block.timestamp;
-            amount += remaining * rewardRate;
-        }
-        rewardRate = uint128(amount / REWARD_DURATION);
-        lastUpdate = uint32(block.timestamp);
-        periodFinish = uint32(block.timestamp + REWARD_DURATION);
-
-        // minting rewards
-        amount = vault.allocateNewEmissions(id.minting);
-        uint256 reward = dailyMintReward[previousWeek];
-        if (reward > 0) {
-            uint32[7] memory totals = totalMints[previousWeek];
-            for (uint256 i = 0; i < 7; i++) {
-                if (totals[i] == 0) {
-                    amount += reward;
-                }
-            }
-        }
-        dailyMintReward[currentWeek] = amount / 7;
-    }
-
     // --- Trove Adjustment functions ---
 
     function openTrove(
@@ -997,7 +847,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         arrayIndex = TroveOwners.length - 1;
         t.arrayIndex = uint128(arrayIndex);
 
-        _updateIntegrals(_borrower, 0, supply);
         if (!_isRecoveryMode) _updateMintVolume(_borrower, _compositeDebt);
 
         totalActiveCollateral = totalActiveCollateral + _collateralAmount;
@@ -1172,7 +1021,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         Trove storage t = Troves[_borrower];
         if (t.status == Status.active) {
             uint256 troveInterestIndex = t.activeInterestIndex;
-            uint256 supply = totalActiveDebt;
             uint256 currentInterestIndex = _accrueActiveInterests();
             debt = t.debt;
             uint256 prevDebt = debt;
@@ -1199,7 +1047,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
             if (prevDebt != debt) {
                 t.debt = debt;
             }
-            _updateIntegrals(_borrower, prevDebt, supply);
         }
         return (coll, debt);
     }
@@ -1254,10 +1101,8 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
 
     function closeTroveByLiquidation(address _borrower) external {
         _requireCallerIsLM();
-        uint256 debtBefore = Troves[_borrower].debt;
         _removeStake(_borrower);
         _closeTrove(_borrower, Status.closedByLiquidation);
-        _updateIntegralForAccount(_borrower, debtBefore, rewardIntegral);
         emit TroveUpdated(_borrower, 0, 0, 0, TroveManagerOperation.liquidate);
     }
 
@@ -1382,7 +1227,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     }
 
     function _updateBalances() private {
-        _updateRewardIntegral(totalActiveDebt);
         _accrueActiveInterests();
     }
 

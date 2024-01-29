@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-address constant VAULT_ADDRESS = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;
-
 address constant PRICE_FEED_ETH_FEED = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
 
 address constant PRISMA_CORE_OWNER = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;

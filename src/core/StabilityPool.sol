@@ -8,7 +8,6 @@ import "../dependencies/PrismaOwnable.sol";
 import "../dependencies/SystemStart.sol";
 import "../dependencies/PrismaMath.sol";
 import "../interfaces/IDebtToken.sol";
-import "../interfaces/IVault.sol";
 
 /**
  * @title Prisma Stability Pool
@@ -28,7 +27,6 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     uint256 public constant emissionId = 0;
 
     IDebtToken public immutable debtToken;
-    IPrismaVault public immutable vault;
     address public immutable factory;
     address public immutable liquidationManager;
 
@@ -136,15 +134,11 @@ contract StabilityPool is PrismaOwnable, SystemStart {
 
     event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
 
-    constructor(
-        address _prismaCore,
-        IDebtToken _debtTokenAddress,
-        IPrismaVault _vault,
-        address _factory,
-        address _liquidationManager
-    ) PrismaOwnable(_prismaCore) SystemStart(_prismaCore) {
+    constructor(address _prismaCore, IDebtToken _debtTokenAddress, address _factory, address _liquidationManager)
+        PrismaOwnable(_prismaCore)
+        SystemStart(_prismaCore)
+    {
         debtToken = _debtTokenAddress;
-        vault = _vault;
         factory = _factory;
         liquidationManager = _liquidationManager;
         periodFinish = uint32(block.timestamp - 1);
@@ -232,13 +226,9 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         require(!PRISMA_CORE.paused(), "Deposits are paused");
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
 
-        _triggerRewardIssuance();
-
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
-
-        _accrueRewards(msg.sender);
 
         debtToken.sendToSP(msg.sender, _amount);
         uint256 newTotalDebtTokenDeposits = totalDebtTokenDeposits + _amount;
@@ -268,14 +258,10 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         require(initialDeposit > 0, "StabilityPool: User must have a non-zero deposit");
         require(depositTimestamp < block.timestamp, "!Deposit and withdraw same block");
 
-        _triggerRewardIssuance();
-
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
         uint256 debtToWithdraw = PrismaMath._min(_amount, compoundedDebtDeposit);
-
-        _accrueRewards(msg.sender);
 
         if (debtToWithdraw > 0) {
             debtToken.returnFromPool(address(this), msg.sender, debtToWithdraw);
@@ -288,85 +274,6 @@ contract StabilityPool is PrismaOwnable, SystemStart {
 
         _updateSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
-    }
-
-    // --- Prisma issuance functions ---
-
-    function _triggerRewardIssuance() internal {
-        _updateG(_vestedEmissions());
-
-        uint256 _periodFinish = periodFinish;
-        uint256 lastUpdateWeek = (_periodFinish - startTime) / 1 weeks;
-        // If the last claim was a week earlier we reclaim
-        if (getWeek() >= lastUpdateWeek) {
-            uint256 amount = vault.allocateNewEmissions(emissionId);
-            if (amount > 0) {
-                // If the previous period is not finished we combine new and pending old rewards
-                if (block.timestamp < _periodFinish) {
-                    uint256 remaining = _periodFinish - block.timestamp;
-                    amount += remaining * rewardRate;
-                }
-                rewardRate = uint128(amount / REWARD_DURATION);
-                periodFinish = uint32(block.timestamp + REWARD_DURATION);
-            }
-        }
-        lastUpdate = uint32(block.timestamp);
-    }
-
-    function _vestedEmissions() internal view returns (uint256) {
-        uint256 updated = periodFinish;
-        // Period is not ended we max at current timestamp
-        if (updated > block.timestamp) updated = block.timestamp;
-        // if the last update was after the current update time it means all rewards have been vested already
-        uint256 lastUpdateCached = lastUpdate;
-        if (lastUpdateCached >= updated) return 0; //Nothing to claim
-        uint256 duration = updated - lastUpdateCached;
-        return duration * rewardRate;
-    }
-
-    function _updateG(uint256 _prismaIssuance) internal {
-        uint256 totalDebt = totalDebtTokenDeposits; // cached to save an SLOAD
-        /*
-         * When total deposits is 0, G is not updated. In this case, the Prisma issued can not be obtained by later
-         * depositors - it is missed out on, and remains in the balanceof the Treasury contract.
-         *
-         */
-        if (totalDebt == 0 || _prismaIssuance == 0) {
-            return;
-        }
-
-        uint256 prismaPerUnitStaked;
-        prismaPerUnitStaked = _computePrismaPerUnitStaked(_prismaIssuance, totalDebt);
-        uint128 currentEpochCached = currentEpoch;
-        uint128 currentScaleCached = currentScale;
-        uint256 marginalPrismaGain = prismaPerUnitStaked * P;
-        uint256 newG = epochToScaleToG[currentEpochCached][currentScaleCached] + marginalPrismaGain;
-        epochToScaleToG[currentEpochCached][currentScaleCached] = newG;
-
-        emit G_Updated(newG, currentEpochCached, currentScaleCached);
-    }
-
-    function _computePrismaPerUnitStaked(uint256 _prismaIssuance, uint256 _totalDebtTokenDeposits)
-        internal
-        returns (uint256)
-    {
-        /*
-         * Calculate the Prisma-per-unit staked.  Division uses a "feedback" error correction, to keep the
-         * cumulative error low in the running total G:
-         *
-         * 1) Form a numerator which compensates for the floor division error that occurred the last time this
-         * function was called.
-         * 2) Calculate "per-unit-staked" ratio.
-         * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
-         * 4) Store this error for use in the next correction when this function is called.
-         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
-         */
-        uint256 prismaNumerator = (_prismaIssuance * DECIMAL_PRECISION) + lastPrismaError;
-
-        uint256 prismaPerUnitStaked = prismaNumerator / _totalDebtTokenDeposits;
-        lastPrismaError = prismaNumerator - (prismaPerUnitStaked * _totalDebtTokenDeposits);
-
-        return prismaPerUnitStaked;
     }
 
     // --- Liquidation functions ---
@@ -387,8 +294,6 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         if (totalDebt == 0 || _debtToOffset == 0) {
             return;
         }
-
-        _triggerRewardIssuance();
 
         (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) =
             _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalDebt, idx);
@@ -556,74 +461,6 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         return (hasGains);
     }
 
-    /*
-     * Calculate the Prisma gain earned by a deposit since its last snapshots were taken.
-     * Given by the formula:  Prisma = d0 * (G - G(0))/P(0)
-     * where G(0) and P(0) are the depositor's snapshots of the sum G and product P, respectively.
-     * d0 is the last recorded deposit value.
-     */
-    function claimableReward(address _depositor) external view returns (uint256) {
-        uint256 totalDebt = totalDebtTokenDeposits;
-        uint256 initialDeposit = accountDeposits[_depositor].amount;
-
-        if (totalDebt == 0 || initialDeposit == 0) {
-            return storedPendingReward[_depositor];
-        }
-        uint256 prismaNumerator = (_vestedEmissions() * DECIMAL_PRECISION) + lastPrismaError;
-        uint256 prismaPerUnitStaked = prismaNumerator / totalDebt;
-        uint256 marginalPrismaGain = prismaPerUnitStaked * P;
-
-        Snapshots memory snapshots = depositSnapshots[_depositor];
-        uint128 epochSnapshot = snapshots.epoch;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint256 firstPortion;
-        uint256 secondPortion;
-        if (scaleSnapshot == currentScale) {
-            firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - snapshots.G + marginalPrismaGain;
-            secondPortion = epochToScaleToG[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
-        } else {
-            firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - snapshots.G;
-            secondPortion = (epochToScaleToG[epochSnapshot][scaleSnapshot + 1] + marginalPrismaGain) / SCALE_FACTOR;
-        }
-
-        return storedPendingReward[_depositor]
-            + (initialDeposit * (firstPortion + secondPortion)) / snapshots.P / DECIMAL_PRECISION;
-    }
-
-    function _claimableReward(address _depositor) private view returns (uint256) {
-        uint256 initialDeposit = accountDeposits[_depositor].amount;
-        if (initialDeposit == 0) {
-            return 0;
-        }
-
-        Snapshots memory snapshots = depositSnapshots[_depositor];
-
-        return _getPrismaGainFromSnapshots(initialDeposit, snapshots);
-    }
-
-    function _getPrismaGainFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
-        internal
-        view
-        returns (uint256)
-    {
-        /*
-         * Grab the sum 'G' from the epoch at which the stake was made. The Prisma gain may span up to one scale change.
-         * If it does, the second portion of the Prisma gain is scaled by 1e9.
-         * If the gain spans no scale change, the second portion will be 0.
-         */
-        uint128 epochSnapshot = snapshots.epoch;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint256 G_Snapshot = snapshots.G;
-        uint256 P_Snapshot = snapshots.P;
-
-        uint256 firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - G_Snapshot;
-        uint256 secondPortion = epochToScaleToG[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
-
-        uint256 prismaGain = (initialStake * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION;
-
-        return prismaGain;
-    }
-
     // --- Compounded deposit and compounded front end stake ---
 
     /*
@@ -746,54 +583,5 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         }
 
         emit DepositSnapshotUpdated(_depositor, currentP, currentG);
-    }
-
-    //This assumes the snapshot gets updated in the caller
-    function _accrueRewards(address _depositor) internal {
-        uint256 amount = _claimableReward(_depositor);
-        storedPendingReward[_depositor] = storedPendingReward[_depositor] + amount;
-    }
-
-    function claimReward(address recipient) external returns (uint256 amount) {
-        amount = _claimReward(msg.sender);
-        if (amount > 0) {
-            vault.transferAllocatedTokens(msg.sender, recipient, amount);
-        }
-        emit RewardClaimed(msg.sender, recipient, amount);
-        return amount;
-    }
-
-    function vaultClaimReward(address claimant, address) external returns (uint256 amount) {
-        require(msg.sender == address(vault));
-
-        return _claimReward(claimant);
-    }
-
-    function _claimReward(address account) internal returns (uint256 amount) {
-        uint256 initialDeposit = accountDeposits[account].amount;
-
-        if (initialDeposit > 0) {
-            uint128 depositTimestamp = accountDeposits[account].timestamp;
-            _triggerRewardIssuance();
-            bool hasGains = _accrueDepositorCollateralGain(account);
-
-            uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(account);
-            uint256 debtLoss = initialDeposit - compoundedDebtDeposit;
-
-            amount = _claimableReward(account);
-            // we update only if the snapshot has changed
-            if (debtLoss > 0 || hasGains || amount > 0) {
-                // Update deposit
-                accountDeposits[account] =
-                    AccountDeposit({amount: uint128(compoundedDebtDeposit), timestamp: depositTimestamp});
-                _updateSnapshots(account, compoundedDebtDeposit);
-            }
-        }
-        uint256 pending = storedPendingReward[account];
-        if (pending > 0) {
-            amount += pending;
-            storedPendingReward[account] = 0;
-        }
-        return amount;
     }
 }

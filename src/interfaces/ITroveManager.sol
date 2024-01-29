@@ -50,8 +50,6 @@ interface ITroveManager {
 
     function movePendingTroveRewardsToActiveBalances(uint256 _debt, uint256 _collateral) external;
 
-    function notifyRegisteredId(uint256[] calldata _assignedIds) external returns (bool);
-
     function openTrove(
         address _borrower,
         uint256 _collateralAmount,
