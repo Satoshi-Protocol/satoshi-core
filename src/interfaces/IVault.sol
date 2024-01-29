@@ -59,12 +59,10 @@ interface IPrismaVault {
 
     function boostDelegation(address) external view returns (bool isEnabled, uint16 feePct, address callback);
 
-    function claimableRewardAfterBoost(
-        address account,
-        address receiver,
-        address boostDelegate,
-        address rewardContract
-    ) external view returns (uint256 adjustedAmount, uint256 feeToDelegate);
+    function claimableRewardAfterBoost(address account, address receiver, address boostDelegate, address rewardContract)
+        external
+        view
+        returns (uint256 adjustedAmount, uint256 feeToDelegate);
 
     function emissionSchedule() external view returns (address);
 

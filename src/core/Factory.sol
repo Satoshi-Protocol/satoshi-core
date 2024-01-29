@@ -12,9 +12,9 @@ import "../interfaces/IStabilityPool.sol";
 import "../interfaces/ILiquidationManager.sol";
 
 /**
-    @title Prisma Trove Factory
-    @notice Deploys cloned pairs of `TroveManager` and `SortedTroves` in order to
-            add new collateral types within the system.
+ * @title Prisma Trove Factory
+ *     @notice Deploys cloned pairs of `TroveManager` and `SortedTroves` in order to
+ *             add new collateral types within the system.
  */
 contract Factory is PrismaOwnable {
     using Clones for address;
@@ -68,19 +68,19 @@ contract Factory is PrismaOwnable {
     }
 
     /**
-        @notice Deploy new instances of `TroveManager` and `SortedTroves`, adding
-                a new collateral type to the system.
-        @dev * When using the default `PriceFeed`, ensure it is configured correctly
-               prior to calling this function.
-             * After calling this function, the owner should also call `Vault.registerReceiver`
-               to enable PRISMA emissions on the newly deployed `TroveManager`
-        @param collateral Collateral token to use in new deployment
-        @param priceFeed Custom `PriceFeed` deployment. Leave as `address(0)` to use the default.
-        @param customTroveManagerImpl Custom `TroveManager` implementation to clone from.
-                                      Leave as `address(0)` to use the default.
-        @param customSortedTrovesImpl Custom `SortedTroves` implementation to clone from.
-                                      Leave as `address(0)` to use the default.
-        @param params Struct of initial parameters to be set on the new trove manager
+     * @notice Deploy new instances of `TroveManager` and `SortedTroves`, adding
+     *             a new collateral type to the system.
+     *     @dev * When using the default `PriceFeed`, ensure it is configured correctly
+     *            prior to calling this function.
+     * After calling this function, the owner should also call `Vault.registerReceiver`
+     *            to enable PRISMA emissions on the newly deployed `TroveManager`
+     *     @param collateral Collateral token to use in new deployment
+     *     @param priceFeed Custom `PriceFeed` deployment. Leave as `address(0)` to use the default.
+     *     @param customTroveManagerImpl Custom `TroveManager` implementation to clone from.
+     *                                   Leave as `address(0)` to use the default.
+     *     @param customSortedTrovesImpl Custom `SortedTroves` implementation to clone from.
+     *                                   Leave as `address(0)` to use the default.
+     *     @param params Struct of initial parameters to be set on the new trove manager
      */
     function deployNewInstance(
         address collateral,

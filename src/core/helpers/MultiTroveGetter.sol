@@ -19,11 +19,11 @@ contract MultiTroveGetter {
 
     constructor() {}
 
-    function getMultipleSortedTroves(
-        ITroveManager troveManager,
-        int _startIdx,
-        uint256 _count
-    ) external view returns (CombinedTroveData[] memory _troves) {
+    function getMultipleSortedTroves(ITroveManager troveManager, int256 _startIdx, uint256 _count)
+        external
+        view
+        returns (CombinedTroveData[] memory _troves)
+    {
         ISortedTroves sortedTroves = ISortedTroves(troveManager.sortedTroves());
         uint256 startIdx;
         bool descend;
@@ -80,11 +80,9 @@ contract MultiTroveGetter {
                 /* interestIndex */
                 ,
                 ,
-
             ) = troveManager.Troves(currentTroveowner);
-            (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) = troveManager.rewardSnapshots(
-                currentTroveowner
-            );
+            (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) =
+                troveManager.rewardSnapshots(currentTroveowner);
 
             currentTroveowner = sortedTroves.getNext(currentTroveowner);
         }
@@ -115,11 +113,9 @@ contract MultiTroveGetter {
                 /* interestIndex */
                 ,
                 ,
-
             ) = troveManager.Troves(currentTroveowner);
-            (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) = troveManager.rewardSnapshots(
-                currentTroveowner
-            );
+            (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) =
+                troveManager.rewardSnapshots(currentTroveowner);
 
             currentTroveowner = sortedTroves.getPrev(currentTroveowner);
         }

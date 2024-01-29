@@ -11,12 +11,12 @@ import "../interfaces/IDebtToken.sol";
 import "../interfaces/IVault.sol";
 
 /**
-    @title Prisma Stability Pool
-    @notice Based on Liquity's `StabilityPool`
-            https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
-
-            Prisma's implementation is modified to support multiple collaterals. Deposits into
-            the stability pool may be used to liquidate any supported collateral type.
+ * @title Prisma Stability Pool
+ *     @notice Based on Liquity's `StabilityPool`
+ *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
+ *
+ *             Prisma's implementation is modified to support multiple collaterals. Deposits into
+ *             the stability pool may be used to liquidate any supported collateral type.
  */
 contract StabilityPool is PrismaOwnable, SystemStart {
     using SafeERC20 for IERC20;
@@ -114,6 +114,7 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         uint128 idx;
         uint128 expiry;
     }
+
     struct Queue {
         uint16 firstSunsetIndexKey;
         uint16 nextSunsetIndexKey;
@@ -183,8 +184,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         require(idx < length, "Index too large");
         uint256 externalLoopEnd = currentEpoch;
         uint256 internalLoopEnd = currentScale;
-        for (uint128 i; i <= externalLoopEnd; ) {
-            for (uint128 j; j <= internalLoopEnd; ) {
+        for (uint128 i; i <= externalLoopEnd;) {
+            for (uint128 j; j <= internalLoopEnd;) {
                 epochToScaleToSums[i][j][idx] = 0;
                 unchecked {
                     ++j;
@@ -202,17 +203,14 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     /**
      * @notice Starts sunsetting a collateral
      *         During sunsetting liquidated collateral handoff to the SP will revert
-        @dev IMPORTANT: When sunsetting a collateral, `TroveManager.startSunset`
-                        should be called on all TM linked to that collateral
-        @param collateral Collateral to sunset
-
+     *     @dev IMPORTANT: When sunsetting a collateral, `TroveManager.startSunset`
+     *                     should be called on all TM linked to that collateral
+     *     @param collateral Collateral to sunset
      */
     function startCollateralSunset(IERC20 collateral) external onlyOwner {
         require(indexByCollateral[collateral] > 0, "Collateral already sunsetting");
-        _sunsetIndexes[queue.nextSunsetIndexKey++] = SunsetIndex(
-            uint128(indexByCollateral[collateral] - 1),
-            uint128(block.timestamp + SUNSET_DURATION)
-        );
+        _sunsetIndexes[queue.nextSunsetIndexKey++] =
+            SunsetIndex(uint128(indexByCollateral[collateral] - 1), uint128(block.timestamp + SUNSET_DURATION));
         delete indexByCollateral[collateral]; //This will prevent calls to the SP in case of liquidations
     }
 
@@ -248,10 +246,7 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         emit StabilityPoolDebtBalanceUpdated(newTotalDebtTokenDeposits);
 
         uint256 newDeposit = compoundedDebtDeposit + _amount;
-        accountDeposits[msg.sender] = AccountDeposit({
-            amount: uint128(newDeposit),
-            timestamp: uint128(block.timestamp)
-        });
+        accountDeposits[msg.sender] = AccountDeposit({amount: uint128(newDeposit), timestamp: uint128(block.timestamp)});
 
         _updateSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
@@ -289,7 +284,7 @@ contract StabilityPool is PrismaOwnable, SystemStart {
 
         // Update deposit
         uint256 newDeposit = compoundedDebtDeposit - debtToWithdraw;
-        accountDeposits[msg.sender] = AccountDeposit({ amount: uint128(newDeposit), timestamp: depositTimestamp });
+        accountDeposits[msg.sender] = AccountDeposit({amount: uint128(newDeposit), timestamp: depositTimestamp});
 
         _updateSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
@@ -351,10 +346,10 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         emit G_Updated(newG, currentEpochCached, currentScaleCached);
     }
 
-    function _computePrismaPerUnitStaked(
-        uint256 _prismaIssuance,
-        uint256 _totalDebtTokenDeposits
-    ) internal returns (uint256) {
+    function _computePrismaPerUnitStaked(uint256 _prismaIssuance, uint256 _totalDebtTokenDeposits)
+        internal
+        returns (uint256)
+    {
         /*
          * Calculate the Prisma-per-unit staked.  Division uses a "feedback" error correction, to keep the
          * cumulative error low in the running total G:
@@ -395,12 +390,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
 
         _triggerRewardIssuance();
 
-        (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) = _computeRewardsPerUnitStaked(
-            _collToAdd,
-            _debtToOffset,
-            totalDebt,
-            idx
-        );
+        (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) =
+            _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalDebt, idx);
 
         _updateRewardSumAndProduct(collateralGainPerUnitStaked, debtLossPerUnitStaked, idx); // updates S and P
 
@@ -559,9 +550,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
             hasGains = true;
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;
-            depositorGains[i] += uint80(
-                (initialDeposit * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION
-            );
+            depositorGains[i] +=
+                uint80((initialDeposit * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION);
         }
         return (hasGains);
     }
@@ -596,11 +586,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
             secondPortion = (epochToScaleToG[epochSnapshot][scaleSnapshot + 1] + marginalPrismaGain) / SCALE_FACTOR;
         }
 
-        return
-            storedPendingReward[_depositor] +
-            (initialDeposit * (firstPortion + secondPortion)) /
-            snapshots.P /
-            DECIMAL_PRECISION;
+        return storedPendingReward[_depositor]
+            + (initialDeposit * (firstPortion + secondPortion)) / snapshots.P / DECIMAL_PRECISION;
     }
 
     function _claimableReward(address _depositor) private view returns (uint256) {
@@ -614,10 +601,11 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         return _getPrismaGainFromSnapshots(initialDeposit, snapshots);
     }
 
-    function _getPrismaGainFromSnapshots(
-        uint256 initialStake,
-        Snapshots memory snapshots
-    ) internal view returns (uint256) {
+    function _getPrismaGainFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
         /*
          * Grab the sum 'G' from the epoch at which the stake was made. The Prisma gain may span up to one scale change.
          * If it does, the second portion of the Prisma gain is scaled by 1e9.
@@ -655,10 +643,11 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     }
 
     // Internal function, used to calculcate compounded deposits and compounded front end stakes.
-    function _getCompoundedStakeFromSnapshots(
-        uint256 initialStake,
-        Snapshots memory snapshots
-    ) internal view returns (uint256) {
+    function _getCompoundedStakeFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 snapshot_P = snapshots.P;
         uint128 scaleSnapshot = snapshots.scale;
         uint128 epochSnapshot = snapshots.epoch;
@@ -708,7 +697,7 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         uint256[] memory collateralGains = new uint256[](collateralTokens.length);
 
         uint80[256] storage depositorGains = collateralGainsByDepositor[msg.sender];
-        for (uint256 i; i < loopEnd; ) {
+        for (uint256 i; i < loopEnd;) {
             uint256 collateralIndex = collateralIndexes[i];
             uint256 gains = depositorGains[collateralIndex];
             if (gains > 0) {
@@ -795,7 +784,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
             // we update only if the snapshot has changed
             if (debtLoss > 0 || hasGains || amount > 0) {
                 // Update deposit
-                accountDeposits[account] = AccountDeposit({ amount: uint128(compoundedDebtDeposit), timestamp: depositTimestamp });
+                accountDeposits[account] =
+                    AccountDeposit({amount: uint128(compoundedDebtDeposit), timestamp: depositTimestamp});
                 _updateSnapshots(account, compoundedDebtDeposit);
             }
         }

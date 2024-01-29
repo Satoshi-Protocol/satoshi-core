@@ -18,11 +18,10 @@ interface ISortedTroves {
 
     function data() external view returns (address head, address tail, uint256 size);
 
-    function findInsertPosition(
-        uint256 _NICR,
-        address _prevId,
-        address _nextId
-    ) external view returns (address, address);
+    function findInsertPosition(uint256 _NICR, address _prevId, address _nextId)
+        external
+        view
+        returns (address, address);
 
     function getFirst() external view returns (address);
 

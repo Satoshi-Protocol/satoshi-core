@@ -5,9 +5,9 @@ pragma solidity 0.8.20;
 import "../interfaces/IPrismaCore.sol";
 
 /**
-    @title Prisma Ownable
-    @notice Contracts inheriting `PrismaOwnable` have the same owner as `PrismaCore`.
-            The ownership cannot be independently modified or renounced.
+ * @title Prisma Ownable
+ *     @notice Contracts inheriting `PrismaOwnable` have the same owner as `PrismaCore`.
+ *             The ownership cannot be independently modified or renounced.
  */
 contract PrismaOwnable {
     IPrismaCore public immutable PRISMA_CORE;

@@ -5,8 +5,8 @@ pragma solidity 0.8.20;
 import "../interfaces/IPrismaCore.sol";
 
 /**
-    @title Prisma System Start Time
-    @dev Provides a unified `startTime` and `getWeek`, used for emissions.
+ * @title Prisma System Start Time
+ *     @dev Provides a unified `startTime` and `getWeek`, used for emissions.
  */
 contract SystemStart {
     uint256 immutable startTime;

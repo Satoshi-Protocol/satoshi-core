@@ -8,10 +8,7 @@ interface ITroveManager {
     event LTermsUpdated(uint256 _L_collateral, uint256 _L_debt);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event Redemption(
-        uint256 _attemptedDebtAmount,
-        uint256 _actualDebtAmount,
-        uint256 _collateralSent,
-        uint256 _collateralFee
+        uint256 _attemptedDebtAmount, uint256 _actualDebtAmount, uint256 _collateralSent, uint256 _collateralFee
     );
     event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
     event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
@@ -133,9 +130,7 @@ interface ITroveManager {
 
     function SUNSETTING_INTEREST_RATE() external view returns (uint256);
 
-    function Troves(
-        address
-    )
+    function Troves(address)
         external
         view
         returns (
@@ -181,9 +176,10 @@ interface ITroveManager {
 
     function getCurrentICR(address _borrower, uint256 _price) external view returns (uint256);
 
-    function getEntireDebtAndColl(
-        address _borrower
-    ) external view returns (uint256 debt, uint256 coll, uint256 pendingDebtReward, uint256 pendingCollateralReward);
+    function getEntireDebtAndColl(address _borrower)
+        external
+        view
+        returns (uint256 debt, uint256 coll, uint256 pendingDebtReward, uint256 pendingCollateralReward);
 
     function getEntireSystemColl() external view returns (uint256);
 

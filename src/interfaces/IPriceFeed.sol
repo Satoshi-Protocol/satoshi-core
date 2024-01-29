@@ -27,9 +27,7 @@ interface IPriceFeed {
 
     function guardian() external view returns (address);
 
-    function oracleRecords(
-        address
-    )
+    function oracleRecords(address)
         external
         view
         returns (
@@ -43,7 +41,8 @@ interface IPriceFeed {
 
     function owner() external view returns (address);
 
-    function priceRecords(
-        address
-    ) external view returns (uint96 scaledPrice, uint32 timestamp, uint32 lastUpdated, uint80 roundId);
+    function priceRecords(address)
+        external
+        view
+        returns (uint96 scaledPrice, uint32 timestamp, uint32 lastUpdated, uint80 roundId);
 }

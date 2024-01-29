@@ -35,12 +35,7 @@ contract MultiCollateralHintHelpers is PrismaBase {
      * will leave it uncapped.
      */
 
-    function getRedemptionHints(
-        ITroveManager troveManager,
-        uint256 _debtAmount,
-        uint256 _price,
-        uint256 _maxIterations
-    )
+    function getRedemptionHints(ITroveManager troveManager, uint256 _debtAmount, uint256 _price, uint256 _maxIterations)
         external
         view
         returns (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount)
@@ -63,7 +58,7 @@ contract MultiCollateralHintHelpers is PrismaBase {
 
         uint256 minNetDebt = borrowerOperations.minNetDebt();
         while (currentTroveuser != address(0) && remainingDebt > 0 && _maxIterations-- > 0) {
-            (uint256 debt, uint256 coll, , ) = troveManager.getEntireDebtAndColl(currentTroveuser);
+            (uint256 debt, uint256 coll,,) = troveManager.getEntireDebtAndColl(currentTroveuser);
             uint256 netDebt = _getNetDebt(debt);
 
             if (netDebt > remainingDebt) {
@@ -98,12 +93,11 @@ contract MultiCollateralHintHelpers is PrismaBase {
     Submitting numTrials = k * sqrt(length), with k = 15 makes it very, very likely that the ouput address will
     be <= sqrt(length) positions away from the correct insert position.
     */
-    function getApproxHint(
-        ITroveManager troveManager,
-        uint256 _CR,
-        uint256 _numTrials,
-        uint256 _inputRandomSeed
-    ) external view returns (address hintAddress, uint256 diff, uint256 latestRandomSeed) {
+    function getApproxHint(ITroveManager troveManager, uint256 _CR, uint256 _numTrials, uint256 _inputRandomSeed)
+        external
+        view
+        returns (address hintAddress, uint256 diff, uint256 latestRandomSeed)
+    {
         ISortedTroves sortedTroves = ISortedTroves(troveManager.sortedTroves());
         uint256 arrayLength = troveManager.getTroveOwnersCount();
 
