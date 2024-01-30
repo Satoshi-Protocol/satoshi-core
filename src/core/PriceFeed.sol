@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import "../interfaces/IAggregatorV3Interface.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "../dependencies/PrismaMath.sol";
-import "../dependencies/PrismaOwnable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
+import {IPriceFeed, OracleRecord, PriceRecord, FeedResponse} from "../interfaces/IPriceFeed.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 
 /**
  * @title Prisma Multi Token Price Feed
@@ -14,44 +15,7 @@ import "../dependencies/PrismaOwnable.sol";
  *
  *             Prisma's implementation additionally caches price values within a block and incorporates exchange rate settings for derivative tokens (e.g. stETH -> wstETH).
  */
-contract PriceFeed is PrismaOwnable {
-    struct OracleRecord {
-        IAggregatorV3Interface chainLinkOracle;
-        uint8 decimals;
-        uint32 heartbeat;
-        bytes4 sharePriceSignature;
-        uint8 sharePriceDecimals;
-        bool isFeedWorking;
-        bool isEthIndexed;
-    }
-
-    struct PriceRecord {
-        uint96 scaledPrice;
-        uint32 timestamp;
-        uint32 lastUpdated;
-        uint80 roundId;
-    }
-
-    struct FeedResponse {
-        uint80 roundId;
-        int256 answer;
-        uint256 timestamp;
-        bool success;
-    }
-
-    // Custom Errors --------------------------------------------------------------------------------------------------
-
-    error PriceFeed__InvalidFeedResponseError(address token);
-    error PriceFeed__FeedFrozenError(address token);
-    error PriceFeed__UnknownFeedError(address token);
-    error PriceFeed__HeartbeatOutOfBoundsError();
-
-    // Events ---------------------------------------------------------------------------------------------------------
-
-    event NewOracleRegistered(address token, address chainlinkAggregator, bool isEthIndexed);
-    event PriceFeedStatusUpdated(address token, address oracle, bool isWorking);
-    event PriceRecordUpdated(address indexed token, uint256 _price);
-
+contract PriceFeed is IPriceFeed, PrismaOwnable {
     /**
      * Constants ----------------------------------------------------------------------------------------------------
      */
@@ -67,20 +31,22 @@ contract PriceFeed is PrismaOwnable {
 
     // State ------------------------------------------------------------------------------------------------------------
 
-    mapping(address => OracleRecord) public oracleRecords;
-    mapping(address => PriceRecord) public priceRecords;
+    mapping(IERC20 => OracleRecord) public oracleRecords;
+    mapping(IERC20 => PriceRecord) public priceRecords;
 
     struct OracleSetup {
-        address token;
-        address chainlink;
+        IERC20 token;
+        IAggregatorV3Interface chainlink;
         uint32 heartbeat;
         bytes4 sharePriceSignature;
         uint8 sharePriceDecimals;
         bool isEthIndexed;
     }
 
-    constructor(address _prismaCore, address ethFeed, OracleSetup[] memory oracles) PrismaOwnable(_prismaCore) {
-        _setOracle(address(0), ethFeed, 3600, 0, 0, false);
+    constructor(IPrismaCore _prismaCore, IAggregatorV3Interface ethFeed, OracleSetup[] memory oracles)
+        PrismaOwnable(_prismaCore)
+    {
+        _setOracle(IERC20(address(0)), ethFeed, 3600, 0, 0, false);
         for (uint256 i = 0; i < oracles.length; i++) {
             OracleSetup memory o = oracles[i];
             _setOracle(o.token, o.chainlink, o.heartbeat, o.sharePriceSignature, o.sharePriceDecimals, o.isEthIndexed);
@@ -99,8 +65,8 @@ contract PriceFeed is PrismaOwnable {
      *     @param _isEthIndexed True if the base currency is ETH
      */
     function setOracle(
-        address _token,
-        address _chainlinkOracle,
+        IERC20 _token,
+        IAggregatorV3Interface _chainlinkOracle,
         uint32 _heartbeat,
         bytes4 sharePriceSignature,
         uint8 sharePriceDecimals,
@@ -110,16 +76,15 @@ contract PriceFeed is PrismaOwnable {
     }
 
     function _setOracle(
-        address _token,
-        address _chainlinkOracle,
+        IERC20 _token,
+        IAggregatorV3Interface _chainlinkOracle,
         uint32 _heartbeat,
         bytes4 sharePriceSignature,
         uint8 sharePriceDecimals,
         bool _isEthIndexed
     ) internal {
         if (_heartbeat > 86400) revert PriceFeed__HeartbeatOutOfBoundsError();
-        IAggregatorV3Interface newFeed = IAggregatorV3Interface(_chainlinkOracle);
-        (FeedResponse memory currResponse, FeedResponse memory prevResponse,) = _fetchFeedResponses(newFeed, 0);
+        (FeedResponse memory currResponse, FeedResponse memory prevResponse,) = _fetchFeedResponses(_chainlinkOracle, 0);
 
         if (!_isFeedWorking(currResponse, prevResponse)) {
             revert PriceFeed__InvalidFeedResponseError(_token);
@@ -129,8 +94,8 @@ contract PriceFeed is PrismaOwnable {
         }
 
         OracleRecord memory record = OracleRecord({
-            chainLinkOracle: newFeed,
-            decimals: newFeed.decimals(),
+            chainLinkOracle: _chainlinkOracle,
+            decimals: _chainlinkOracle.decimals(),
             heartbeat: _heartbeat,
             sharePriceSignature: sharePriceSignature,
             sharePriceDecimals: sharePriceDecimals,
@@ -154,7 +119,7 @@ contract PriceFeed is PrismaOwnable {
      *     @param _token Token to fetch the price for
      *     @return The latest valid price for the requested token
      */
-    function fetchPrice(address _token) public returns (uint256) {
+    function fetchPrice(IERC20 _token) public returns (uint256) {
         PriceRecord memory priceRecord = priceRecords[_token];
         OracleRecord memory oracle = oracleRecords[_token];
 
@@ -181,7 +146,7 @@ contract PriceFeed is PrismaOwnable {
         }
 
         if (oracle.isEthIndexed) {
-            uint256 ethPrice = fetchPrice(address(0));
+            uint256 ethPrice = fetchPrice(IERC20(address(0)));
             return (ethPrice * scaledPrice) / 1 ether;
         }
         return scaledPrice;
@@ -190,7 +155,7 @@ contract PriceFeed is PrismaOwnable {
     // Internal functions -----------------------------------------------------------------------------------------------
 
     function _processFeedResponses(
-        address _token,
+        IERC20 _token,
         OracleRecord memory oracle,
         FeedResponse memory _currResponse,
         FeedResponse memory _prevResponse,
@@ -203,7 +168,8 @@ contract PriceFeed is PrismaOwnable {
         if (isValidResponse) {
             uint256 scaledPrice = _scalePriceByDigits(uint256(_currResponse.answer), decimals);
             if (oracle.sharePriceSignature != 0) {
-                (bool success, bytes memory returnData) = _token.staticcall(abi.encode(oracle.sharePriceSignature));
+                (bool success, bytes memory returnData) =
+                    address(_token).staticcall(abi.encode(oracle.sharePriceSignature));
                 require(success, "Share price not available");
                 scaledPrice = (scaledPrice * abi.decode(returnData, (uint256))) / (10 ** oracle.sharePriceDecimals);
             }
@@ -285,12 +251,12 @@ contract PriceFeed is PrismaOwnable {
         }
     }
 
-    function _updateFeedStatus(address _token, OracleRecord memory _oracle, bool _isWorking) internal {
+    function _updateFeedStatus(IERC20 _token, OracleRecord memory _oracle, bool _isWorking) internal {
         oracleRecords[_token].isFeedWorking = _isWorking;
         emit PriceFeedStatusUpdated(_token, address(_oracle.chainLinkOracle), _isWorking);
     }
 
-    function _storePrice(address _token, uint256 _price, uint256 _timestamp, uint80 roundId) internal {
+    function _storePrice(IERC20 _token, uint256 _price, uint256 _timestamp, uint80 roundId) internal {
         priceRecords[_token] = PriceRecord({
             scaledPrice: uint96(_price),
             timestamp: uint32(_timestamp),

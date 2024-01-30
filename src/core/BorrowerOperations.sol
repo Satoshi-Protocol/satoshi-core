@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../interfaces/ITroveManager.sol";
-import "../interfaces/IDebtToken.sol";
-import "../dependencies/PrismaBase.sol";
-import "../dependencies/PrismaMath.sol";
-import "../dependencies/PrismaOwnable.sol";
-import "../dependencies/DelegatedOps.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {
+    IBorrowerOperations, BorrowerOperation, TroveManagerData, Balances
+} from "../interfaces/IBorrowerOperations.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {PrismaBase} from "../dependencies/PrismaBase.sol";
+import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {DelegatedOps} from "../dependencies/DelegatedOps.sol";
 
 /**
  * @title Prisma Borrower Operations
@@ -19,26 +23,15 @@ import "../dependencies/DelegatedOps.sol";
  *             Prisma's implementation is modified to support multiple collaterals. There is a 1:n
  *             relationship between `BorrowerOperations` and each `TroveManager` / `SortedTroves` pair.
  */
-contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
+contract BorrowerOperations is IBorrowerOperations, PrismaBase, PrismaOwnable, DelegatedOps {
     using SafeERC20 for IERC20;
 
     IDebtToken public immutable debtToken;
-    address public immutable factory;
+    IFactory public immutable factory;
     uint256 public minNetDebt;
 
     mapping(ITroveManager => TroveManagerData) public troveManagersData;
     ITroveManager[] internal _troveManagers;
-
-    struct TroveManagerData {
-        IERC20 collateralToken;
-        uint16 index;
-    }
-
-    struct SystemBalances {
-        uint256[] collaterals;
-        uint256[] debts;
-        uint256[] prices;
-    }
 
     struct LocalVariables_adjustTrove {
         uint256 price;
@@ -69,25 +62,15 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
         uint256 arrayIndex;
     }
 
-    enum BorrowerOperation {
-        openTrove,
-        closeTrove,
-        adjustTrove
-    }
-
-    event BorrowingFeePaid(address indexed borrower, IERC20 collateralToken, uint256 amount);
-    event CollateralConfigured(ITroveManager troveManager, IERC20 collateralToken);
-    event TroveManagerRemoved(ITroveManager troveManager);
-
     constructor(
-        address _prismaCore,
-        address _debtTokenAddress,
-        address _factory,
+        IPrismaCore _prismaCore,
+        address _debtTokenAddr,
+        address _factoryAddr,
         uint256 _minNetDebt,
         uint256 _gasCompensation
     ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) {
-        debtToken = IDebtToken(_debtTokenAddress);
-        factory = _factory;
+        debtToken = IDebtToken(_debtTokenAddr);
+        factory = IFactory(_factoryAddr);
         _setMinNetDebt(_minNetDebt);
     }
 
@@ -101,7 +84,7 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
     }
 
     function configureCollateral(ITroveManager troveManager, IERC20 collateralToken) external {
-        require(msg.sender == factory, "!factory");
+        require(msg.sender == address(factory), "!factory");
         troveManagersData[troveManager] = TroveManagerData(collateralToken, uint16(_troveManagers.length));
         _troveManagers.push(troveManager);
         emit CollateralConfigured(troveManager, collateralToken);
@@ -132,7 +115,7 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
      *          Can still be accessed as a view from within the UX.
      */
     function getTCR() external returns (uint256 globalTotalCollateralRatio) {
-        SystemBalances memory balances = fetchBalances();
+        Balances memory balances = fetchBalances();
         (globalTotalCollateralRatio,,) = _getTCRData(balances);
         return globalTotalCollateralRatio;
     }
@@ -143,9 +126,9 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
      *     @dev Not a view because fetching from the oracle is state changing.
      *          Can still be accessed as a view from within the UX.
      */
-    function fetchBalances() public returns (SystemBalances memory balances) {
+    function fetchBalances() public returns (Balances memory balances) {
         uint256 loopEnd = _troveManagers.length;
-        balances = SystemBalances({
+        balances = Balances({
             collaterals: new uint256[](loopEnd),
             debts: new uint256[](loopEnd),
             prices: new uint256[](loopEnd)
@@ -556,7 +539,7 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
         return newTCR;
     }
 
-    function _getTCRData(SystemBalances memory balances)
+    function _getTCRData(Balances memory balances)
         internal
         pure
         returns (uint256 amount, uint256 totalPricedCollateral, uint256 totalDebt)
@@ -591,7 +574,7 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
         require(address(collateralToken) != address(0), "Collateral not enabled");
 
         uint256 amount;
-        SystemBalances memory balances = fetchBalances();
+        Balances memory balances = fetchBalances();
         (amount, totalPricedCollateral, totalDebt) = _getTCRData(balances);
         isRecoveryMode = checkRecoveryMode(amount);
 
@@ -599,7 +582,7 @@ contract BorrowerOperations is PrismaBase, PrismaOwnable, DelegatedOps {
     }
 
     function getGlobalSystemBalances() external returns (uint256 totalPricedCollateral, uint256 totalDebt) {
-        SystemBalances memory balances = fetchBalances();
+        Balances memory balances = fetchBalances();
         (, totalPricedCollateral, totalDebt) = _getTCRData(balances);
     }
 }

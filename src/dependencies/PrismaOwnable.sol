@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import "../interfaces/IPrismaCore.sol";
+import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 
 /**
  * @title Prisma Ownable
  *     @notice Contracts inheriting `PrismaOwnable` have the same owner as `PrismaCore`.
  *             The ownership cannot be independently modified or renounced.
  */
-contract PrismaOwnable {
+contract PrismaOwnable is IPrismaOwnable {
     IPrismaCore public immutable PRISMA_CORE;
 
-    constructor(address _prismaCore) {
-        PRISMA_CORE = IPrismaCore(_prismaCore);
+    constructor(IPrismaCore _prismaCore) {
+        PRISMA_CORE = _prismaCore;
     }
 
     modifier onlyOwner() {

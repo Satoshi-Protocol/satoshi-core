@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
+
+import {IDelegatedOps} from "../interfaces/IDelegatedOps.sol";
 
 /**
  * @title Prisma Delegated Operations
@@ -16,9 +17,7 @@ pragma solidity 0.8.13;
  *             from the caller, create the debt position for `account`, and send newly
  *             minted tokens to the caller.
  */
-contract DelegatedOps {
-    event DelegateApprovalSet(address indexed caller, address indexed delegate, bool isApproved);
-
+contract DelegatedOps is IDelegatedOps {
     // owner => caller => isApproved
     mapping(address => mapping(address => bool)) public isApprovedDelegate;
 

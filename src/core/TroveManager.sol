@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../interfaces/IBorrowerOperations.sol";
-import "../interfaces/IDebtToken.sol";
-import "../interfaces/ISortedTroves.sol";
-import "../interfaces/IPriceFeed.sol";
-import "../dependencies/SystemStart.sol";
-import "../dependencies/PrismaBase.sol";
-import "../dependencies/PrismaMath.sol";
-import "../dependencies/PrismaOwnable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {PrismaBase} from "../dependencies/PrismaBase.sol";
+import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {ITroveManager, Trove, Status, TroveManagerOperation} from "../interfaces/ITroveManager.sol";
+import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
+import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
+import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
+import {IGasPool} from "../interfaces/IGasPool.sol";
+import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 
 /**
  * @title Prisma Trove Manager
@@ -26,14 +28,14 @@ import "../dependencies/PrismaOwnable.sol";
  *             Functionality related to liquidations has been moved to `LiquidationManager`. This was
  *             necessary to avoid the restriction on deployed bytecode size.
  */
-contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
+contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
     using SafeERC20 for IERC20;
 
     // --- Connected contract declarations ---
 
-    address public immutable borrowerOperationsAddress;
-    address public immutable liquidationManager;
-    address immutable gasPoolAddress;
+    IBorrowerOperations public immutable borrowerOperations;
+    ILiquidationManager public immutable liquidationManager;
+    IGasPool public immutable gasPool;
     IDebtToken public immutable debtToken;
 
     IPriceFeed public priceFeed;
@@ -136,7 +138,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     // account -> data for latest activity
     mapping(address => VolumeData) public accountLatestMint;
 
-    mapping(address => Trove) public Troves;
+    mapping(address => Trove) public troves;
     mapping(address => uint256) public surplusBalances;
 
     // Map addresses with active troves to their RewardSnapshot
@@ -154,16 +156,6 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     struct EmissionId {
         uint16 debt;
         uint16 minting;
-    }
-
-    // Store the necessary data for a trove
-    struct Trove {
-        uint256 debt;
-        uint256 coll;
-        uint256 stake;
-        Status status;
-        uint128 arrayIndex;
-        uint256 activeInterestIndex;
     }
 
     struct RedemptionTotals {
@@ -189,55 +181,22 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         uint256 debt;
     }
 
-    enum TroveManagerOperation {
-        open,
-        close,
-        adjust,
-        liquidate,
-        redeemCollateral
-    }
-
-    enum Status {
-        nonExistent,
-        active,
-        closedByOwner,
-        closedByLiquidation,
-        closedByRedemption
-    }
-
-    event TroveUpdated(
-        address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
-    );
-
-    event Redemption(
-        uint256 _attemptedDebtAmount, uint256 _actualDebtAmount, uint256 _collateralSent, uint256 _collateralFee
-    );
-    event BaseRateUpdated(uint256 _baseRate);
-    event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
-    event TotalStakesUpdated(uint256 _newTotalStakes);
-    event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
-    event LTermsUpdated(uint256 _L_collateral, uint256 _L_debt);
-    event TroveSnapshotsUpdated(uint256 _L_collateral, uint256 _L_debt);
-    event TroveIndexUpdated(address _borrower, uint256 _newIndex);
-    event CollateralSent(address _to, uint256 _amount);
-    event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
-
     modifier whenNotPaused() {
         require(!paused, "Collateral Paused");
         _;
     }
 
     constructor(
-        address _prismaCore,
-        address _gasPoolAddress,
-        address _debtTokenAddress,
-        address _borrowerOperationsAddress,
-        address _liquidationManager,
+        IPrismaCore _prismaCore,
+        IGasPool _gasPool,
+        IDebtToken _debtToken,
+        IBorrowerOperations _borrowerOperations,
+        ILiquidationManager _liquidationManager,
         uint256 _gasCompensation
-    ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) SystemStart(_prismaCore) {
-        gasPoolAddress = _gasPoolAddress;
-        debtToken = IDebtToken(_debtTokenAddress);
-        borrowerOperationsAddress = _borrowerOperationsAddress;
+    ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) {
+        gasPool = _gasPool;
+        debtToken = _debtToken;
+        borrowerOperations = _borrowerOperations;
         liquidationManager = _liquidationManager;
     }
 
@@ -268,10 +227,10 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
 
     /**
      * @notice Sets a custom price feed for this trove manager
-     * @param _priceFeedAddress Price feed address
+     * @param _priceFeed Price feed address
      */
-    function setPriceFeed(address _priceFeedAddress) external onlyOwner {
-        priceFeed = IPriceFeed(_priceFeedAddress);
+    function setPriceFeed(IPriceFeed _priceFeed) external onlyOwner {
+        priceFeed = _priceFeed;
     }
 
     /**
@@ -356,13 +315,13 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     function fetchPrice() public returns (uint256) {
         IPriceFeed _priceFeed = priceFeed;
         if (address(_priceFeed) == address(0)) {
-            _priceFeed = IPriceFeed(PRISMA_CORE.priceFeed());
+            _priceFeed = PRISMA_CORE.priceFeed();
         }
-        return _priceFeed.fetchPrice(address(collateralToken));
+        return _priceFeed.fetchPrice(collateralToken);
     }
 
     function getWeekAndDay() public view returns (uint256, uint256) {
-        uint256 duration = (block.timestamp - startTime);
+        uint256 duration = (block.timestamp - PRISMA_CORE.startTime());
         uint256 week = duration / 1 weeks;
         uint256 day = (duration % 1 weeks) / 1 days;
         return (week, day);
@@ -381,11 +340,11 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     }
 
     function getTroveStatus(address _borrower) external view returns (uint256) {
-        return uint256(Troves[_borrower].status);
+        return uint256(troves[_borrower].status);
     }
 
     function getTroveStake(address _borrower) external view returns (uint256) {
-        return Troves[_borrower].stake;
+        return troves[_borrower].stake;
     }
 
     /**
@@ -406,7 +365,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         view
         returns (uint256 debt, uint256 coll, uint256 pendingDebtReward, uint256 pendingCollateralReward)
     {
-        Trove storage t = Troves[_borrower];
+        Trove storage t = troves[_borrower];
         debt = t.debt;
         coll = t.coll;
 
@@ -479,9 +438,9 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         uint256 coll = L_collateral - snapshot.collateral;
         uint256 debt = L_debt - snapshot.debt;
 
-        if (coll + debt == 0 || Troves[_borrower].status != Status.active) return (0, 0);
+        if (coll + debt == 0 || troves[_borrower].status != Status.active) return (0, 0);
 
-        uint256 stake = Troves[_borrower].stake;
+        uint256 stake = troves[_borrower].stake;
         return ((stake * coll) / DECIMAL_PRECISION, (stake * debt) / DECIMAL_PRECISION);
     }
 
@@ -491,7 +450,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
          * this indicates that rewards have occured since the snapshot was made, and the user therefore has
          * pending rewards
          */
-        if (Troves[_borrower].status != Status.active) {
+        if (troves[_borrower].status != Status.active) {
             return false;
         }
 
@@ -639,7 +598,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         require(block.timestamp >= systemDeploymentTime + BOOTSTRAP_PERIOD, "BOOTSTRAP_PERIOD");
         totals.price = fetchPrice();
         uint256 _MCR = MCR;
-        require(IBorrowerOperations(borrowerOperationsAddress).getTCR() >= _MCR, "Cannot redeem when TCR < MCR");
+        require(IBorrowerOperations(borrowerOperations).getTCR() >= _MCR, "Cannot redeem when TCR < MCR");
         require(_debtAmount > 0, "Amount must be greater than zero");
         require(debtToken.balanceOf(msg.sender) >= _debtAmount, "Insufficient balance");
         _updateBalances();
@@ -721,7 +680,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         address _lowerPartialRedemptionHint,
         uint256 _partialRedemptionHintNICR
     ) internal returns (SingleRedemptionValues memory singleRedemption) {
-        Trove storage t = Troves[_borrower];
+        Trove storage t = troves[_borrower];
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
         singleRedemption.debtLot = PrismaMath._min(_maxDebtAmount, t.debt - DEBT_GAS_COMPENSATION);
 
@@ -752,10 +711,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
                 uint256 icrError = _partialRedemptionHintNICR > newNICR
                     ? _partialRedemptionHintNICR - newNICR
                     : newNICR - _partialRedemptionHintNICR;
-                if (
-                    icrError > 5e14
-                        || _getNetDebt(newDebt) < IBorrowerOperations(borrowerOperationsAddress).minNetDebt()
-                ) {
+                if (icrError > 5e14 || _getNetDebt(newDebt) < IBorrowerOperations(borrowerOperations).minNetDebt()) {
                     singleRedemption.cancelledPartial = true;
                     return singleRedemption;
                 }
@@ -781,7 +737,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
      * Any surplus collateral left in the trove can be later claimed by the borrower.
      */
     function _redeemCloseTrove(address _borrower, uint256 _debt, uint256 _collateral) internal {
-        debtToken.burn(gasPoolAddress, _debt);
+        debtToken.burn(address(gasPool), _debt);
         totalActiveDebt = totalActiveDebt - _debt;
 
         surplusBalances[_borrower] += _collateral;
@@ -832,7 +788,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         require(!sunsetting, "Cannot open while sunsetting");
         uint256 supply = totalActiveDebt;
 
-        Trove storage t = Troves[_borrower];
+        Trove storage t = troves[_borrower];
         require(t.status != Status.active, "BorrowerOps: Trove is active");
         t.status = Status.active;
         t.coll = _collateralAmount;
@@ -874,7 +830,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
             require(!sunsetting, "Cannot increase while sunsetting");
         }
 
-        Trove storage t = Troves[_borrower];
+        Trove storage t = troves[_borrower];
         require(t.status == Status.active, "Trove closed or does not exist");
 
         uint256 newDebt = t.debt;
@@ -913,7 +869,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
 
     function closeTrove(address _borrower, address _receiver, uint256 collAmount, uint256 debtAmount) external {
         _requireCallerIsBO();
-        require(Troves[_borrower].status == Status.active, "Trove closed or does not exist");
+        require(troves[_borrower].status == Status.active, "Trove closed or does not exist");
         _removeStake(_borrower);
         _closeTrove(_borrower, Status.closedByOwner);
         totalActiveDebt = totalActiveDebt - debtAmount;
@@ -949,7 +905,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     function _closeTrove(address _borrower, Status closedStatus) internal {
         uint256 TroveOwnersArrayLength = TroveOwners.length;
 
-        Trove storage t = Troves[_borrower];
+        Trove storage t = troves[_borrower];
         t.status = closedStatus;
         t.coll = 0;
         t.debt = 0;
@@ -962,7 +918,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
             uint128 index = t.arrayIndex;
             address addressToMove = TroveOwners[TroveOwnersArrayLength - 1];
             TroveOwners[index] = addressToMove;
-            Troves[addressToMove].arrayIndex = index;
+            troves[addressToMove].arrayIndex = index;
             emit TroveIndexUpdated(addressToMove, index);
         }
 
@@ -1018,7 +974,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
 
     // Add the borrowers's coll and debt rewards earned from redistributions, to their Trove
     function _applyPendingRewards(address _borrower) internal returns (uint256 coll, uint256 debt) {
-        Trove storage t = Troves[_borrower];
+        Trove storage t = troves[_borrower];
         if (t.status == Status.active) {
             uint256 troveInterestIndex = t.activeInterestIndex;
             uint256 currentInterestIndex = _accrueActiveInterests();
@@ -1060,9 +1016,9 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
 
     // Remove borrower's stake from the totalStakes sum, and set their stake to 0
     function _removeStake(address _borrower) internal {
-        uint256 stake = Troves[_borrower].stake;
+        uint256 stake = troves[_borrower].stake;
         totalStakes = totalStakes - stake;
-        Troves[_borrower].stake = 0;
+        troves[_borrower].stake = 0;
     }
 
     // Update borrower's stake based on their latest collateral value
@@ -1147,7 +1103,7 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
         emit SystemSnapshotsUpdated(totalStakesSnapshot, totalCollateralSnapshot);
 
         // send gas compensation
-        debtToken.returnFromPool(gasPoolAddress, _liquidator, _debtGasComp);
+        debtToken.returnFromPool(address(gasPool), _liquidator, _debtGasComp);
         _sendCollateral(_liquidator, _collGasComp);
     }
 
@@ -1265,10 +1221,10 @@ contract TroveManager is PrismaBase, PrismaOwnable, SystemStart {
     // --- Requires ---
 
     function _requireCallerIsBO() internal view {
-        require(msg.sender == borrowerOperationsAddress, "Caller not BO");
+        require(msg.sender == address(borrowerOperations), "Caller not BO");
     }
 
     function _requireCallerIsLM() internal view {
-        require(msg.sender == liquidationManager, "Not Liquidation Manager");
+        require(msg.sender == address(liquidationManager), "Not Liquidation Manager");
     }
 }

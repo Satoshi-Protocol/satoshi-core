@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
+
+import {IPriceFeed} from "./IPriceFeed.sol";
 
 interface IPrismaCore {
     event FeeReceiverSet(address feeReceiver);
@@ -9,7 +10,7 @@ interface IPrismaCore {
     event NewOwnerCommitted(address owner, address pendingOwner, uint256 deadline);
     event NewOwnerRevoked(address owner, address revokedOwner);
     event Paused();
-    event PriceFeedSet(address priceFeed);
+    event PriceFeedSet(IPriceFeed priceFeed);
     event Unpaused();
 
     function acceptTransferOwnership() external;
@@ -24,7 +25,7 @@ interface IPrismaCore {
 
     function setPaused(bool _paused) external;
 
-    function setPriceFeed(address _priceFeed) external;
+    function setPriceFeed(IPriceFeed _priceFeed) external;
 
     function OWNERSHIP_TRANSFER_DELAY() external view returns (uint256);
 
@@ -40,7 +41,7 @@ interface IPrismaCore {
 
     function pendingOwner() external view returns (address);
 
-    function priceFeed() external view returns (address);
+    function priceFeed() external view returns (IPriceFeed);
 
     function startTime() external view returns (uint256);
 }

@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-interface IStabilityPool {
-    event CollateralGainWithdrawn(address indexed _depositor, uint256[] _collateral);
-    event CollateralOverwritten(address oldCollateral, address newCollateral);
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IPrismaCore} from "./IPrismaCore.sol";
+import {IPrismaOwnable} from "./IPrismaOwnable.sol";
+import {IDebtToken} from "./IDebtToken.sol";
+import {IFactory} from "./IFactory.sol";
+import {ILiquidationManager} from "./ILiquidationManager.sol";
+
+interface IStabilityPool is IPrismaOwnable {
+    event CollateralGainWithdrawn(address indexed _depositor, uint256[] _collateralAmounts);
+    event CollateralOverwritten(IERC20 oldCollateralToken, IERC20 newCollateralToken);
     event DepositSnapshotUpdated(address indexed _depositor, uint256 _P, uint256 _G);
     event EpochUpdated(uint128 _currentEpoch);
     event G_Updated(uint256 _G, uint128 _epoch, uint128 _scale);
@@ -17,17 +23,13 @@ interface IStabilityPool {
 
     function claimCollateralGains(address recipient, uint256[] calldata collateralIndexes) external;
 
-    function claimReward(address recipient) external returns (uint256 amount);
+    function enableCollateral(IERC20 _collateral) external;
 
-    function enableCollateral(address _collateral) external;
-
-    function offset(address collateral, uint256 _debtToOffset, uint256 _collToAdd) external;
+    function offset(IERC20 collateralToken, uint256 _debtToOffset, uint256 _collToAdd) external;
 
     function provideToSP(uint256 _amount) external;
 
-    function startCollateralSunset(address collateral) external;
-
-    function vaultClaimReward(address claimant, address) external returns (uint256 amount);
+    function startCollateralSunset(IERC20 collateralToken) external;
 
     function withdrawFromSP(uint256 _amount) external;
 
@@ -35,25 +37,21 @@ interface IStabilityPool {
 
     function P() external view returns (uint256);
 
-    function PRISMA_CORE() external view returns (address);
-
     function SCALE_FACTOR() external view returns (uint256);
 
     function SUNSET_DURATION() external view returns (uint128);
 
     function accountDeposits(address) external view returns (uint128 amount, uint128 timestamp);
 
-    function claimableReward(address _depositor) external view returns (uint256);
-
     function collateralGainsByDepositor(address depositor, uint256) external view returns (uint80 gains);
 
-    function collateralTokens(uint256) external view returns (address);
+    function collateralTokens(uint256) external view returns (IERC20);
 
     function currentEpoch() external view returns (uint128);
 
     function currentScale() external view returns (uint128);
 
-    function debtToken() external view returns (address);
+    function debtToken() external view returns (IDebtToken);
 
     function depositSnapshots(address) external view returns (uint256 P, uint256 G, uint128 scale, uint128 epoch);
 
@@ -65,7 +63,7 @@ interface IStabilityPool {
 
     function epochToScaleToSums(uint128, uint128, uint256) external view returns (uint256);
 
-    function factory() external view returns (address);
+    function factory() external view returns (IFactory);
 
     function getCompoundedDebtDeposit(address _depositor) external view returns (uint256);
 
@@ -73,27 +71,15 @@ interface IStabilityPool {
 
     function getTotalDebtTokenDeposits() external view returns (uint256);
 
-    function getWeek() external view returns (uint256 week);
-
-    function guardian() external view returns (address);
-
-    function indexByCollateral(address collateral) external view returns (uint256 index);
-
-    function lastCollateralError_Offset() external view returns (uint256);
-
-    function lastDebtLossError_Offset() external view returns (uint256);
+    function indexByCollateral(IERC20 collateral) external view returns (uint256 index);
 
     function lastPrismaError() external view returns (uint256);
 
     function lastUpdate() external view returns (uint32);
 
-    function liquidationManager() external view returns (address);
-
-    function owner() external view returns (address);
+    function liquidationManager() external view returns (ILiquidationManager);
 
     function periodFinish() external view returns (uint32);
 
     function rewardRate() external view returns (uint128);
-
-    function vault() external view returns (address);
 }

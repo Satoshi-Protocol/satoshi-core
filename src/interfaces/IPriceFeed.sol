@@ -1,17 +1,54 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-interface IPriceFeed {
-    event NewOracleRegistered(address token, address chainlinkAggregator, bool isEthIndexed);
-    event PriceFeedStatusUpdated(address token, address oracle, bool isWorking);
-    event PriceRecordUpdated(address indexed token, uint256 _price);
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 
-    function fetchPrice(address _token) external returns (uint256);
+struct OracleRecord {
+    IAggregatorV3Interface chainLinkOracle;
+    uint8 decimals;
+    uint32 heartbeat;
+    bytes4 sharePriceSignature;
+    uint8 sharePriceDecimals;
+    bool isFeedWorking;
+    bool isEthIndexed;
+}
+
+struct PriceRecord {
+    uint96 scaledPrice;
+    uint32 timestamp;
+    uint32 lastUpdated;
+    uint80 roundId;
+}
+
+struct FeedResponse {
+    uint80 roundId;
+    int256 answer;
+    uint256 timestamp;
+    bool success;
+}
+
+interface IPriceFeed is IPrismaOwnable {
+    event NewOracleRegistered(
+        IERC20 indexed token, IAggregatorV3Interface indexed chainlinkAggregator, bool indexed isEthIndexed
+    );
+    event PriceFeedStatusUpdated(IERC20 indexed token, address indexed oracle, bool indexed isWorking);
+    event PriceRecordUpdated(IERC20 indexed token, uint256 indexed _price);
+
+    // Custom Errors --------------------------------------------------------------------------------------------------
+
+    error PriceFeed__InvalidFeedResponseError(IERC20 token);
+    error PriceFeed__FeedFrozenError(IERC20 token);
+    error PriceFeed__UnknownFeedError(IERC20 token);
+    error PriceFeed__HeartbeatOutOfBoundsError();
+
+    function fetchPrice(IERC20 _token) external returns (uint256);
 
     function setOracle(
-        address _token,
-        address _chainlinkOracle,
+        IERC20 _token,
+        IAggregatorV3Interface _chainlinkOracle,
+        uint32 _heartbeat,
         bytes4 sharePriceSignature,
         uint8 sharePriceDecimals,
         bool _isEthIndexed
@@ -19,29 +56,22 @@ interface IPriceFeed {
 
     function MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND() external view returns (uint256);
 
-    function PRISMA_CORE() external view returns (address);
-
-    function RESPONSE_TIMEOUT() external view returns (uint256);
-
     function TARGET_DIGITS() external view returns (uint256);
 
-    function guardian() external view returns (address);
-
-    function oracleRecords(address)
+    function oracleRecords(IERC20)
         external
         view
         returns (
-            address chainLinkOracle,
+            IAggregatorV3Interface chainLinkOracle,
             uint8 decimals,
+            uint32 heartbeat,
             bytes4 sharePriceSignature,
             uint8 sharePriceDecimals,
             bool isFeedWorking,
             bool isEthIndexed
         );
 
-    function owner() external view returns (address);
-
-    function priceRecords(address)
+    function priceRecords(IERC20)
         external
         view
         returns (uint96 scaledPrice, uint32 timestamp, uint32 lastUpdated, uint80 roundId);

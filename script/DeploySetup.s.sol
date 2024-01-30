@@ -2,11 +2,15 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
+import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
 import {IPrismaCore} from "../src/interfaces/IPrismaCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/IDebtToken.sol";
 import {ILiquidationManager} from "../src/interfaces/ILiquidationManager.sol";
 import {IStabilityPool} from "../src/interfaces/IStabilityPool.sol";
+import {IPriceFeed} from "../src/interfaces/IPriceFeed.sol";
+import {IFactory} from "../src/interfaces/IFactory.sol";
+import {IGasPool} from "../src/interfaces/IGasPool.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {PrismaCore} from "../src/core/PrismaCore.sol";
 import {PriceFeed} from "../src/core/PriceFeed.sol";
@@ -56,126 +60,99 @@ contract DeploySetupScript is Script {
         console.log("start nonce");
         console.log(nonce);
 
-        address computedSortedTrovesAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedPriceFeedAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedPrismaCoreAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedGasPoolAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedBorrowerOperationsAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedDebtTokenAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedLiquidationManagerAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedStabilityPoolAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedTroveManagerAddr = vm.computeCreateAddress(deployer, nonce);
-        ++nonce;
-        address computedFactoryAddr = vm.computeCreateAddress(deployer, nonce);
+        // Computed contract addresses
+        address cpSortedTrovesAddr = vm.computeCreateAddress(deployer, nonce);
+        address cpPriceFeedAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpPrismaCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpBorrowerOperationsAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpLiquidationManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpStabilityPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpTroveManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
 
         // Deploy `SortedTroves.sol`
         sortedTroves = new SortedTroves();
-        console.log("SortedTroves computed at: ", computedSortedTrovesAddr);
-        console.log("SortedTroves deployed at: ", address(sortedTroves));
-        assert(computedSortedTrovesAddr == address(sortedTroves));
-
-        // empty array
-        PriceFeed.OracleSetup[] memory oracleSetups = new PriceFeed.OracleSetup[](0);
+        assert(cpSortedTrovesAddr == address(sortedTroves));
 
         // Deploy `PriceFeed.sol`
-        priceFeed = new PriceFeed(computedPrismaCoreAddr, PRICE_FEED_ETH_FEED, oracleSetups);
-        console.log("PriceFeed computed at: ", computedPriceFeedAddr);
-        console.log("PriceFeed deployed at: ", address(priceFeed));
-        assert(computedPriceFeedAddr == address(priceFeed));
+        // empty array
+        PriceFeed.OracleSetup[] memory oracleSetups = new PriceFeed.OracleSetup[](0);
+        priceFeed =
+            new PriceFeed(IPrismaCore(cpPrismaCoreAddr), IAggregatorV3Interface(PRICE_FEED_ETH_FEED), oracleSetups);
+        assert(cpPriceFeedAddr == address(priceFeed));
 
         // Deploy `PrismaCore.sol`
-        prismaCore =
-            new PrismaCore(PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, computedPriceFeedAddr, PRISMA_CORE_FEE_RECEIVER);
-        console.log("PrismaCore computed at: ", computedPrismaCoreAddr);
-        console.log("PrismaCore deployed at: ", address(prismaCore));
-        assert(computedPrismaCoreAddr == address(prismaCore));
+        prismaCore = new PrismaCore(
+            PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, IPriceFeed(cpPriceFeedAddr), PRISMA_CORE_FEE_RECEIVER
+        );
+        assert(cpPrismaCoreAddr == address(prismaCore));
 
         // Deploy `GasPool.sol`
         gasPool = new GasPool();
-        console.log("GasPool computed at: ", computedGasPoolAddr);
-        console.log("GasPool deployed at: ", address(gasPool));
-        assert(computedGasPoolAddr == address(gasPool));
+        assert(cpGasPoolAddr == address(gasPool));
 
         // Deploy `BorrowerOperations.sol`
         borrowerOperations = new BorrowerOperations(
-            computedPrismaCoreAddr, computedDebtTokenAddr, computedFactoryAddr, BO_MIN_NET_DEBT, GAS_COMPENSATION
+            IPrismaCore(cpPrismaCoreAddr), cpDebtTokenAddr, cpFactoryAddr, BO_MIN_NET_DEBT, GAS_COMPENSATION
         );
-        console.log("BorrowerOperations computed at: ", computedBorrowerOperationsAddr);
-        console.log("BorrowerOperations deployed at: ", address(borrowerOperations));
-        assert(computedBorrowerOperationsAddr == address(borrowerOperations));
+        assert(cpBorrowerOperationsAddr == address(borrowerOperations));
 
         // Deploy `DebtToken.sol`
         debtToken = new DebtToken(
             DEBT_TOKEN_NAME,
             DEBT_TOKEN_SYMBOL,
-            computedStabilityPoolAddr,
-            computedBorrowerOperationsAddr,
-            IPrismaCore(computedPrismaCoreAddr),
+            IStabilityPool(cpStabilityPoolAddr),
+            IBorrowerOperations(cpBorrowerOperationsAddr),
+            IPrismaCore(cpPrismaCoreAddr),
             DEBT_TOKEN_LAYER_ZERO_END_POINT,
-            computedFactoryAddr,
-            computedGasPoolAddr,
+            IFactory(cpFactoryAddr),
+            IGasPool(cpGasPoolAddr),
             GAS_COMPENSATION
         );
-        console.log("DebtToken computed at: ", computedDebtTokenAddr);
-        console.log("DebtToken deployed at: ", address(debtToken));
-        assert(computedDebtTokenAddr == address(debtToken));
+        assert(cpDebtTokenAddr == address(debtToken));
 
         // Deploy `LiquidationManager.sol`
         liquidationManager = new LiquidationManager(
-            IStabilityPool(computedStabilityPoolAddr),
-            IBorrowerOperations(computedBorrowerOperationsAddr),
-            computedFactoryAddr,
+            IStabilityPool(cpStabilityPoolAddr),
+            IBorrowerOperations(cpBorrowerOperationsAddr),
+            IFactory(cpFactoryAddr),
             GAS_COMPENSATION
         );
-        console.log("LiquidationManager computed at: ", computedLiquidationManagerAddr);
-        console.log("LiquidationManager deployed at: ", address(liquidationManager));
-        assert(computedLiquidationManagerAddr == address(liquidationManager));
+        assert(cpLiquidationManagerAddr == address(liquidationManager));
 
         // Deploy `StabilityPool.sol`
         stabilityPool = new StabilityPool(
-            computedPrismaCoreAddr,
-            IDebtToken(computedDebtTokenAddr),
-            computedFactoryAddr,
-            computedLiquidationManagerAddr
+            IPrismaCore(cpPrismaCoreAddr),
+            IDebtToken(cpDebtTokenAddr),
+            IFactory(cpFactoryAddr),
+            ILiquidationManager(cpLiquidationManagerAddr)
         );
-        console.log("StabilityPool computed at: ", computedStabilityPoolAddr);
-        console.log("StabilityPool deployed at: ", address(stabilityPool));
-        assert(computedStabilityPoolAddr == address(stabilityPool));
+        assert(cpStabilityPoolAddr == address(stabilityPool));
 
         // Deploy `TroveManager.sol`
         troveManager = new TroveManager(
-            computedPrismaCoreAddr,
-            computedGasPoolAddr,
-            computedDebtTokenAddr,
-            computedBorrowerOperationsAddr,
-            computedLiquidationManagerAddr,
+            IPrismaCore(cpPrismaCoreAddr),
+            IGasPool(cpGasPoolAddr),
+            IDebtToken(cpDebtTokenAddr),
+            IBorrowerOperations(cpBorrowerOperationsAddr),
+            ILiquidationManager(cpLiquidationManagerAddr),
             GAS_COMPENSATION
         );
-        console.log("TroveManager computed at: ", computedTroveManagerAddr);
-        console.log("TroveManager deployed at: ", address(troveManager));
-        assert(computedTroveManagerAddr == address(troveManager));
+        assert(cpTroveManagerAddr == address(troveManager));
 
         // Deploy `Factory.sol`
         factory = new Factory(
-            computedPrismaCoreAddr,
-            IDebtToken(computedDebtTokenAddr),
-            IStabilityPool(computedStabilityPoolAddr),
-            IBorrowerOperations(computedBorrowerOperationsAddr),
-            computedSortedTrovesAddr,
-            computedTroveManagerAddr,
-            ILiquidationManager(computedLiquidationManagerAddr)
+            IPrismaCore(cpPrismaCoreAddr),
+            cpDebtTokenAddr,
+            cpStabilityPoolAddr,
+            cpBorrowerOperationsAddr,
+            cpSortedTrovesAddr,
+            cpTroveManagerAddr,
+            cpLiquidationManagerAddr
         );
-        console.log("Factory computed at: ", computedFactoryAddr);
-        console.log("Factory deployed at: ", address(factory));
-        assert(computedFactoryAddr == address(factory));
+        assert(cpFactoryAddr == address(factory));
 
         vm.stopBroadcast();
     }

@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import {OFT, IERC20, ERC20} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
-import "../interfaces/IPrismaCore.sol";
+import {OFT, IERC20, ERC20} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
+import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IGasPool} from "../interfaces/IGasPool.sol";
 
 /**
  * @title Prisma Debt Token "acUSD"
@@ -12,7 +17,7 @@ import "../interfaces/IPrismaCore.sol";
  *             This contract has a 1:n relationship with multiple deployments of `TroveManager`,
  *             each of which hold one collateral type which may be used to mint this token.
  */
-contract DebtToken is OFT {
+contract DebtToken is IDebtToken, OFT {
     string public constant version = "1";
 
     // --- ERC 3156 Data ---
@@ -38,12 +43,12 @@ contract DebtToken is OFT {
 
     // --- Addresses ---
     IPrismaCore private immutable _prismaCore;
-    address public immutable stabilityPoolAddress;
-    address public immutable borrowerOperationsAddress;
-    address public immutable factory;
-    address public immutable gasPool;
+    IStabilityPool public immutable stabilityPool;
+    IBorrowerOperations public immutable borrowerOperations;
+    IFactory public immutable factory;
+    IGasPool public immutable gasPool;
 
-    mapping(address => bool) public troveManager;
+    mapping(ITroveManager => bool) public troveManager;
 
     // Amount of debt to be locked in gas pool on opening troves
     uint256 public immutable DEBT_GAS_COMPENSATION;
@@ -51,17 +56,17 @@ contract DebtToken is OFT {
     constructor(
         string memory _name,
         string memory _symbol,
-        address _stabilityPoolAddress,
-        address _borrowerOperationsAddress,
+        IStabilityPool _stabilityPool,
+        IBorrowerOperations _borrowerOperations,
         IPrismaCore prismaCore_,
         address _layerZeroEndpoint,
-        address _factory,
-        address _gasPool,
+        IFactory _factory,
+        IGasPool _gasPool,
         uint256 _gasCompensation
     ) OFT(_name, _symbol, _layerZeroEndpoint) {
-        stabilityPoolAddress = _stabilityPoolAddress;
+        stabilityPool = _stabilityPool;
         _prismaCore = prismaCore_;
-        borrowerOperationsAddress = _borrowerOperationsAddress;
+        borrowerOperations = _borrowerOperations;
         factory = _factory;
         gasPool = _gasPool;
 
@@ -76,59 +81,64 @@ contract DebtToken is OFT {
         _CACHED_DOMAIN_SEPARATOR = _buildDomainSeparator(_TYPE_HASH, hashedName, hashedVersion);
     }
 
-    function enableTroveManager(address _troveManager) external {
-        require(msg.sender == factory, "!Factory");
+    function enableTroveManager(ITroveManager _troveManager) external {
+        require(msg.sender == address(factory), "!Factory");
         troveManager[_troveManager] = true;
     }
 
     // --- Functions for intra-Prisma calls ---
 
     function mintWithGasCompensation(address _account, uint256 _amount) external returns (bool) {
-        require(msg.sender == borrowerOperationsAddress);
+        require(msg.sender == address(borrowerOperations));
         _mint(_account, _amount);
-        _mint(gasPool, DEBT_GAS_COMPENSATION);
+        _mint(address(gasPool), DEBT_GAS_COMPENSATION);
 
         return true;
     }
 
     function burnWithGasCompensation(address _account, uint256 _amount) external returns (bool) {
-        require(msg.sender == borrowerOperationsAddress);
+        require(msg.sender == address(borrowerOperations));
         _burn(_account, _amount);
-        _burn(gasPool, DEBT_GAS_COMPENSATION);
+        _burn(address(gasPool), DEBT_GAS_COMPENSATION);
 
         return true;
     }
 
     function mint(address _account, uint256 _amount) external {
-        require(msg.sender == borrowerOperationsAddress || troveManager[msg.sender], "Debt: Caller not BO/TM");
+        require(
+            msg.sender == address(borrowerOperations) || troveManager[ITroveManager(msg.sender)],
+            "Debt: Caller not BO/TM"
+        );
         _mint(_account, _amount);
     }
 
     function burn(address _account, uint256 _amount) external {
-        require(troveManager[msg.sender], "Debt: Caller not TroveManager");
+        require(troveManager[ITroveManager(msg.sender)], "Debt: Caller not TroveManager");
         _burn(_account, _amount);
     }
 
     function sendToSP(address _sender, uint256 _amount) external {
-        require(msg.sender == stabilityPoolAddress, "Debt: Caller not StabilityPool");
+        require(msg.sender == address(stabilityPool), "Debt: Caller not StabilityPool");
         _transfer(_sender, msg.sender, _amount);
     }
 
     function returnFromPool(address _poolAddress, address _receiver, uint256 _amount) external {
-        require(msg.sender == stabilityPoolAddress || troveManager[msg.sender], "Debt: Caller not TM/SP");
+        require(
+            msg.sender == address(stabilityPool) || troveManager[ITroveManager(msg.sender)], "Debt: Caller not TM/SP"
+        );
         _transfer(_poolAddress, _receiver, _amount);
     }
 
     // --- External functions ---
 
-    function transfer(address recipient, uint256 amount) public override(IERC20, ERC20) returns (bool) {
+    function transfer(address recipient, uint256 amount) public override(IDebtToken, IERC20, ERC20) returns (bool) {
         _requireValidRecipient(recipient);
         return super.transfer(recipient, amount);
     }
 
     function transferFrom(address sender, address recipient, uint256 amount)
         public
-        override(IERC20, ERC20)
+        override(IDebtToken, IERC20, ERC20)
         returns (bool)
     {
         _requireValidRecipient(recipient);
@@ -249,7 +259,8 @@ contract DebtToken is OFT {
             "Debt: Cannot transfer tokens directly to the Debt token contract or the zero address"
         );
         require(
-            _recipient != stabilityPoolAddress && !troveManager[_recipient] && _recipient != borrowerOperationsAddress,
+            _recipient != address(stabilityPool) && !troveManager[ITroveManager(_recipient)]
+                && _recipient != address(borrowerOperations),
             "Debt: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
         );
     }

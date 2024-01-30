@@ -1,22 +1,40 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-interface IBorrowerOperations {
-    struct Balances {
-        uint256[] collaterals;
-        uint256[] debts;
-        uint256[] prices;
-    }
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
+import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IDelegatedOps} from "../interfaces/IDelegatedOps.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
 
-    event BorrowingFeePaid(address indexed borrower, uint256 amount);
-    event CollateralConfigured(address troveManager, address collateralToken);
+enum BorrowerOperation {
+    openTrove,
+    closeTrove,
+    adjustTrove
+}
+
+struct Balances {
+    uint256[] collaterals;
+    uint256[] debts;
+    uint256[] prices;
+}
+
+struct TroveManagerData {
+    IERC20 collateralToken;
+    uint16 index;
+}
+
+interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
+    event BorrowingFeePaid(address indexed borrower, IERC20 indexed collateralToken, uint256 indexed amount);
+    event CollateralConfigured(ITroveManager troveManager, IERC20 indexed collateralToken);
     event TroveCreated(address indexed _borrower, uint256 arrayIndex);
-    event TroveManagerRemoved(address troveManager);
+    event TroveManagerRemoved(ITroveManager indexed troveManager);
     event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 stake, uint8 operation);
 
     function addColl(
-        address troveManager,
+        ITroveManager troveManager,
         address account,
         uint256 _collateralAmount,
         address _upperHint,
@@ -24,7 +42,7 @@ interface IBorrowerOperations {
     ) external;
 
     function adjustTrove(
-        address troveManager,
+        ITroveManager troveManager,
         address account,
         uint256 _maxFeePercentage,
         uint256 _collDeposit,
@@ -35,9 +53,9 @@ interface IBorrowerOperations {
         address _lowerHint
     ) external;
 
-    function closeTrove(address troveManager, address account) external;
+    function closeTrove(ITroveManager troveManager, address account) external;
 
-    function configureCollateral(address troveManager, address collateralToken) external;
+    function configureCollateral(ITroveManager troveManager, IERC20 collateralToken) external;
 
     function fetchBalances() external returns (Balances memory balances);
 
@@ -46,7 +64,7 @@ interface IBorrowerOperations {
     function getTCR() external returns (uint256 globalTotalCollateralRatio);
 
     function openTrove(
-        address troveManager,
+        ITroveManager troveManager,
         address account,
         uint256 _maxFeePercentage,
         uint256 _collateralAmount,
@@ -55,22 +73,20 @@ interface IBorrowerOperations {
         address _lowerHint
     ) external;
 
-    function removeTroveManager(address troveManager) external;
+    function removeTroveManager(ITroveManager troveManager) external;
 
     function repayDebt(
-        address troveManager,
+        ITroveManager troveManager,
         address account,
         uint256 _debtAmount,
         address _upperHint,
         address _lowerHint
     ) external;
 
-    function setDelegateApproval(address _delegate, bool _isApproved) external;
-
     function setMinNetDebt(uint256 _minNetDebt) external;
 
     function withdrawColl(
-        address troveManager,
+        ITroveManager troveManager,
         address account,
         uint256 _collWithdrawal,
         address _upperHint,
@@ -78,7 +94,7 @@ interface IBorrowerOperations {
     ) external;
 
     function withdrawDebt(
-        address troveManager,
+        ITroveManager troveManager,
         address account,
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
@@ -88,31 +104,13 @@ interface IBorrowerOperations {
 
     function checkRecoveryMode(uint256 TCR) external pure returns (bool);
 
-    function CCR() external view returns (uint256);
+    function debtToken() external view returns (IDebtToken);
 
-    function DEBT_GAS_COMPENSATION() external view returns (uint256);
-
-    function DECIMAL_PRECISION() external view returns (uint256);
-
-    function PERCENT_DIVISOR() external view returns (uint256);
-
-    function PRISMA_CORE() external view returns (address);
-
-    function _100pct() external view returns (uint256);
-
-    function debtToken() external view returns (address);
-
-    function factory() external view returns (address);
+    function factory() external view returns (IFactory);
 
     function getCompositeDebt(uint256 _debt) external view returns (uint256);
 
-    function guardian() external view returns (address);
-
-    function isApprovedDelegate(address owner, address caller) external view returns (bool isApproved);
-
     function minNetDebt() external view returns (uint256);
 
-    function owner() external view returns (address);
-
-    function troveManagersData(address) external view returns (address collateralToken, uint16 index);
+    function troveManagersData(ITroveManager) external view returns (IERC20 collateralToken, uint16 index);
 }

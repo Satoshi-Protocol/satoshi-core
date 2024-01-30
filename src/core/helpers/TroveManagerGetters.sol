@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
 import "../../interfaces/ITroveManager.sol";
@@ -28,13 +27,13 @@ contract TroveManagerGetters {
         address[] memory uniqueCollaterals = new address[](length);
         uint256 collateralCount;
         for (uint256 i = 0; i < length; i++) {
-            address troveManager = factory.troveManagers(i);
-            address collateral = ITroveManager(troveManager).collateralToken();
-            troveManagersAndCollaterals[i] = [troveManager, collateral];
+            ITroveManager troveManager = factory.troveManagers(i);
+            IERC20 collateral = troveManager.collateralToken();
+            troveManagersAndCollaterals[i] = [address(troveManager), address(collateral)];
             for (uint256 x = 0; x < length; x++) {
-                if (uniqueCollaterals[x] == collateral) break;
+                if (uniqueCollaterals[x] == address(collateral)) break;
                 if (uniqueCollaterals[x] == address(0)) {
-                    uniqueCollaterals[x] = collateral;
+                    uniqueCollaterals[x] = address(collateral);
                     collateralCount++;
                     break;
                 }
@@ -63,13 +62,13 @@ contract TroveManagerGetters {
     /**
      * @notice Returns a list of trove managers where `account` has an existing trove
      */
-    function getActiveTroveManagersForAccount(address account) external view returns (address[] memory) {
+    function getActiveTroveManagersForAccount(address account) external view returns (ITroveManager[] memory) {
         uint256 length = factory.troveManagerCount();
-        address[] memory troveManagers = new address[](length);
+        ITroveManager[] memory troveManagers = new ITroveManager[](length);
         uint256 tmCount;
         for (uint256 i = 0; i < length; i++) {
-            address troveManager = factory.troveManagers(i);
-            if (ITroveManager(troveManager).getTroveStatus(account) > 0) {
+            ITroveManager troveManager = factory.troveManagers(i);
+            if (troveManager.getTroveStatus(account) > 0) {
                 troveManagers[tmCount] = troveManager;
                 tmCount++;
             }

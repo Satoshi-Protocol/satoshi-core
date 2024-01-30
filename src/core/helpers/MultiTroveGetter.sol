@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
 import "../../interfaces/ITroveManager.sol";
@@ -80,7 +79,7 @@ contract MultiTroveGetter {
                 /* interestIndex */
                 ,
                 ,
-            ) = troveManager.Troves(currentTroveowner);
+            ) = troveManager.troves(currentTroveowner);
             (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) =
                 troveManager.rewardSnapshots(currentTroveowner);
 
@@ -113,7 +112,7 @@ contract MultiTroveGetter {
                 /* interestIndex */
                 ,
                 ,
-            ) = troveManager.Troves(currentTroveowner);
+            ) = troveManager.troves(currentTroveowner);
             (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) =
                 troveManager.rewardSnapshots(currentTroveowner);
 

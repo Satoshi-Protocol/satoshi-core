@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {DeploymentParams} from "../src/core/Factory.sol";
+
 address constant COLLATERAL_ADDRESS = address(0);
 address constant PRICE_FEED_ADDRESS = address(0);
 address constant CUSTOM_TROVE_MANAGER_IMPL = address(0);

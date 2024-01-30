@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
+
+import {ITroveManager} from "./ITroveManager.sol";
 
 interface ISortedTroves {
     event NodeAdded(address _id, uint256 _NICR);
@@ -12,7 +13,7 @@ interface ISortedTroves {
 
     function remove(address _id) external;
 
-    function setAddresses(address _troveManagerAddress) external;
+    function setAddresses(address _troveManagerAddr) external;
 
     function contains(address _id) external view returns (bool);
 
@@ -35,7 +36,7 @@ interface ISortedTroves {
 
     function isEmpty() external view returns (bool);
 
-    function troveManager() external view returns (address);
+    function troveManager() external view returns (ITroveManager);
 
     function validInsertPosition(uint256 _NICR, address _prevId, address _nextId) external view returns (bool);
 }

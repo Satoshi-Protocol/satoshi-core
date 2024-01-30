@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../dependencies/PrismaOwnable.sol";
-import "../dependencies/SystemStart.sol";
-import "../dependencies/PrismaMath.sol";
-import "../interfaces/IDebtToken.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
+import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 
 /**
  * @title Prisma Stability Pool
@@ -17,7 +19,7 @@ import "../interfaces/IDebtToken.sol";
  *             Prisma's implementation is modified to support multiple collaterals. Deposits into
  *             the stability pool may be used to liquidate any supported collateral type.
  */
-contract StabilityPool is PrismaOwnable, SystemStart {
+contract StabilityPool is IStabilityPool, PrismaOwnable {
     using SafeERC20 for IERC20;
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
@@ -27,8 +29,8 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     uint256 public constant emissionId = 0;
 
     IDebtToken public immutable debtToken;
-    address public immutable factory;
-    address public immutable liquidationManager;
+    IFactory public immutable factory;
+    ILiquidationManager public immutable liquidationManager;
 
     uint128 public rewardRate;
     uint32 public lastUpdate;
@@ -121,26 +123,12 @@ contract StabilityPool is PrismaOwnable, SystemStart {
         uint16 nextSunsetIndexKey;
     }
 
-    event StabilityPoolDebtBalanceUpdated(uint256 _newBalance);
-
-    event P_Updated(uint256 _P);
-    event S_Updated(uint256 idx, uint256 _S, uint128 _epoch, uint128 _scale);
-    event G_Updated(uint256 _G, uint128 _epoch, uint128 _scale);
-    event EpochUpdated(uint128 _currentEpoch);
-    event ScaleUpdated(uint128 _currentScale);
-
-    event DepositSnapshotUpdated(address indexed _depositor, uint256 _P, uint256 _G);
-    event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
-
-    event CollateralGainWithdrawn(address indexed _depositor, uint256[] _collateral);
-    event CollateralOverwritten(IERC20 oldCollateral, IERC20 newCollateral);
-
-    event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
-
-    constructor(address _prismaCore, IDebtToken _debtTokenAddress, address _factory, address _liquidationManager)
-        PrismaOwnable(_prismaCore)
-        SystemStart(_prismaCore)
-    {
+    constructor(
+        IPrismaCore _prismaCore,
+        IDebtToken _debtTokenAddress,
+        IFactory _factory,
+        ILiquidationManager _liquidationManager
+    ) PrismaOwnable(_prismaCore) {
         debtToken = _debtTokenAddress;
         factory = _factory;
         liquidationManager = _liquidationManager;
@@ -148,7 +136,7 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     }
 
     function enableCollateral(IERC20 _collateral) external {
-        require(msg.sender == factory, "Not factory");
+        require(msg.sender == address(factory), "Not factory");
         uint256 length = collateralTokens.length;
         bool collateralEnabled;
         for (uint256 i = 0; i < length; i++) {
@@ -289,7 +277,7 @@ contract StabilityPool is PrismaOwnable, SystemStart {
     }
 
     function _offset(IERC20 collateral, uint256 _debtToOffset, uint256 _collToAdd) internal {
-        require(msg.sender == liquidationManager, "StabilityPool: Caller is not Liquidation Manager");
+        require(msg.sender == address(liquidationManager), "StabilityPool: Caller is not Liquidation Manager");
         uint256 idx = indexByCollateral[collateral];
         idx -= 1;
 

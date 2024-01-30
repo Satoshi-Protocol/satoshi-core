@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../interfaces/IStabilityPool.sol";
-import "../interfaces/ISortedTroves.sol";
-import "../interfaces/IBorrowerOperations.sol";
-import "../interfaces/ITroveManager.sol";
-import "../dependencies/PrismaMath.sol";
-import "../dependencies/PrismaBase.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
+import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
+import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
+import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {PrismaBase} from "../dependencies/PrismaBase.sol";
 
 /**
  * @title Prisma Liquidation Manager
@@ -36,10 +37,10 @@ import "../dependencies/PrismaBase.sol";
  *                the value of the debt is distributed between stability pool depositors. The remaining
  *                collateral is left claimable by the trove owner.
  */
-contract LiquidationManager is PrismaBase {
+contract LiquidationManager is ILiquidationManager, PrismaBase {
     IStabilityPool public immutable stabilityPool;
     IBorrowerOperations public immutable borrowerOperations;
-    address public immutable factory;
+    IFactory public immutable factory;
 
     uint256 private constant _100pct = 1000000000000000000; // 1e18 == 100%
 
@@ -83,21 +84,10 @@ contract LiquidationManager is PrismaBase {
         uint256 totalCollSurplus;
     }
 
-    event Liquidation(
-        uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _debtGasCompensation
-    );
-
-    enum TroveManagerOperation {
-        applyPendingRewards,
-        liquidateInNormalMode,
-        liquidateInRecoveryMode,
-        redeemCollateral
-    }
-
     constructor(
         IStabilityPool _stabilityPoolAddress,
         IBorrowerOperations _borrowerOperations,
-        address _factory,
+        IFactory _factory,
         uint256 _gasCompensation
     ) PrismaBase(_gasCompensation) {
         stabilityPool = _stabilityPoolAddress;
@@ -106,7 +96,7 @@ contract LiquidationManager is PrismaBase {
     }
 
     function enableTroveManager(ITroveManager _troveManager) external {
-        require(msg.sender == factory, "Not factory");
+        require(msg.sender == address(factory), "Not factory");
         _enabledTroveManagers[_troveManager] = true;
     }
 
