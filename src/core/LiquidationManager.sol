@@ -53,12 +53,12 @@ contract LiquidationManager is ILiquidationManager, PrismaBase {
     mapping(ITroveManager => bool) internal _enabledTroveManagers;
 
     constructor(
-        IStabilityPool _stabilityPoolAddress,
+        IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
         IFactory _factory,
         uint256 _gasCompensation
     ) PrismaBase(_gasCompensation) {
-        stabilityPool = _stabilityPoolAddress;
+        stabilityPool = _stabilityPool;
         borrowerOperations = _borrowerOperations;
         factory = _factory;
     }

@@ -42,7 +42,7 @@ contract DebtToken is IDebtToken, OFT {
     mapping(address => uint256) private _nonces;
 
     // --- Addresses ---
-    IPrismaCore private immutable _prismaCore;
+    IPrismaCore private immutable prismaCore;
     IStabilityPool public immutable stabilityPool;
     IBorrowerOperations public immutable borrowerOperations;
     IFactory public immutable factory;
@@ -58,14 +58,14 @@ contract DebtToken is IDebtToken, OFT {
         string memory _symbol,
         IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
-        IPrismaCore prismaCore_,
+        IPrismaCore _prismaCore,
         address _layerZeroEndpoint,
         IFactory _factory,
         IGasPool _gasPool,
         uint256 _gasCompensation
     ) OFT(_name, _symbol, _layerZeroEndpoint) {
         stabilityPool = _stabilityPool;
-        _prismaCore = prismaCore_;
+        prismaCore = _prismaCore;
         borrowerOperations = _borrowerOperations;
         factory = _factory;
         gasPool = _gasPool;
@@ -210,7 +210,7 @@ contract DebtToken is IDebtToken, OFT {
         );
         _spendAllowance(address(receiver), address(this), amount + fee);
         _burn(address(receiver), amount);
-        _transfer(address(receiver), _prismaCore.feeReceiver(), fee);
+        _transfer(address(receiver), prismaCore.feeReceiver(), fee);
         return true;
     }
 

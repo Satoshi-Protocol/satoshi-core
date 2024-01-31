@@ -103,11 +103,11 @@ contract StabilityPool is IStabilityPool, PrismaOwnable {
 
     constructor(
         IPrismaCore _prismaCore,
-        IDebtToken _debtTokenAddress,
+        IDebtToken _debtToken,
         IFactory _factory,
         ILiquidationManager _liquidationManager
     ) PrismaOwnable(_prismaCore) {
-        debtToken = _debtTokenAddress;
+        debtToken = _debtToken;
         factory = _factory;
         liquidationManager = _liquidationManager;
         periodFinish = uint32(block.timestamp - 1);

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "../../interfaces/IBorrowerOperations.sol";
-import "../../interfaces/ITroveManager.sol";
-import "../../interfaces/ISortedTroves.sol";
-import "../../interfaces/IFactory.sol";
-import "../../dependencies/PrismaBase.sol";
-import "../../dependencies/PrismaMath.sol";
+import "../interfaces/IBorrowerOperations.sol";
+import "../interfaces/ITroveManager.sol";
+import "../interfaces/ISortedTroves.sol";
+import "../interfaces/IFactory.sol";
+import "../dependencies/PrismaBase.sol";
+import "../dependencies/PrismaMath.sol";
 
 contract MultiCollateralHintHelpers is PrismaBase {
     IBorrowerOperations public immutable borrowerOperations;

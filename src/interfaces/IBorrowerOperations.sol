@@ -27,7 +27,7 @@ struct TroveManagerData {
 }
 
 interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
-    event BorrowingFeePaid(address indexed borrower, IERC20 indexed collateralToken, uint256 indexed amount);
+    event BorrowingFeePaid(address indexed borrower, IERC20 indexed collateralToken, uint256 amount);
     event CollateralConfigured(ITroveManager troveManager, IERC20 indexed collateralToken);
     event TroveCreated(address indexed _borrower, uint256 arrayIndex);
     event TroveManagerRemoved(ITroveManager indexed troveManager);

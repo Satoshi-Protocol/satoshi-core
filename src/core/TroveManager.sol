@@ -572,7 +572,7 @@ contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
         require(block.timestamp >= systemDeploymentTime + BOOTSTRAP_PERIOD, "BOOTSTRAP_PERIOD");
         totals.price = fetchPrice();
         uint256 _MCR = MCR;
-        require(IBorrowerOperations(borrowerOperations).getTCR() >= _MCR, "Cannot redeem when TCR < MCR");
+        require(borrowerOperations.getTCR() >= _MCR, "Cannot redeem when TCR < MCR");
         require(_debtAmount > 0, "Amount must be greater than zero");
         require(debtToken.balanceOf(msg.sender) >= _debtAmount, "Insufficient balance");
         _updateBalances();
@@ -685,7 +685,7 @@ contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
                 uint256 icrError = _partialRedemptionHintNICR > newNICR
                     ? _partialRedemptionHintNICR - newNICR
                     : newNICR - _partialRedemptionHintNICR;
-                if (icrError > 5e14 || _getNetDebt(newDebt) < IBorrowerOperations(borrowerOperations).minNetDebt()) {
+                if (icrError > 5e14 || _getNetDebt(newDebt) < borrowerOperations.minNetDebt()) {
                     singleRedemption.cancelledPartial = true;
                     return singleRedemption;
                 }
