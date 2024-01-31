@@ -33,12 +33,6 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
     event TroveManagerRemoved(ITroveManager indexed troveManager);
     event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 stake, uint8 operation);
 
-    /// @notice Function to add collateral to a trove
-    /// @param _troveManager trove manager contract
-    /// @param _account address of the borrower
-    /// @param _collateralAmount amount of collateral to add
-    /// @param _upperHint upper hint
-    /// @param _lowerHint lower hint
     function addColl(
         ITroveManager _troveManager,
         address _account,
@@ -47,16 +41,6 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
         address _lowerHint
     ) external;
 
-    /// @notice Function to adjust a trove
-    /// @param _troveManager trove manager contract
-    /// @param _account address of the borrower
-    /// @param _maxFeePercentage max fee percentage
-    /// @param _collDeposit amount of collateral to add
-    /// @param _collWithdrawal amount of collateral to withdraw
-    /// @param _debtChange amount of debt to change
-    /// @param _isDebtIncrease flag to indicate if debt is increased
-    /// @param _upperHint upper hint
-    /// @param _lowerHint lower hint
     function adjustTrove(
         ITroveManager _troveManager,
         address _account,
@@ -69,21 +53,10 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
         address _lowerHint
     ) external;
 
-    /// @notice Function to close a trove
-    /// @param _troveManager trove manager contract
-    /// @param _account address of the borrower
     function closeTrove(ITroveManager _troveManager, address _account) external;
 
-    /// @notice Function to configure collateral
-    /// @param _troveManager trove manager contract
-    /// @param _collateralToken address of the collateral token
     function configureCollateral(ITroveManager _troveManager, IERC20 _collateralToken) external;
 
-    /// @notice Get total collateral and debt balances for all active collaterals, as well as
-    ///         the current collateral prices
-    /// @dev Not a view because fetching from the oracle is state changing.
-    ///      Can still be accessed as a view from within the UX.
-    /// @return balances Balances struct
     function fetchBalances() external returns (Balances memory balances);
 
     function getGlobalSystemBalances() external returns (uint256 totalPricedCollateral, uint256 totalDebt);
@@ -139,8 +112,5 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
 
     function minNetDebt() external view returns (uint256);
 
-    function troveManagersData(ITroveManager _troveManager)
-        external
-        view
-        returns (IERC20 collateralToken, uint16 index);
+    function troveManagersData(ITroveManager _troveManager) external view returns (IERC20 collateralToken, uint16 index);
 }
