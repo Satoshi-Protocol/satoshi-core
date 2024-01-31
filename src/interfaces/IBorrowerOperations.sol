@@ -112,5 +112,8 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
 
     function minNetDebt() external view returns (uint256);
 
-    function troveManagersData(ITroveManager _troveManager) external view returns (IERC20 collateralToken, uint16 index);
+    function troveManagersData(ITroveManager _troveManager)
+        external
+        view
+        returns (IERC20 collateralToken, uint16 index);
 }

@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "../interfaces/ITroveManager.sol";
-import "../interfaces/ISortedTroves.sol";
-import "../interfaces/IFactory.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
+
+struct CombinedTroveData {
+    address owner;
+    uint256 debt;
+    uint256 coll;
+    uint256 stake;
+    uint256 snapshotCollateral;
+    uint256 snapshotDebt;
+}
 
 /*  Helper contract for grabbing Trove data for the front end. Not part of the core Prisma system. */
 contract MultiTroveGetter {
-    struct CombinedTroveData {
-        address owner;
-        uint256 debt;
-        uint256 coll;
-        uint256 stake;
-        uint256 snapshotCollateral;
-        uint256 snapshotDebt;
-    }
-
     constructor() {}
 
     function getMultipleSortedTroves(ITroveManager troveManager, int256 _startIdx, uint256 _count)

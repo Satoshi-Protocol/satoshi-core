@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "../interfaces/ITroveManager.sol";
-import "../interfaces/IFactory.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+
+struct Collateral {
+    address collateral;
+    address[] troveManagers;
+}
 
 /*  Helper contract for grabbing Trove data for the front end. Not part of the core Prisma system. */
 contract TroveManagerGetters {
-    struct Collateral {
-        address collateral;
-        address[] troveManagers;
-    }
-
     IFactory public immutable factory;
 
     constructor(IFactory _factory) {
