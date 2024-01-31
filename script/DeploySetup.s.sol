@@ -27,7 +27,7 @@ import {
     PRISMA_CORE_OWNER,
     PRISMA_CORE_GUARDIAN,
     PRISMA_CORE_FEE_RECEIVER,
-    PRICE_FEED_ETH_FEED,
+    NATIVE_TOKEN_FEED,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     DEBT_TOKEN_LAYER_ZERO_END_POINT,
@@ -94,7 +94,7 @@ contract DeploySetupScript is Script {
 
         // Deploy `PriceFeed.sol`
         OracleSetup[] memory oracleSetups = new OracleSetup[](0); // empty array
-        priceFeed = new PriceFeed(cpPrismaCore, IAggregatorV3Interface(PRICE_FEED_ETH_FEED), oracleSetups);
+        priceFeed = new PriceFeed(cpPrismaCore, IAggregatorV3Interface(NATIVE_TOKEN_FEED), oracleSetups);
         assert(cpPriceFeed == priceFeed);
 
         // Deploy `PrismaCore.sol`

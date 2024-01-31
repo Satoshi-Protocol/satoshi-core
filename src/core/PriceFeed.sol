@@ -34,12 +34,12 @@ contract PriceFeed is IPriceFeed, PrismaOwnable {
     mapping(IERC20 => OracleRecord) public oracleRecords;
     mapping(IERC20 => PriceRecord) public priceRecords;
 
-    constructor(IPrismaCore _prismaCore, IAggregatorV3Interface ethFeed, OracleSetup[] memory oracles)
+    constructor(IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles)
         PrismaOwnable(_prismaCore)
     {
-        _setOracle(IERC20(address(0)), ethFeed, 3600, 0, 0, false);
-        for (uint256 i = 0; i < oracles.length; i++) {
-            OracleSetup memory o = oracles[i];
+        _setOracle(IERC20(address(0)), _nativeTokenFeed, 3600, 0, 0, false);
+        for (uint256 i = 0; i < _oracles.length; i++) {
+            OracleSetup memory o = _oracles[i];
             _setOracle(o.token, o.chainlink, o.heartbeat, o.sharePriceSignature, o.sharePriceDecimals, o.isEthIndexed);
         }
     }
