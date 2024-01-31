@@ -8,9 +8,11 @@ import {IBorrowerOperations} from "../src/interfaces/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/IDebtToken.sol";
 import {ILiquidationManager} from "../src/interfaces/ILiquidationManager.sol";
 import {IStabilityPool} from "../src/interfaces/IStabilityPool.sol";
-import {IPriceFeed} from "../src/interfaces/IPriceFeed.sol";
+import {IPriceFeed, OracleSetup} from "../src/interfaces/IPriceFeed.sol";
 import {IFactory} from "../src/interfaces/IFactory.sol";
 import {IGasPool} from "../src/interfaces/IGasPool.sol";
+import {ISortedTroves} from "../src/interfaces/ISortedTroves.sol";
+import {ITroveManager} from "../src/interfaces/ITroveManager.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {PrismaCore} from "../src/core/PrismaCore.sol";
 import {PriceFeed} from "../src/core/PriceFeed.sol";
@@ -35,23 +37,49 @@ import {
 
 contract DeploySetupScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
-    address internal deployer;
-    uint64 internal nonce;
-    SortedTroves public sortedTroves;
-    PrismaCore public prismaCore;
-    PriceFeed public priceFeed;
-    GasPool public gasPool;
-    BorrowerOperations public borrowerOperations;
-    DebtToken public debtToken;
-    LiquidationManager public liquidationManager;
-    StabilityPool public stabilityPool;
-    TroveManager public troveManager;
-    Factory public factory;
+    address public deployer;
+    uint64 public nonce;
+
+    // Deployed contracts
+    ISortedTroves public sortedTroves;
+    IPrismaCore public prismaCore;
+    IPriceFeed public priceFeed;
+    IGasPool public gasPool;
+    IBorrowerOperations public borrowerOperations;
+    IDebtToken public debtToken;
+    ILiquidationManager public liquidationManager;
+    IStabilityPool public stabilityPool;
+    ITroveManager public troveManager;
+    IFactory public factory;
+
+    // Computed contract addresses
+    ISortedTroves public cpSortedTroves;
+    IPrismaCore public cpPrismaCore;
+    IPriceFeed public cpPriceFeed;
+    IGasPool public cpGasPool;
+    IBorrowerOperations public cpBorrowerOperations;
+    IDebtToken public cpDebtToken;
+    ILiquidationManager public cpLiquidationManager;
+    IStabilityPool public cpStabilityPool;
+    ITroveManager public cpTroveManager;
+    IFactory public cpFactory;
 
     function setUp() public {
         DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
         deployer = vm.addr(DEPLOYMENT_PRIVATE_KEY);
         nonce = vm.getNonce(deployer);
+
+        // Computed contract addresses
+        cpSortedTroves = ISortedTroves(vm.computeCreateAddress(deployer, nonce));
+        cpPriceFeed = IPriceFeed(vm.computeCreateAddress(deployer, ++nonce));
+        cpPrismaCore = IPrismaCore(vm.computeCreateAddress(deployer, ++nonce));
+        cpGasPool = IGasPool(vm.computeCreateAddress(deployer, ++nonce));
+        cpBorrowerOperations = IBorrowerOperations(vm.computeCreateAddress(deployer, ++nonce));
+        cpDebtToken = IDebtToken(vm.computeCreateAddress(deployer, ++nonce));
+        cpLiquidationManager = ILiquidationManager(vm.computeCreateAddress(deployer, ++nonce));
+        cpStabilityPool = IStabilityPool(vm.computeCreateAddress(deployer, ++nonce));
+        cpTroveManager = ITroveManager(vm.computeCreateAddress(deployer, ++nonce));
+        cpFactory = IFactory(vm.computeCreateAddress(deployer, ++nonce));
     }
 
     function run() public {
@@ -60,99 +88,67 @@ contract DeploySetupScript is Script {
         console.log("start nonce");
         console.log(nonce);
 
-        // Computed contract addresses
-        address cpSortedTrovesAddr = vm.computeCreateAddress(deployer, nonce);
-        address cpPriceFeedAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpPrismaCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpBorrowerOperationsAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpLiquidationManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpStabilityPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpTroveManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
-        address cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
-
         // Deploy `SortedTroves.sol`
         sortedTroves = new SortedTroves();
-        assert(cpSortedTrovesAddr == address(sortedTroves));
+        assert(cpSortedTroves == sortedTroves);
 
         // Deploy `PriceFeed.sol`
-        // empty array
-        PriceFeed.OracleSetup[] memory oracleSetups = new PriceFeed.OracleSetup[](0);
-        priceFeed =
-            new PriceFeed(IPrismaCore(cpPrismaCoreAddr), IAggregatorV3Interface(PRICE_FEED_ETH_FEED), oracleSetups);
-        assert(cpPriceFeedAddr == address(priceFeed));
+        OracleSetup[] memory oracleSetups = new OracleSetup[](0); // empty array
+        priceFeed = new PriceFeed(cpPrismaCore, IAggregatorV3Interface(PRICE_FEED_ETH_FEED), oracleSetups);
+        assert(cpPriceFeed == priceFeed);
 
         // Deploy `PrismaCore.sol`
-        prismaCore = new PrismaCore(
-            PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, IPriceFeed(cpPriceFeedAddr), PRISMA_CORE_FEE_RECEIVER
-        );
-        assert(cpPrismaCoreAddr == address(prismaCore));
+        prismaCore = new PrismaCore(PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, cpPriceFeed, PRISMA_CORE_FEE_RECEIVER);
+        assert(cpPrismaCore == prismaCore);
 
         // Deploy `GasPool.sol`
         gasPool = new GasPool();
-        assert(cpGasPoolAddr == address(gasPool));
+        assert(cpGasPool == gasPool);
 
         // Deploy `BorrowerOperations.sol`
-        borrowerOperations = new BorrowerOperations(
-            IPrismaCore(cpPrismaCoreAddr), cpDebtTokenAddr, cpFactoryAddr, BO_MIN_NET_DEBT, GAS_COMPENSATION
-        );
-        assert(cpBorrowerOperationsAddr == address(borrowerOperations));
+        borrowerOperations =
+            new BorrowerOperations(cpPrismaCore, cpDebtToken, cpFactory, BO_MIN_NET_DEBT, GAS_COMPENSATION);
+        assert(cpBorrowerOperations == borrowerOperations);
 
         // Deploy `DebtToken.sol`
         debtToken = new DebtToken(
             DEBT_TOKEN_NAME,
             DEBT_TOKEN_SYMBOL,
-            IStabilityPool(cpStabilityPoolAddr),
-            IBorrowerOperations(cpBorrowerOperationsAddr),
-            IPrismaCore(cpPrismaCoreAddr),
+            cpStabilityPool,
+            cpBorrowerOperations,
+            cpPrismaCore,
             DEBT_TOKEN_LAYER_ZERO_END_POINT,
-            IFactory(cpFactoryAddr),
-            IGasPool(cpGasPoolAddr),
+            cpFactory,
+            cpGasPool,
             GAS_COMPENSATION
         );
-        assert(cpDebtTokenAddr == address(debtToken));
+        assert(cpDebtToken == debtToken);
 
         // Deploy `LiquidationManager.sol`
-        liquidationManager = new LiquidationManager(
-            IStabilityPool(cpStabilityPoolAddr),
-            IBorrowerOperations(cpBorrowerOperationsAddr),
-            IFactory(cpFactoryAddr),
-            GAS_COMPENSATION
-        );
-        assert(cpLiquidationManagerAddr == address(liquidationManager));
+        liquidationManager = new LiquidationManager(cpStabilityPool, cpBorrowerOperations, cpFactory, GAS_COMPENSATION);
+        assert(cpLiquidationManager == liquidationManager);
 
         // Deploy `StabilityPool.sol`
-        stabilityPool = new StabilityPool(
-            IPrismaCore(cpPrismaCoreAddr),
-            IDebtToken(cpDebtTokenAddr),
-            IFactory(cpFactoryAddr),
-            ILiquidationManager(cpLiquidationManagerAddr)
-        );
-        assert(cpStabilityPoolAddr == address(stabilityPool));
+        stabilityPool = new StabilityPool(cpPrismaCore, cpDebtToken, cpFactory, cpLiquidationManager);
+        assert(cpStabilityPool == stabilityPool);
 
         // Deploy `TroveManager.sol`
         troveManager = new TroveManager(
-            IPrismaCore(cpPrismaCoreAddr),
-            IGasPool(cpGasPoolAddr),
-            IDebtToken(cpDebtTokenAddr),
-            IBorrowerOperations(cpBorrowerOperationsAddr),
-            ILiquidationManager(cpLiquidationManagerAddr),
-            GAS_COMPENSATION
+            cpPrismaCore, cpGasPool, cpDebtToken, cpBorrowerOperations, cpLiquidationManager, GAS_COMPENSATION
         );
-        assert(cpTroveManagerAddr == address(troveManager));
+        assert(cpTroveManager == troveManager);
 
         // Deploy `Factory.sol`
         factory = new Factory(
-            IPrismaCore(cpPrismaCoreAddr),
-            cpDebtTokenAddr,
-            cpStabilityPoolAddr,
-            cpBorrowerOperationsAddr,
-            cpSortedTrovesAddr,
-            cpTroveManagerAddr,
-            cpLiquidationManagerAddr
+            cpPrismaCore,
+            cpDebtToken,
+            cpStabilityPool,
+            cpBorrowerOperations,
+            cpSortedTroves,
+            cpTroveManager,
+            cpLiquidationManager
         );
-        assert(cpFactoryAddr == address(factory));
+        assert(cpFactory == factory);
 
         vm.stopBroadcast();
     }

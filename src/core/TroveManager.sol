@@ -7,7 +7,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {ITroveManager, Trove, Status, TroveManagerOperation} from "../interfaces/ITroveManager.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
 import {IDebtToken} from "../interfaces/IDebtToken.sol";
 import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
@@ -15,6 +14,16 @@ import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
 import {IGasPool} from "../interfaces/IGasPool.sol";
 import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {
+    ITroveManager,
+    Trove,
+    Status,
+    TroveManagerOperation,
+    VolumeData,
+    RedemptionTotals,
+    SingleRedemptionValues,
+    RewardSnapshot
+} from "../interfaces/ITroveManager.sol";
 
 /**
  * @title Prisma Trove Manager
@@ -44,7 +53,6 @@ contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves public sortedTroves;
 
-    EmissionId public emissionId;
     // Minimum collateral ratio for individual troves
     uint256 public MCR;
 
@@ -146,40 +154,6 @@ contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
 
     // Array of all active trove addresses - used to to compute an approximate hint off-chain, for the sorted list insertion
     address[] TroveOwners;
-
-    struct VolumeData {
-        uint32 amount;
-        uint32 week;
-        uint32 day;
-    }
-
-    struct EmissionId {
-        uint16 debt;
-        uint16 minting;
-    }
-
-    struct RedemptionTotals {
-        uint256 remainingDebt;
-        uint256 totalDebtToRedeem;
-        uint256 totalCollateralDrawn;
-        uint256 collateralFee;
-        uint256 collateralToSendToRedeemer;
-        uint256 decayedBaseRate;
-        uint256 price;
-        uint256 totalDebtSupplyAtStart;
-    }
-
-    struct SingleRedemptionValues {
-        uint256 debtLot;
-        uint256 collateralLot;
-        bool cancelledPartial;
-    }
-
-    // Object containing the collateral and debt snapshots for a given active trove
-    struct RewardSnapshot {
-        uint256 collateral;
-        uint256 debt;
-    }
 
     modifier whenNotPaused() {
         require(!paused, "Collateral Paused");

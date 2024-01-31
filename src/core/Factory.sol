@@ -3,16 +3,16 @@ pragma solidity 0.8.13;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
 import {IDebtToken} from "../interfaces/IDebtToken.sol";
 import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
 import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
 import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
-import {DeploymentParams, IFactory} from "../interfaces/IFactory.sol";
 import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {DeploymentParams, IFactory} from "../interfaces/IFactory.sol";
 
 /**
  * @title Prisma Trove Factory
@@ -35,19 +35,19 @@ contract Factory is IFactory, PrismaOwnable {
 
     constructor(
         IPrismaCore _prismaCore,
-        address _debtTokenAddr,
-        address _stabilityPoolAddr,
-        address _borrowerOperationsAddr,
-        address _sortedTrovesAddr,
-        address _troveManagerAddr,
-        address _liquidationManagerAddr
+        IDebtToken _debtToken,
+        IStabilityPool _stabilityPool,
+        IBorrowerOperations _borrowerOperations,
+        ISortedTroves _sortedTroves,
+        ITroveManager _troveManager,
+        ILiquidationManager _liquidationManager
     ) PrismaOwnable(_prismaCore) {
-        debtToken = IDebtToken(_debtTokenAddr);
-        stabilityPool = IStabilityPool(_stabilityPoolAddr);
-        borrowerOperations = IBorrowerOperations(_borrowerOperationsAddr);
-        sortedTrovesImpl = ISortedTroves(_sortedTrovesAddr);
-        troveManagerImpl = ITroveManager(_troveManagerAddr);
-        liquidationManager = ILiquidationManager(_liquidationManagerAddr);
+        debtToken = IDebtToken(_debtToken);
+        stabilityPool = IStabilityPool(_stabilityPool);
+        borrowerOperations = IBorrowerOperations(_borrowerOperations);
+        sortedTrovesImpl = ISortedTroves(_sortedTroves);
+        troveManagerImpl = ITroveManager(_troveManager);
+        liquidationManager = ILiquidationManager(_liquidationManager);
     }
 
     function troveManagerCount() external view returns (uint256) {

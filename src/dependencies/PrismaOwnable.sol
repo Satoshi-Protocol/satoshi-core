@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
 
 /**
  * @title Prisma Ownable

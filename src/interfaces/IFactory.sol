@@ -10,6 +10,7 @@ import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
+import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
 
 // commented values are suggested default parameters
 struct DeploymentParams {
@@ -23,7 +24,7 @@ struct DeploymentParams {
     uint256 MCR; // 11 * 1e17  (110%)
 }
 
-interface IFactory {
+interface IFactory is IPrismaOwnable {
     event NewDeployment(
         IERC20 collateral, IPriceFeed priceFeed, ITroveManager troveManager, ISortedTroves sortedTroves
     );

@@ -8,6 +8,28 @@ import {IDebtToken} from "./IDebtToken.sol";
 import {IFactory} from "./IFactory.sol";
 import {ILiquidationManager} from "./ILiquidationManager.sol";
 
+struct AccountDeposit {
+    uint128 amount;
+    uint128 timestamp; // timestamp of the last deposit
+}
+
+struct Snapshots {
+    uint256 P;
+    uint256 G;
+    uint128 scale;
+    uint128 epoch;
+}
+
+struct SunsetIndex {
+    uint128 idx;
+    uint128 expiry;
+}
+
+struct Queue {
+    uint16 firstSunsetIndexKey;
+    uint16 nextSunsetIndexKey;
+}
+
 interface IStabilityPool is IPrismaOwnable {
     event CollateralGainWithdrawn(address indexed _depositor, uint256[] _collateralAmounts);
     event CollateralOverwritten(IERC20 oldCollateralToken, IERC20 newCollateralToken);

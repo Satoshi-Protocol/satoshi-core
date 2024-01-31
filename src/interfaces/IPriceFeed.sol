@@ -29,6 +29,15 @@ struct FeedResponse {
     bool success;
 }
 
+struct OracleSetup {
+    IERC20 token;
+    IAggregatorV3Interface chainlink;
+    uint32 heartbeat;
+    bytes4 sharePriceSignature;
+    uint8 sharePriceDecimals;
+    bool isEthIndexed;
+}
+
 interface IPriceFeed is IPrismaOwnable {
     event NewOracleRegistered(
         IERC20 indexed token, IAggregatorV3Interface indexed chainlinkAggregator, bool indexed isEthIndexed

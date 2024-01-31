@@ -3,17 +3,17 @@ pragma solidity 0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    IBorrowerOperations, BorrowerOperation, TroveManagerData, Balances
-} from "../interfaces/IBorrowerOperations.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {DelegatedOps} from "../dependencies/DelegatedOps.sol";
+import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {
+    IBorrowerOperations, BorrowerOperation, TroveManagerData, Balances
+} from "../interfaces/IBorrowerOperations.sol";
 
 /**
  * @title Prisma Borrower Operations
@@ -64,13 +64,13 @@ contract BorrowerOperations is IBorrowerOperations, PrismaBase, PrismaOwnable, D
 
     constructor(
         IPrismaCore _prismaCore,
-        address _debtTokenAddr,
-        address _factoryAddr,
+        IDebtToken _debtToken,
+        IFactory _factory,
         uint256 _minNetDebt,
         uint256 _gasCompensation
     ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) {
-        debtToken = IDebtToken(_debtTokenAddr);
-        factory = IFactory(_factoryAddr);
+        debtToken = _debtToken;
+        factory = _factory;
         _setMinNetDebt(_minNetDebt);
     }
 

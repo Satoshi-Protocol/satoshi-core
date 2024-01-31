@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {ISortedTroves, Node, Data} from "../interfaces/ISortedTroves.sol";
 
 /**
  * @title Prisma Sorted Troves
@@ -16,21 +16,6 @@ contract SortedTroves is ISortedTroves {
     ITroveManager public troveManager;
 
     Data public data;
-
-    // Information for a node in the list
-    struct Node {
-        bool exists;
-        address nextId; // Id of next node (smaller NICR) in the list
-        address prevId; // Id of previous node (larger NICR) in the list
-    }
-
-    // Information for the list
-    struct Data {
-        address head; // Head of the list. Also the node in the list with the largest NICR
-        address tail; // Tail of the list. Also the node in the list with the smallest NICR
-        uint256 size; // Current size of the list
-        mapping(address => Node) nodes; // Track the corresponding ids for each node in the list
-    }
 
     function setAddresses(address _troveManagerAddress) external {
         require(address(troveManager) == address(0), "Already set");

@@ -6,10 +6,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/IStabilityPool.sol";
 
 /**
  * @title Prisma Stability Pool
@@ -100,28 +100,6 @@ contract StabilityPool is IStabilityPool, PrismaOwnable {
 
     mapping(uint16 => SunsetIndex) _sunsetIndexes;
     Queue queue;
-
-    struct AccountDeposit {
-        uint128 amount;
-        uint128 timestamp; // timestamp of the last deposit
-    }
-
-    struct Snapshots {
-        uint256 P;
-        uint256 G;
-        uint128 scale;
-        uint128 epoch;
-    }
-
-    struct SunsetIndex {
-        uint128 idx;
-        uint128 expiry;
-    }
-
-    struct Queue {
-        uint16 firstSunsetIndexKey;
-        uint16 nextSunsetIndexKey;
-    }
 
     constructor(
         IPrismaCore _prismaCore,

@@ -18,6 +18,14 @@ enum Status {
     closedByRedemption
 }
 
+enum TroveManagerOperation {
+    open,
+    close,
+    adjust,
+    liquidate,
+    redeemCollateral
+}
+
 // Store the necessary data for a trove
 struct Trove {
     uint256 debt;
@@ -28,12 +36,33 @@ struct Trove {
     uint256 activeInterestIndex;
 }
 
-enum TroveManagerOperation {
-    open,
-    close,
-    adjust,
-    liquidate,
-    redeemCollateral
+struct VolumeData {
+    uint32 amount;
+    uint32 week;
+    uint32 day;
+}
+
+struct RedemptionTotals {
+    uint256 remainingDebt;
+    uint256 totalDebtToRedeem;
+    uint256 totalCollateralDrawn;
+    uint256 collateralFee;
+    uint256 collateralToSendToRedeemer;
+    uint256 decayedBaseRate;
+    uint256 price;
+    uint256 totalDebtSupplyAtStart;
+}
+
+struct SingleRedemptionValues {
+    uint256 debtLot;
+    uint256 collateralLot;
+    bool cancelledPartial;
+}
+
+// Object containing the collateral and debt snapshots for a given active trove
+struct RewardSnapshot {
+    uint256 collateral;
+    uint256 debt;
 }
 
 interface ITroveManager is IPrismaOwnable, IPrismaBase {
@@ -181,8 +210,6 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
     function defaultedCollateral() external view returns (uint256);
 
     function defaultedDebt() external view returns (uint256);
-
-    function emissionId() external view returns (uint16 debt, uint16 minting);
 
     function getBorrowingFee(uint256 _debt) external view returns (uint256);
 

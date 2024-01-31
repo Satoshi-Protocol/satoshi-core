@@ -3,13 +3,13 @@ pragma solidity 0.8.13;
 
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import {OFT, IERC20, ERC20} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IGasPool} from "../interfaces/IGasPool.sol";
+import {IDebtToken} from "../interfaces/IDebtToken.sol";
 
 /**
  * @title Prisma Debt Token "acUSD"

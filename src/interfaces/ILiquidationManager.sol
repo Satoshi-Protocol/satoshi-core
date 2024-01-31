@@ -7,6 +7,43 @@ import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
 import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 
+/*
+     * --- Variable container structs for liquidations ---
+     *
+     * These structs are used to hold, return and assign variables inside the liquidation functions,
+     * in order to avoid the error: "CompilerError: Stack too deep".
+     **/
+
+struct TroveManagerValues {
+    uint256 price;
+    uint256 MCR;
+    bool sunsetting;
+}
+
+struct LiquidationValues {
+    uint256 entireTroveDebt;
+    uint256 entireTroveColl;
+    uint256 collGasCompensation;
+    uint256 debtGasCompensation;
+    uint256 debtToOffset;
+    uint256 collToSendToSP;
+    uint256 debtToRedistribute;
+    uint256 collToRedistribute;
+    uint256 collSurplus;
+}
+
+struct LiquidationTotals {
+    uint256 totalCollInSequence;
+    uint256 totalDebtInSequence;
+    uint256 totalCollGasCompensation;
+    uint256 totalDebtGasCompensation;
+    uint256 totalDebtToOffset;
+    uint256 totalCollToSendToSP;
+    uint256 totalDebtToRedistribute;
+    uint256 totalCollToRedistribute;
+    uint256 totalCollSurplus;
+}
+
 interface ILiquidationManager is IPrismaBase {
     event Liquidation(
         uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _debtGasCompensation

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 
 /**
  * @title Prisma Core

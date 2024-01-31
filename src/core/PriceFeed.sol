@@ -3,10 +3,10 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
-import {IPriceFeed, OracleRecord, PriceRecord, FeedResponse} from "../interfaces/IPriceFeed.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {IPriceFeed, OracleRecord, PriceRecord, FeedResponse, OracleSetup} from "../interfaces/IPriceFeed.sol";
 
 /**
  * @title Prisma Multi Token Price Feed
@@ -33,15 +33,6 @@ contract PriceFeed is IPriceFeed, PrismaOwnable {
 
     mapping(IERC20 => OracleRecord) public oracleRecords;
     mapping(IERC20 => PriceRecord) public priceRecords;
-
-    struct OracleSetup {
-        IERC20 token;
-        IAggregatorV3Interface chainlink;
-        uint32 heartbeat;
-        bytes4 sharePriceSignature;
-        uint8 sharePriceDecimals;
-        bool isEthIndexed;
-    }
 
     constructor(IPrismaCore _prismaCore, IAggregatorV3Interface ethFeed, OracleSetup[] memory oracles)
         PrismaOwnable(_prismaCore)

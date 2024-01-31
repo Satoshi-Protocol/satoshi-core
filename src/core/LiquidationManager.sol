@@ -2,14 +2,19 @@
 pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
+import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
 import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
-import {PrismaMath} from "../dependencies/PrismaMath.sol";
-import {PrismaBase} from "../dependencies/PrismaBase.sol";
+import {
+    ILiquidationManager,
+    TroveManagerValues,
+    LiquidationValues,
+    LiquidationTotals
+} from "../interfaces/ILiquidationManager.sol";
 
 /**
  * @title Prisma Liquidation Manager
@@ -46,43 +51,6 @@ contract LiquidationManager is ILiquidationManager, PrismaBase {
 
     // troveManager => enabled
     mapping(ITroveManager => bool) internal _enabledTroveManagers;
-
-    /*
-     * --- Variable container structs for liquidations ---
-     *
-     * These structs are used to hold, return and assign variables inside the liquidation functions,
-     * in order to avoid the error: "CompilerError: Stack too deep".
-     **/
-
-    struct TroveManagerValues {
-        uint256 price;
-        uint256 MCR;
-        bool sunsetting;
-    }
-
-    struct LiquidationValues {
-        uint256 entireTroveDebt;
-        uint256 entireTroveColl;
-        uint256 collGasCompensation;
-        uint256 debtGasCompensation;
-        uint256 debtToOffset;
-        uint256 collToSendToSP;
-        uint256 debtToRedistribute;
-        uint256 collToRedistribute;
-        uint256 collSurplus;
-    }
-
-    struct LiquidationTotals {
-        uint256 totalCollInSequence;
-        uint256 totalDebtInSequence;
-        uint256 totalCollGasCompensation;
-        uint256 totalDebtGasCompensation;
-        uint256 totalDebtToOffset;
-        uint256 totalCollToSendToSP;
-        uint256 totalDebtToRedistribute;
-        uint256 totalCollToRedistribute;
-        uint256 totalCollSurplus;
-    }
 
     constructor(
         IStabilityPool _stabilityPoolAddress,
