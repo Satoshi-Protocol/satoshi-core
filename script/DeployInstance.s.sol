@@ -3,14 +3,17 @@ pragma solidity ^0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Script, console} from "forge-std/Script.sol";
+import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
 import {IFactory} from "../src/interfaces/IFactory.sol";
 import {IPriceFeed} from "../src/interfaces/IPriceFeed.sol";
 import {ITroveManager} from "../src/interfaces/ITroveManager.sol";
 import {ISortedTroves} from "../src/interfaces/ISortedTroves.sol";
 import {DeploymentParams} from "../src/core/Factory.sol";
 import {
-    COLLATERAL_ADDRESS,
+    FACTORY_ADDRESS,
     PRICE_FEED_ADDRESS,
+    COLLATERAL_ADDRESS,
+    ORACLE_ADDRESS,
     CUSTOM_TROVE_MANAGER_IMPL,
     CUSTOM_SORTED_TROVES_IMPL,
     MINUTE_DECAY_FACTOR,
@@ -28,15 +31,17 @@ contract DeployInstanceScript is Script {
     IFactory internal factory;
     IERC20 internal collateral;
     IPriceFeed internal priceFeed;
+    IAggregatorV3Interface internal oracle;
     ITroveManager internal customTroveManagerImpl;
     ISortedTroves internal customSortedTrovesImpl;
     DeploymentParams internal deploymentParams;
 
     function setUp() public {
         DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
-        factory = IFactory(vm.envAddress("FACTORY_ADDRESS"));
+        factory = IFactory(FACTORY_ADDRESS);
         collateral = IERC20(COLLATERAL_ADDRESS);
         priceFeed = IPriceFeed(PRICE_FEED_ADDRESS);
+        oracle = IAggregatorV3Interface(ORACLE_ADDRESS);
         customTroveManagerImpl = ITroveManager(CUSTOM_TROVE_MANAGER_IMPL);
         customSortedTrovesImpl = ISortedTroves(CUSTOM_SORTED_TROVES_IMPL);
         deploymentParams = DeploymentParams({
@@ -51,9 +56,16 @@ contract DeployInstanceScript is Script {
         });
     }
 
+// IERC20 _token,
+//         IAggregatorV3Interface _chainlinkOracle,
+//         uint32 _heartbeat,
+//         bytes4 sharePriceSignature,
+//         uint8 sharePriceDecimals,
+//         bool _isEthIndexed
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
+        priceFeed.setOracle(collateral, oracle, 10000, 0, 0, false);
         DeploymentParams memory params = deploymentParams;
         factory.deployNewInstance(collateral, priceFeed, customTroveManagerImpl, customSortedTrovesImpl, params);
 

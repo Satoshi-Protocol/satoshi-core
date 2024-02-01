@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-address constant COLLATERAL_ADDRESS = address(0);
-address constant PRICE_FEED_ADDRESS = address(0);
+address constant FACTORY_ADDRESS = 0xDfAA53cB0Ce891485389fEBdcD547965906A8300;
+address constant PRICE_FEED_ADDRESS = 0xdAf9EF6c3d250C6e2015908f67071A0FF4D012B7;
+address constant COLLATERAL_ADDRESS = 0xc556bAe1e86B2aE9c22eA5E036b07E55E7596074;
+address constant ORACLE_ADDRESS = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
 address constant CUSTOM_TROVE_MANAGER_IMPL = address(0);
 address constant CUSTOM_SORTED_TROVES_IMPL = address(0);
 

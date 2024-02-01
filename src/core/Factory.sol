@@ -87,8 +87,8 @@ contract Factory is IFactory, PrismaOwnable {
         ISortedTroves sortedTroves =
             ISortedTroves(implementation.cloneDeterministic(bytes32(bytes20(address(troveManager)))));
 
-        ITroveManager(troveManager).setAddresses(address(priceFeed), address(sortedTroves), address(collateralToken));
-        ISortedTroves(sortedTroves).setAddresses(address(troveManager));
+        troveManager.setAddresses(address(priceFeed), address(sortedTroves), address(collateralToken));
+        sortedTroves.setAddresses(address(troveManager));
 
         // verify that the oracle is correctly working
         ITroveManager(troveManager).fetchPrice();
@@ -98,7 +98,7 @@ contract Factory is IFactory, PrismaOwnable {
         debtToken.enableTroveManager(troveManager);
         borrowerOperations.configureCollateral(troveManager, collateralToken);
 
-        ITroveManager(troveManager).setParameters(
+        troveManager.setParameters(
             params.minuteDecayFactor,
             params.redemptionFeeFloor,
             params.maxRedemptionFee,

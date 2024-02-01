@@ -96,7 +96,7 @@ contract LiquidationManager is ILiquidationManager, PrismaBase {
 
         troveManager.updateBalances();
 
-        ISortedTroves sortedTrovesCached = ISortedTroves(troveManager.sortedTroves());
+        ISortedTroves sortedTrovesCached = troveManager.sortedTroves();
 
         LiquidationValues memory singleLiquidation;
         LiquidationTotals memory totals;
