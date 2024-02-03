@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
+import {IERC3156FlashBorrowerUpgradeable as IERC3156FlashBorrower} from "@openzeppelin/contracts-upgradeable/interfaces/IERC3156FlashBorrowerUpgradeable.sol";
 import {IOFT} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/interfaces/IOFT.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {IGasPool} from "../interfaces/IGasPool.sol";

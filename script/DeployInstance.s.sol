@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Script, console} from "forge-std/Script.sol";
+import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
 import {IFactory} from "../src/interfaces/IFactory.sol";
 import {IPriceFeed} from "../src/interfaces/IPriceFeed.sol";
