@@ -43,6 +43,13 @@ interface IStabilityPool is IPrismaOwnable {
     event StabilityPoolDebtBalanceUpdated(uint256 _newBalance);
     event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
 
+    function initialize(
+        IPrismaCore _prismaCore,
+        IDebtToken _debtToken,
+        IFactory _factory,
+        ILiquidationManager _liquidationManager
+    ) external;
+
     function claimCollateralGains(address recipient, uint256[] calldata collateralIndexes) external;
 
     function enableCollateral(IERC20 _collateral) external;
@@ -79,8 +86,6 @@ interface IStabilityPool is IPrismaOwnable {
 
     function depositSums(address, uint256) external view returns (uint256);
 
-    function emissionId() external view returns (uint256);
-
     function epochToScaleToG(uint128, uint128) external view returns (uint256);
 
     function epochToScaleToSums(uint128, uint128, uint256) external view returns (uint256);
@@ -97,11 +102,5 @@ interface IStabilityPool is IPrismaOwnable {
 
     function lastPrismaError() external view returns (uint256);
 
-    function lastUpdate() external view returns (uint32);
-
     function liquidationManager() external view returns (ILiquidationManager);
-
-    function periodFinish() external view returns (uint32);
-
-    function rewardRate() external view returns (uint128);
 }

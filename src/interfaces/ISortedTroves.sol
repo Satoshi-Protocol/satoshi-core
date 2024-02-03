@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {IPrismaCore} from "./IPrismaCore.sol";
 import {ITroveManager} from "./ITroveManager.sol";
 
 // Information for a node in the list
@@ -21,6 +22,8 @@ struct Data {
 interface ISortedTroves {
     event NodeAdded(address _id, uint256 _NICR);
     event NodeRemoved(address _id);
+
+    function initialize(IPrismaCore _prismaCore) external;
 
     function insert(address _id, uint256 _NICR, address _prevId, address _nextId) external;
 

@@ -29,15 +29,7 @@ interface IFactory is IPrismaOwnable {
         IERC20 collateral, IPriceFeed priceFeed, ITroveManager troveManager, ISortedTroves sortedTroves
     );
 
-    function deployNewInstance(
-        IERC20 collateral,
-        IPriceFeed priceFeed,
-        ITroveManager customTroveManagerImpl,
-        ISortedTroves customSortedTrovesImpl,
-        DeploymentParams calldata params
-    ) external;
-
-    function setImplementations(ITroveManager _troveManagerImpl, ISortedTroves _sortedTrovesImpl) external;
+    function deployNewInstance(IERC20 collateral, IPriceFeed priceFeed, DeploymentParams calldata params) external;
 
     function borrowerOperations() external view returns (IBorrowerOperations);
 
@@ -45,13 +37,13 @@ interface IFactory is IPrismaOwnable {
 
     function liquidationManager() external view returns (ILiquidationManager);
 
-    function sortedTrovesImpl() external view returns (ISortedTroves);
+    function sortedTroves() external view returns (ISortedTroves);
 
     function stabilityPool() external view returns (IStabilityPool);
 
     function troveManagerCount() external view returns (uint256);
 
-    function troveManagerImpl() external view returns (ITroveManager);
+    function troveManager() external view returns (ITroveManager);
 
     function troveManagers(uint256) external view returns (ITroveManager);
 }

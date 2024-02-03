@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 
 struct OracleRecord {
@@ -51,6 +52,9 @@ interface IPriceFeed is IPrismaOwnable {
     error PriceFeed__FeedFrozenError(IERC20 token);
     error PriceFeed__UnknownFeedError(IERC20 token);
     error PriceFeed__HeartbeatOutOfBoundsError();
+
+    function initialize(IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles)
+        external;
 
     function fetchPrice(IERC20 _token) external returns (uint256);
 

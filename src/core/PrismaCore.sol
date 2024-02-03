@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 
+//NOTE: non-upgradeable
+
 /**
  * @title Prisma Core
  *     @notice Single source of truth for system-wide values and contract ownership.

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20Upgradeable as SafeERC20} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
@@ -23,11 +25,11 @@ import {
  *             Prisma's implementation is modified to support multiple collaterals. There is a 1:n
  *             relationship between `BorrowerOperations` and each `TroveManager` / `SortedTroves` pair.
  */
-contract BorrowerOperations is IBorrowerOperations, PrismaBase, PrismaOwnable, DelegatedOps {
+contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, DelegatedOps, IBorrowerOperations {
     using SafeERC20 for IERC20;
 
-    IDebtToken public immutable debtToken;
-    IFactory public immutable factory;
+    IDebtToken public debtToken;
+    IFactory public factory;
     uint256 public minNetDebt;
 
     mapping(ITroveManager => TroveManagerData) public troveManagersData;
@@ -62,13 +64,26 @@ contract BorrowerOperations is IBorrowerOperations, PrismaBase, PrismaOwnable, D
         uint256 arrayIndex;
     }
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(
         IPrismaCore _prismaCore,
         IDebtToken _debtToken,
         IFactory _factory,
         uint256 _minNetDebt,
         uint256 _gasCompensation
-    ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) {
+    ) external initializer {
+        __UUPSUpgradeable_init_unchained();
+        __PrismaOwnable_init(_prismaCore);
+        __PrismaBase_init(_gasCompensation);
         debtToken = _debtToken;
         factory = _factory;
         _setMinNetDebt(_minNetDebt);

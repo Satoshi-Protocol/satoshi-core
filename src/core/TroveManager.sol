@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20Upgradeable as SafeERC20} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
@@ -37,15 +39,15 @@ import {
  *             Functionality related to liquidations has been moved to `LiquidationManager`. This was
  *             necessary to avoid the restriction on deployed bytecode size.
  */
-contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
+contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     // --- Connected contract declarations ---
 
-    IBorrowerOperations public immutable borrowerOperations;
-    ILiquidationManager public immutable liquidationManager;
-    IGasPool public immutable gasPool;
-    IDebtToken public immutable debtToken;
+    IBorrowerOperations public borrowerOperations;
+    ILiquidationManager public liquidationManager;
+    IGasPool public gasPool;
+    IDebtToken public debtToken;
 
     IPriceFeed public priceFeed;
     IERC20 public collateralToken;
@@ -129,12 +131,6 @@ contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
     uint256 public defaultedCollateral;
     uint256 public defaultedDebt;
 
-    uint256 public rewardIntegral;
-    uint128 public rewardRate;
-    uint32 public lastUpdate;
-    uint32 public periodFinish;
-
-    mapping(address => uint256) public rewardIntegralFor;
     mapping(address => uint256) private storedPendingReward;
 
     // week -> total available rewards for 1 day within this week
@@ -160,14 +156,27 @@ contract TroveManager is ITroveManager, PrismaBase, PrismaOwnable {
         _;
     }
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(
         IPrismaCore _prismaCore,
         IGasPool _gasPool,
         IDebtToken _debtToken,
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
         uint256 _gasCompensation
-    ) PrismaOwnable(_prismaCore) PrismaBase(_gasCompensation) {
+    ) external initializer {
+        __UUPSUpgradeable_init_unchained();
+        __PrismaOwnable_init(_prismaCore);
+        __PrismaBase_init(_gasCompensation);
         gasPool = _gasPool;
         debtToken = _debtToken;
         borrowerOperations = _borrowerOperations;

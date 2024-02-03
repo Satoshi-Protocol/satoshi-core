@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
 import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
@@ -44,12 +46,20 @@ struct LiquidationTotals {
     uint256 totalCollSurplus;
 }
 
-interface ILiquidationManager is IPrismaBase {
+interface ILiquidationManager is IPrismaOwnable, IPrismaBase {
     event Liquidation(
         uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _debtGasCompensation
     );
     event TroveLiquidated(address indexed _borrower, uint256 _debt, uint256 _coll, uint8 _operation);
     event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, uint8 _operation);
+
+    function initialize(
+        IPrismaCore _prismaCore,
+        IStabilityPool _stabilityPool,
+        IBorrowerOperations _borrowerOperations,
+        IFactory _factory,
+        uint256 _gasCompensation
+    ) external;
 
     function batchLiquidateTroves(ITroveManager troveManager, address[] calldata _troveArray) external;
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
 
@@ -9,10 +10,10 @@ import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
  *     @notice Contracts inheriting `PrismaOwnable` have the same owner as `PrismaCore`.
  *             The ownership cannot be independently modified or renounced.
  */
-contract PrismaOwnable is IPrismaOwnable {
-    IPrismaCore public immutable PRISMA_CORE;
+abstract contract PrismaOwnable is Initializable, IPrismaOwnable {
+    IPrismaCore public PRISMA_CORE;
 
-    constructor(IPrismaCore _prismaCore) {
+    function __PrismaOwnable_init(IPrismaCore _prismaCore) internal initializer {
         PRISMA_CORE = _prismaCore;
     }
 

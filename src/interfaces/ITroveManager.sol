@@ -3,12 +3,14 @@ pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
 import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
 import {IDebtToken} from "../interfaces/IDebtToken.sol";
 import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
 import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
 import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IGasPool} from "../interfaces/IGasPool.sol";
 
 enum Status {
     nonExistent,
@@ -81,6 +83,15 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
     event TroveUpdated(
         address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
+
+    function initialize(
+        IPrismaCore _prismaCore,
+        IGasPool _gasPool,
+        IDebtToken _debtToken,
+        IBorrowerOperations _borrowerOperations,
+        ILiquidationManager _liquidationManager,
+        uint256 _gasCompensation
+    ) external;
 
     function addCollateralSurplus(address borrower, uint256 collSurplus) external;
 
@@ -272,8 +283,6 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
 
     function lastFeeOperationTime() external view returns (uint256);
 
-    function lastUpdate() external view returns (uint32);
-
     function liquidationManager() external view returns (ILiquidationManager);
 
     function maxBorrowingFee() external view returns (uint256);
@@ -286,17 +295,9 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
 
     function paused() external view returns (bool);
 
-    function periodFinish() external view returns (uint32);
-
     function priceFeed() external view returns (IPriceFeed);
 
     function redemptionFeeFloor() external view returns (uint256);
-
-    function rewardIntegral() external view returns (uint256);
-
-    function rewardIntegralFor(address) external view returns (uint256);
-
-    function rewardRate() external view returns (uint128);
 
     function rewardSnapshots(address) external view returns (uint256 collateral, uint256 debt);
 

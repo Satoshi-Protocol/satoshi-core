@@ -14,6 +14,8 @@ import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {DeploymentParams, IFactory} from "../interfaces/IFactory.sol";
 
+//NOTE: non-upgradeable contract
+
 /**
  * @title Prisma Trove Factory
  *     @notice Deploys cloned pairs of `TroveManager` and `SortedTroves` in order to
@@ -22,15 +24,13 @@ import {DeploymentParams, IFactory} from "../interfaces/IFactory.sol";
 contract Factory is IFactory, PrismaOwnable {
     using Clones for address;
 
-    // fixed single-deployment contracts
     IDebtToken public immutable debtToken;
     IStabilityPool public immutable stabilityPool;
     ILiquidationManager public immutable liquidationManager;
     IBorrowerOperations public immutable borrowerOperations;
+    ISortedTroves public immutable sortedTroves;
+    ITroveManager public immutable troveManager;
 
-    // implementation contracts, redeployed each time via clone proxy
-    ISortedTroves public sortedTrovesImpl;
-    ITroveManager public troveManagerImpl;
     ITroveManager[] public troveManagers;
 
     constructor(
@@ -41,12 +41,13 @@ contract Factory is IFactory, PrismaOwnable {
         ISortedTroves _sortedTroves,
         ITroveManager _troveManager,
         ILiquidationManager _liquidationManager
-    ) PrismaOwnable(_prismaCore) {
+    ) {
+        __PrismaOwnable_init(_prismaCore);
         debtToken = IDebtToken(_debtToken);
         stabilityPool = IStabilityPool(_stabilityPool);
         borrowerOperations = IBorrowerOperations(_borrowerOperations);
-        sortedTrovesImpl = ISortedTroves(_sortedTroves);
-        troveManagerImpl = ITroveManager(_troveManager);
+        sortedTroves = ISortedTroves(_sortedTroves);
+        troveManager = ITroveManager(_troveManager);
         liquidationManager = ILiquidationManager(_liquidationManager);
     }
 
@@ -63,42 +64,31 @@ contract Factory is IFactory, PrismaOwnable {
      *            to enable PRISMA emissions on the newly deployed `TroveManager`
      *     @param collateralToken Collateral token to use in new deployment
      *     @param priceFeed Custom `PriceFeed` deployment. Leave as `address(0)` to use the default.
-     *     @param customTroveManagerImpl Custom `TroveManager` implementation to clone from.
-     *                                   Leave as `address(0)` to use the default.
-     *     @param customSortedTrovesImpl Custom `SortedTroves` implementation to clone from.
-     *                                   Leave as `address(0)` to use the default.
      *     @param params Struct of initial parameters to be set on the new trove manager
      */
-    function deployNewInstance(
-        IERC20 collateralToken,
-        IPriceFeed priceFeed,
-        ITroveManager customTroveManagerImpl,
-        ISortedTroves customSortedTrovesImpl,
-        DeploymentParams memory params
-    ) external onlyOwner {
-        address implementation =
-            address(customTroveManagerImpl) == address(0) ? address(troveManagerImpl) : address(customTroveManagerImpl);
-        ITroveManager troveManager =
-            ITroveManager(implementation.cloneDeterministic(bytes32(bytes20(address(collateralToken)))));
-        troveManagers.push(troveManager);
+    function deployNewInstance(IERC20 collateralToken, IPriceFeed priceFeed, DeploymentParams memory params)
+        external
+        onlyOwner
+    {
+        ITroveManager troveManagerClone =
+            ITroveManager(address(troveManager).cloneDeterministic(bytes32(bytes20(address(collateralToken)))));
+        troveManagers.push(troveManagerClone);
 
-        implementation =
-            address(customSortedTrovesImpl) == address(0) ? address(sortedTrovesImpl) : address(customSortedTrovesImpl);
-        ISortedTroves sortedTroves =
-            ISortedTroves(implementation.cloneDeterministic(bytes32(bytes20(address(troveManager)))));
+        ISortedTroves sortedTrovesClone =
+            ISortedTroves(address(sortedTroves).cloneDeterministic(bytes32(bytes20(address(troveManagerClone)))));
 
-        troveManager.setAddresses(address(priceFeed), address(sortedTroves), address(collateralToken));
-        sortedTroves.setAddresses(address(troveManager));
+        troveManagerClone.setAddresses(address(priceFeed), address(sortedTrovesClone), address(collateralToken));
+        sortedTrovesClone.setAddresses(address(troveManagerClone));
 
         // verify that the oracle is correctly working
-        ITroveManager(troveManager).fetchPrice();
+        troveManagerClone.fetchPrice();
 
         stabilityPool.enableCollateral(collateralToken);
-        liquidationManager.enableTroveManager(troveManager);
-        debtToken.enableTroveManager(troveManager);
-        borrowerOperations.configureCollateral(troveManager, collateralToken);
+        liquidationManager.enableTroveManager(troveManagerClone);
+        debtToken.enableTroveManager(troveManagerClone);
+        borrowerOperations.configureCollateral(troveManagerClone, collateralToken);
 
-        troveManager.setParameters(
+        troveManagerClone.setParameters(
             params.minuteDecayFactor,
             params.redemptionFeeFloor,
             params.maxRedemptionFee,
@@ -109,11 +99,6 @@ contract Factory is IFactory, PrismaOwnable {
             params.MCR
         );
 
-        emit NewDeployment(collateralToken, priceFeed, troveManager, sortedTroves);
-    }
-
-    function setImplementations(ITroveManager _troveManagerImpl, ISortedTroves _sortedTrovesImpl) external onlyOwner {
-        troveManagerImpl = _troveManagerImpl;
-        sortedTrovesImpl = _sortedTrovesImpl;
+        emit NewDeployment(collateralToken, priceFeed, troveManagerClone, sortedTrovesClone);
     }
 }

@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
 import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
 import {IDelegatedOps} from "../interfaces/IDelegatedOps.sol";
@@ -32,6 +33,14 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
     event TroveCreated(address indexed _borrower, uint256 arrayIndex);
     event TroveManagerRemoved(ITroveManager indexed troveManager);
     event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 stake, uint8 operation);
+
+    function initialize(
+        IPrismaCore _prismaCore,
+        IDebtToken _debtToken,
+        IFactory _factory,
+        uint256 _minNetDebt,
+        uint256 _gasCompensation
+    ) external;
 
     function addColl(
         ITroveManager _troveManager,

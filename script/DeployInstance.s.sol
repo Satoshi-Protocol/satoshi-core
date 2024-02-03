@@ -14,8 +14,6 @@ import {
     PRICE_FEED_ADDRESS,
     COLLATERAL_ADDRESS,
     ORACLE_ADDRESS,
-    CUSTOM_TROVE_MANAGER_IMPL,
-    CUSTOM_SORTED_TROVES_IMPL,
     MINUTE_DECAY_FACTOR,
     REDEMPTION_FEE_FLOOR,
     MAX_REDEMPTION_FEE,
@@ -32,8 +30,6 @@ contract DeployInstanceScript is Script {
     IERC20 internal collateral;
     IPriceFeed internal priceFeed;
     IAggregatorV3Interface internal oracle;
-    ITroveManager internal customTroveManagerImpl;
-    ISortedTroves internal customSortedTrovesImpl;
     DeploymentParams internal deploymentParams;
 
     function setUp() public {
@@ -42,8 +38,6 @@ contract DeployInstanceScript is Script {
         collateral = IERC20(COLLATERAL_ADDRESS);
         priceFeed = IPriceFeed(PRICE_FEED_ADDRESS);
         oracle = IAggregatorV3Interface(ORACLE_ADDRESS);
-        customTroveManagerImpl = ITroveManager(CUSTOM_TROVE_MANAGER_IMPL);
-        customSortedTrovesImpl = ISortedTroves(CUSTOM_SORTED_TROVES_IMPL);
         deploymentParams = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,
@@ -56,18 +50,12 @@ contract DeployInstanceScript is Script {
         });
     }
 
-    // IERC20 _token,
-    //         IAggregatorV3Interface _chainlinkOracle,
-    //         uint32 _heartbeat,
-    //         bytes4 sharePriceSignature,
-    //         uint8 sharePriceDecimals,
-    //         bool _isEthIndexed
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
         priceFeed.setOracle(collateral, oracle, 10000, 0, 0, false);
         DeploymentParams memory params = deploymentParams;
-        factory.deployNewInstance(collateral, priceFeed, customTroveManagerImpl, customSortedTrovesImpl, params);
+        factory.deployNewInstance(collateral, priceFeed, params);
 
         vm.stopBroadcast();
     }

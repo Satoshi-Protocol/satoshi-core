@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
 import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
 import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
@@ -42,22 +45,36 @@ import {
  *                the value of the debt is distributed between stability pool depositors. The remaining
  *                collateral is left claimable by the trove owner.
  */
-contract LiquidationManager is ILiquidationManager, PrismaBase {
-    IStabilityPool public immutable stabilityPool;
-    IBorrowerOperations public immutable borrowerOperations;
-    IFactory public immutable factory;
+contract LiquidationManager is PrismaOwnable, PrismaBase, ILiquidationManager, UUPSUpgradeable {
+    IStabilityPool public stabilityPool;
+    IBorrowerOperations public borrowerOperations;
+    IFactory public factory;
 
     uint256 private constant _100pct = 1000000000000000000; // 1e18 == 100%
 
     // troveManager => enabled
     mapping(ITroveManager => bool) internal _enabledTroveManagers;
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(
+        IPrismaCore _prismaCore,
         IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
         IFactory _factory,
         uint256 _gasCompensation
-    ) PrismaBase(_gasCompensation) {
+    ) external initializer {
+        __UUPSUpgradeable_init_unchained();
+        __PrismaOwnable_init(_prismaCore);
+        __PrismaBase_init(_gasCompensation);
         stabilityPool = _stabilityPool;
         borrowerOperations = _borrowerOperations;
         factory = _factory;

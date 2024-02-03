@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {SafeERC20Upgradeable as SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20Upgradeable as SafeERC20} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
@@ -19,22 +21,16 @@ import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../
  *             Prisma's implementation is modified to support multiple collaterals. Deposits into
  *             the stability pool may be used to liquidate any supported collateral type.
  */
-contract StabilityPool is IStabilityPool, PrismaOwnable {
+contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint128 public constant SUNSET_DURATION = 180 days;
     uint256 constant REWARD_DURATION = 1 weeks;
 
-    uint256 public constant emissionId = 0;
-
-    IDebtToken public immutable debtToken;
-    IFactory public immutable factory;
-    ILiquidationManager public immutable liquidationManager;
-
-    uint128 public rewardRate;
-    uint32 public lastUpdate;
-    uint32 public periodFinish;
+    IDebtToken public debtToken;
+    IFactory public factory;
+    ILiquidationManager public liquidationManager;
 
     // collateral => index
     mapping(IERC20 => uint256) public indexByCollateral;
@@ -101,16 +97,27 @@ contract StabilityPool is IStabilityPool, PrismaOwnable {
     mapping(uint16 => SunsetIndex) _sunsetIndexes;
     Queue queue;
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(
         IPrismaCore _prismaCore,
         IDebtToken _debtToken,
         IFactory _factory,
         ILiquidationManager _liquidationManager
-    ) PrismaOwnable(_prismaCore) {
+    ) external initializer {
+        __UUPSUpgradeable_init_unchained();
+        __PrismaOwnable_init(_prismaCore);
         debtToken = _debtToken;
         factory = _factory;
         liquidationManager = _liquidationManager;
-        periodFinish = uint32(block.timestamp - 1);
     }
 
     function enableCollateral(IERC20 _collateral) external {

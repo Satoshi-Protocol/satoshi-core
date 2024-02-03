@@ -10,7 +10,8 @@ import {PrismaMath} from "../dependencies/PrismaMath.sol";
 contract MultiCollateralHintHelpers is PrismaBase {
     IBorrowerOperations public immutable borrowerOperations;
 
-    constructor(address _borrowerOperationsAddress, uint256 _gasCompensation) PrismaBase(_gasCompensation) {
+    constructor(address _borrowerOperationsAddress, uint256 _gasCompensation) {
+        __PrismaBase_init(_gasCompensation);
         borrowerOperations = IBorrowerOperations(_borrowerOperationsAddress);
     }
 

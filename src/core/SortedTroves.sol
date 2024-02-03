@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
 import {ITroveManager} from "../interfaces/ITroveManager.sol";
 import {ISortedTroves, Node, Data} from "../interfaces/ISortedTroves.sol";
 
@@ -12,10 +15,25 @@ import {ISortedTroves, Node, Data} from "../interfaces/ISortedTroves.sol";
  *             Originally derived from `SortedDoublyLinkedList`:
  *             https://github.com/livepeer/protocol/blob/master/contracts/libraries/SortedDoublyLL.sol
  */
-contract SortedTroves is ISortedTroves {
+contract SortedTroves is ISortedTroves, UUPSUpgradeable, PrismaOwnable {
     ITroveManager public troveManager;
 
     Data public data;
+
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(IPrismaCore _prismaCore) external initializer {
+        __UUPSUpgradeable_init_unchained();
+        __PrismaOwnable_init(_prismaCore);
+    }
 
     function setAddresses(address _troveManagerAddress) external {
         require(address(troveManager) == address(0), "Already set");

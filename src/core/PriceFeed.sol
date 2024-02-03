@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
@@ -15,7 +16,7 @@ import {IPriceFeed, OracleRecord, PriceRecord, FeedResponse, OracleSetup} from "
  *
  *             Prisma's implementation additionally caches price values within a block and incorporates exchange rate settings for derivative tokens (e.g. stETH -> wstETH).
  */
-contract PriceFeed is IPriceFeed, PrismaOwnable {
+contract PriceFeed is IPriceFeed, PrismaOwnable, UUPSUpgradeable {
     /**
      * Constants ----------------------------------------------------------------------------------------------------
      */
@@ -34,10 +35,39 @@ contract PriceFeed is IPriceFeed, PrismaOwnable {
     mapping(IERC20 => OracleRecord) public oracleRecords;
     mapping(IERC20 => PriceRecord) public priceRecords;
 
-    constructor(IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles)
-        PrismaOwnable(_prismaCore)
+    // constructor(IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles)
+    //     PrismaOwnable(_prismaCore)
+    // {
+    //     _setOracle(IERC20(address(0)), _nativeTokenFeed, 3600, 0, 0, false);
+    //     for (uint256 i = 0; i < _oracles.length; i++) {
+    //         OracleSetup memory o = _oracles[i];
+    //         _setOracle(o.token, o.chainlink, o.heartbeat, o.sharePriceSignature, o.sharePriceDecimals, o.isEthIndexed);
+    //     }
+    // }
+
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles)
+        external
+        initializer
     {
+        __UUPSUpgradeable_init_unchained();
+
+        // (IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles) =
+        //     abi.decode(data, (IPrismaCore, IAggregatorV3Interface, OracleSetup[]));
+
+        __PrismaOwnable_init(_prismaCore);
+
         _setOracle(IERC20(address(0)), _nativeTokenFeed, 3600, 0, 0, false);
+
         for (uint256 i = 0; i < _oracles.length; i++) {
             OracleSetup memory o = _oracles[i];
             _setOracle(o.token, o.chainlink, o.heartbeat, o.sharePriceSignature, o.sharePriceDecimals, o.isEthIndexed);
