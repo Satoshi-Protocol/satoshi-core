@@ -56,12 +56,12 @@ contract DeployInstanceScript is Script {
         });
     }
 
-// IERC20 _token,
-//         IAggregatorV3Interface _chainlinkOracle,
-//         uint32 _heartbeat,
-//         bytes4 sharePriceSignature,
-//         uint8 sharePriceDecimals,
-//         bool _isEthIndexed
+    // IERC20 _token,
+    //         IAggregatorV3Interface _chainlinkOracle,
+    //         uint32 _heartbeat,
+    //         bytes4 sharePriceSignature,
+    //         uint8 sharePriceDecimals,
+    //         bool _isEthIndexed
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
