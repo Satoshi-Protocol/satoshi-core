@@ -60,12 +60,7 @@ contract PriceFeed is IPriceFeed, PrismaOwnable, UUPSUpgradeable {
         initializer
     {
         __UUPSUpgradeable_init_unchained();
-
-        // (IPrismaCore _prismaCore, IAggregatorV3Interface _nativeTokenFeed, OracleSetup[] memory _oracles) =
-        //     abi.decode(data, (IPrismaCore, IAggregatorV3Interface, OracleSetup[]));
-
         __PrismaOwnable_init(_prismaCore);
-
         _setOracle(IERC20(address(0)), _nativeTokenFeed, 3600, 0, 0, false);
 
         for (uint256 i = 0; i < _oracles.length; i++) {

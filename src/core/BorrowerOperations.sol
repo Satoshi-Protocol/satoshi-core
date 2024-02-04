@@ -96,6 +96,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
     function _setMinNetDebt(uint256 _minNetDebt) internal {
         require(_minNetDebt > 0);
         minNetDebt = _minNetDebt;
+        emit MinNetDebtUpdated(_minNetDebt);
     }
 
     function configureCollateral(ITroveManager troveManager, IERC20 collateralToken) external {

@@ -49,24 +49,18 @@ contract DeploySetupScript is Script {
     IStabilityPool stabilityPoolImpl;
     ITroveManager troveManagerImpl;
 
-    // proxy contracts
-    ISortedTroves sortedTrovesProxy;
-    IPriceFeed priceFeedProxy;
-    IBorrowerOperations borrowerOperationsProxy;
-    ILiquidationManager liquidationManagerProxy;
-    IStabilityPool stabilityPoolProxy;
-    ITroveManager troveManagerProxy;
-
     // non-upgradeable contracts
     IGasPool gasPool;
     IPrismaCore prismaCore;
     IDebtToken debtToken;
     IFactory factory;
 
-    // computed contracts for deployment
+    /* computed contracts for deployment */
+    // non-upgradeable contracts
     address cpGasPoolAddr;
     address cpPrismaCoreAddr;
     address cpDebtTokenAddr;
+    address cpFactoryAddr;
     // upgradeable contracts
     address cpSortedTrovesProxyAddr;
     address cpPriceFeedProxyAddr;
@@ -74,8 +68,6 @@ contract DeploySetupScript is Script {
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
     address cpTroveManagerProxyAddr;
-    // factory contract
-    address cpFactoryAddr;
 
     function setUp() public {
         DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
@@ -101,6 +93,7 @@ contract DeploySetupScript is Script {
         cpGasPoolAddr = vm.computeCreateAddress(deployer, nonce);
         cpPrismaCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpSortedTrovesProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpPriceFeedProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -108,16 +101,19 @@ contract DeploySetupScript is Script {
         cpLiquidationManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpStabilityPoolProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
-        // factory contract
-        cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
 
         // Deploy non-upgradeable contracts
+        // GasPool
         gasPool = new GasPool();
         assert(cpGasPoolAddr == address(gasPool));
+
+        // PrismaCore
         prismaCore = new PrismaCore(
             PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, IPriceFeed(cpPriceFeedProxyAddr), PRISMA_CORE_FEE_RECEIVER
         );
         assert(cpPrismaCoreAddr == address(prismaCore));
+
+        // DebtToken
         debtToken = new DebtToken(
             DEBT_TOKEN_NAME,
             DEBT_TOKEN_SYMBOL,
@@ -131,35 +127,55 @@ contract DeploySetupScript is Script {
         );
         assert(cpDebtTokenAddr == address(debtToken));
 
+        // Factory
+        factory = new Factory(
+            IPrismaCore(cpPrismaCoreAddr),
+            IDebtToken(cpDebtTokenAddr),
+            IStabilityPool(cpStabilityPoolProxyAddr),
+            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+            ISortedTroves(cpSortedTrovesProxyAddr),
+            ITroveManager(cpTroveManagerProxyAddr),
+            ILiquidationManager(cpLiquidationManagerProxyAddr)
+        );
+        assert(cpFactoryAddr == address(factory));
+
         // Deploy proxy contracts
         bytes memory data;
         address proxy;
-        data = abi.encodeCall(ISortedTroves.initialize, (prismaCore));
+
+        // SortedTroves
+        data = abi.encodeCall(ISortedTroves.initialize, (IPrismaCore(cpPrismaCoreAddr)));
         proxy = address(new ERC1967Proxy(address(sortedTrovesImpl), data));
-        sortedTrovesProxy = ISortedTroves(proxy);
         assert(proxy == cpSortedTrovesProxyAddr);
 
+        // PriceFeed
         OracleSetup[] memory oracleSetups = new OracleSetup[](0); // empty array
-        data =
-            abi.encodeCall(IPriceFeed.initialize, (prismaCore, IAggregatorV3Interface(NATIVE_TOKEN_FEED), oracleSetups));
+        data = abi.encodeCall(
+            IPriceFeed.initialize,
+            (IPrismaCore(cpPrismaCoreAddr), IAggregatorV3Interface(NATIVE_TOKEN_FEED), oracleSetups)
+        );
         proxy = address(new ERC1967Proxy(address(priceFeedImpl), data));
         assert(proxy == cpPriceFeedProxyAddr);
-        priceFeedProxy = IPriceFeed(proxy);
-        assert(priceFeedProxy.PRISMA_CORE() == prismaCore);
 
+        // BorrowerOperations
         data = abi.encodeCall(
             IBorrowerOperations.initialize,
-            (prismaCore, IDebtToken(cpDebtTokenAddr), IFactory(cpFactoryAddr), BO_MIN_NET_DEBT, GAS_COMPENSATION)
+            (
+                IPrismaCore(cpPrismaCoreAddr),
+                IDebtToken(cpDebtTokenAddr),
+                IFactory(cpFactoryAddr),
+                BO_MIN_NET_DEBT,
+                GAS_COMPENSATION
+            )
         );
         proxy = address(new ERC1967Proxy(address(borrowerOperationsImpl), data));
         assert(proxy == cpBorrowerOperationsProxyAddr);
-        borrowerOperationsProxy = IBorrowerOperations(proxy);
-        assert(borrowerOperationsProxy.PRISMA_CORE() == prismaCore);
 
+        // LiquidationManager
         data = abi.encodeCall(
             ILiquidationManager.initialize,
             (
-                prismaCore,
+                IPrismaCore(cpPrismaCoreAddr),
                 IStabilityPool(cpStabilityPoolProxyAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
                 IFactory(cpFactoryAddr),
@@ -168,13 +184,12 @@ contract DeploySetupScript is Script {
         );
         proxy = address(new ERC1967Proxy(address(liquidationManagerImpl), data));
         assert(proxy == cpLiquidationManagerProxyAddr);
-        liquidationManagerProxy = ILiquidationManager(proxy);
-        assert(liquidationManagerProxy.PRISMA_CORE() == prismaCore);
 
+        // StabilityPool
         data = abi.encodeCall(
             IStabilityPool.initialize,
             (
-                prismaCore,
+                IPrismaCore(cpPrismaCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
                 ILiquidationManager(cpLiquidationManagerProxyAddr)
@@ -182,13 +197,12 @@ contract DeploySetupScript is Script {
         );
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
         assert(proxy == cpStabilityPoolProxyAddr);
-        stabilityPoolProxy = IStabilityPool(proxy);
-        assert(stabilityPoolProxy.PRISMA_CORE() == prismaCore);
 
+        // TroveManager
         data = abi.encodeCall(
             ITroveManager.initialize,
             (
-                prismaCore,
+                IPrismaCore(cpPrismaCoreAddr),
                 IGasPool(cpGasPoolAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
@@ -198,20 +212,6 @@ contract DeploySetupScript is Script {
         );
         proxy = address(new ERC1967Proxy(address(troveManagerImpl), data));
         assert(proxy == cpTroveManagerProxyAddr);
-        troveManagerProxy = ITroveManager(proxy);
-        assert(troveManagerProxy.PRISMA_CORE() == prismaCore);
-
-        // Deploy Factory
-        factory = new Factory(
-            prismaCore,
-            IDebtToken(cpDebtTokenAddr),
-            IStabilityPool(cpStabilityPoolProxyAddr),
-            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            ISortedTroves(cpSortedTrovesProxyAddr),
-            ITroveManager(cpTroveManagerProxyAddr),
-            ILiquidationManager(cpLiquidationManagerProxyAddr)
-        );
-        assert(cpFactoryAddr == address(factory));
 
         vm.stopBroadcast();
     }
