@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IDelegatedOps} from "../interfaces/IDelegatedOps.sol";
+import {IDelegatedOps} from "../interfaces/dependencies/IDelegatedOps.sol";
 
 /**
  * @title Prisma Delegated Operations

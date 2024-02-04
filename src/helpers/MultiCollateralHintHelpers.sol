@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
+import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
+import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
+import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 

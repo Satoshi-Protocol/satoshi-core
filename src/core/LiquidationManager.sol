@@ -6,18 +6,18 @@ import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/t
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
+import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
+import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
+import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
+import {IFactory} from "../interfaces/core/IFactory.sol";
 import {
     ILiquidationManager,
     TroveManagerValues,
     LiquidationValues,
     LiquidationTotals
-} from "../interfaces/ILiquidationManager.sol";
+} from "../interfaces/core/ILiquidationManager.sol";
 
 /**
  * @title Prisma Liquidation Manager

@@ -3,20 +3,20 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
-import {IPrismaCore} from "../src/interfaces/IPrismaCore.sol";
-import {IBorrowerOperations} from "../src/interfaces/IBorrowerOperations.sol";
-import {IDebtToken} from "../src/interfaces/IDebtToken.sol";
-import {ILiquidationManager} from "../src/interfaces/ILiquidationManager.sol";
-import {IStabilityPool} from "../src/interfaces/IStabilityPool.sol";
-import {IPriceFeed, OracleSetup} from "../src/interfaces/IPriceFeed.sol";
-import {IFactory} from "../src/interfaces/IFactory.sol";
-import {IGasPool} from "../src/interfaces/IGasPool.sol";
-import {ISortedTroves} from "../src/interfaces/ISortedTroves.sol";
-import {ITroveManager} from "../src/interfaces/ITroveManager.sol";
+import {IPrismaCore} from "../src/interfaces/core/IPrismaCore.sol";
+import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
+import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
+import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
+import {IPriceFeedAggregator, OracleSetup} from "../src/interfaces/core/IPriceFeedAggregator.sol";
+import {IFactory} from "../src/interfaces/core/IFactory.sol";
+import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
+import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
+import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
+import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {PrismaCore} from "../src/core/PrismaCore.sol";
-import {PriceFeed} from "../src/core/PriceFeed.sol";
+import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
 import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
 import {DebtToken} from "../src/core/DebtToken.sol";
@@ -43,7 +43,7 @@ contract DeploySetupScript is Script {
 
     // implementation contracts addresses
     ISortedTroves sortedTrovesImpl;
-    IPriceFeed priceFeedImpl;
+    IPriceFeedAggregator priceFeedAggregatorImpl;
     IBorrowerOperations borrowerOperationsImpl;
     ILiquidationManager liquidationManagerImpl;
     IStabilityPool stabilityPoolImpl;
@@ -63,7 +63,7 @@ contract DeploySetupScript is Script {
     address cpFactoryAddr;
     // upgradeable contracts
     address cpSortedTrovesProxyAddr;
-    address cpPriceFeedProxyAddr;
+    address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
@@ -79,7 +79,7 @@ contract DeploySetupScript is Script {
 
         // Deploy implementation contracts
         sortedTrovesImpl = new SortedTroves();
-        priceFeedImpl = new PriceFeed();
+        priceFeedAggregatorImpl = new PriceFeedAggregator();
         borrowerOperationsImpl = new BorrowerOperations();
         liquidationManagerImpl = new LiquidationManager();
         stabilityPoolImpl = new StabilityPool();
@@ -96,7 +96,7 @@ contract DeploySetupScript is Script {
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpSortedTrovesProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpPriceFeedProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpLiquidationManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpStabilityPoolProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -109,7 +109,9 @@ contract DeploySetupScript is Script {
 
         // PrismaCore
         prismaCore = new PrismaCore(
-            PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, IPriceFeed(cpPriceFeedProxyAddr), PRISMA_CORE_FEE_RECEIVER
+            PRISMA_CORE_OWNER,
+            PRISMA_CORE_GUARDIAN,
+            PRISMA_CORE_FEE_RECEIVER
         );
         assert(cpPrismaCoreAddr == address(prismaCore));
 
@@ -148,14 +150,14 @@ contract DeploySetupScript is Script {
         proxy = address(new ERC1967Proxy(address(sortedTrovesImpl), data));
         assert(proxy == cpSortedTrovesProxyAddr);
 
-        // PriceFeed
+        // PriceFeedAggregator
         OracleSetup[] memory oracleSetups = new OracleSetup[](0); // empty array
         data = abi.encodeCall(
-            IPriceFeed.initialize,
-            (IPrismaCore(cpPrismaCoreAddr), IAggregatorV3Interface(NATIVE_TOKEN_FEED), oracleSetups)
+            IPriceFeedAggregator.initialize,
+            (IPrismaCore(cpPrismaCoreAddr), IPriceFeed(NATIVE_TOKEN_FEED), oracleSetups)
         );
-        proxy = address(new ERC1967Proxy(address(priceFeedImpl), data));
-        assert(proxy == cpPriceFeedProxyAddr);
+        proxy = address(new ERC1967Proxy(address(priceFeedAggregatorImpl), data));
+        assert(proxy == cpPriceFeedAggregatorProxyAddr);
 
         // BorrowerOperations
         data = abi.encodeCall(
@@ -207,6 +209,7 @@ contract DeploySetupScript is Script {
                 IDebtToken(cpDebtTokenAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
                 ILiquidationManager(cpLiquidationManagerProxyAddr),
+                IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
                 GAS_COMPENSATION
             )
         );

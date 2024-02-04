@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IPrismaCore} from "./IPrismaCore.sol";
-import {IPrismaOwnable} from "./IPrismaOwnable.sol";
+import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
 import {IDebtToken} from "./IDebtToken.sol";
 import {IFactory} from "./IFactory.sol";
 import {ILiquidationManager} from "./ILiquidationManager.sol";

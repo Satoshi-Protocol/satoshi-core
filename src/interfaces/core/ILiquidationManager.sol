@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
-import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
+import {IPrismaCore} from "./IPrismaCore.sol";
+import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {IPrismaBase} from "../dependencies/IPrismaBase.sol";
+import {ITroveManager} from "./ITroveManager.sol";
+import {IBorrowerOperations} from "./IBorrowerOperations.sol";
+import {IStabilityPool} from "./IStabilityPool.sol";
+import {IFactory} from "./IFactory.sol";
 
 /*
      * --- Variable container structs for liquidations ---

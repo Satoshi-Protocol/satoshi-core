@@ -2,15 +2,15 @@
 pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
-import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
-import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
-import {IGasPool} from "../interfaces/IGasPool.sol";
+import {IPriceFeedAggregator} from "../core/IPriceFeedAggregator.sol";
+import {IPrismaCore} from "../core/IPrismaCore.sol";
+import {IBorrowerOperations} from "../core/IBorrowerOperations.sol";
+import {ISortedTroves} from "../core/ISortedTroves.sol";
+import {IDebtToken} from "../core/IDebtToken.sol";
+import {ILiquidationManager} from "../core/ILiquidationManager.sol";
+import {IPrismaBase} from "../dependencies/IPrismaBase.sol";
+import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {IGasPool} from "../core/IGasPool.sol";
 
 enum Status {
     nonExistent,
@@ -90,6 +90,7 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
         IDebtToken _debtToken,
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
+        IPriceFeedAggregator _priceFeedAggregator,
         uint256 _gasCompensation
     ) external;
 
@@ -144,7 +145,7 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
         uint256 _maxFeePercentage
     ) external;
 
-    function setAddresses(address _priceFeedAddress, address _sortedTrovesAddress, address _collateralToken) external;
+function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external;
 
     function setParameters(
         uint256 _minuteDecayFactor,
@@ -158,8 +159,6 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
     ) external;
 
     function setPaused(bool _paused) external;
-
-    function setPriceFeed(IPriceFeed _priceFeed) external;
 
     function startSunset() external;
 
@@ -295,7 +294,7 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
 
     function paused() external view returns (bool);
 
-    function priceFeed() external view returns (IPriceFeed);
+    function priceFeedAggregator() external view returns (IPriceFeedAggregator);
 
     function redemptionFeeFloor() external view returns (uint256);
 

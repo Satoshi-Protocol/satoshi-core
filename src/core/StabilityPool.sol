@@ -7,11 +7,11 @@ import {SafeERC20Upgradeable as SafeERC20} from
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
-import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/IStabilityPool.sol";
+import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
+import {IFactory} from "../interfaces/core/IFactory.sol";
+import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
 
 /**
  * @title Prisma Stability Pool

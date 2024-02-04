@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 
 //NOTE: non-upgradeable
 
@@ -16,7 +16,6 @@ import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
  */
 contract PrismaCore is IPrismaCore {
     address public feeReceiver;
-    IPriceFeed public priceFeed;
 
     address public owner;
     address public pendingOwner;
@@ -36,14 +35,12 @@ contract PrismaCore is IPrismaCore {
     // Other contracts that require access to this should inherit `SystemStart`.
     uint256 public immutable startTime;
 
-    constructor(address _owner, address _guardian, IPriceFeed _priceFeed, address _feeReceiver) {
+    constructor(address _owner, address _guardian, address _feeReceiver) {
         owner = _owner;
         startTime = (block.timestamp / 1 weeks) * 1 weeks;
         guardian = _guardian;
-        priceFeed = _priceFeed;
         feeReceiver = _feeReceiver;
         emit GuardianSet(_guardian);
-        emit PriceFeedSet(_priceFeed);
         emit FeeReceiverSet(_feeReceiver);
     }
 
@@ -59,15 +56,6 @@ contract PrismaCore is IPrismaCore {
     function setFeeReceiver(address _feeReceiver) external onlyOwner {
         feeReceiver = _feeReceiver;
         emit FeeReceiverSet(_feeReceiver);
-    }
-
-    /**
-     * @notice Set the price feed used in the protocol
-     * @param _priceFeed Price feed address
-     */
-    function setPriceFeed(IPriceFeed _priceFeed) external onlyOwner {
-        priceFeed = _priceFeed;
-        emit PriceFeedSet(_priceFeed);
     }
 
     /**

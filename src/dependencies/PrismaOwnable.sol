@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {IPrismaOwnable} from "../interfaces/dependencies/IPrismaOwnable.sol";
 
 /**
  * @title Prisma Ownable

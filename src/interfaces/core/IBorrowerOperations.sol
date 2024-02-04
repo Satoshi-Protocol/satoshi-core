@@ -2,13 +2,13 @@
 pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
-import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
-import {IDelegatedOps} from "../interfaces/IDelegatedOps.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
+import {ITroveManager} from "./ITroveManager.sol";
+import {IPrismaCore} from "./IPrismaCore.sol";
+import {IPrismaBase} from "../dependencies/IPrismaBase.sol";
+import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {IDelegatedOps} from "../dependencies/IDelegatedOps.sol";
+import {IFactory} from "./IFactory.sol";
+import {IDebtToken} from "./IDebtToken.sol";
 
 enum BorrowerOperation {
     openTrove,

@@ -9,13 +9,13 @@ import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {DelegatedOps} from "../dependencies/DelegatedOps.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
+import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
+import {IFactory} from "../interfaces/core/IFactory.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 import {
     IBorrowerOperations, BorrowerOperation, TroveManagerData, Balances
-} from "../interfaces/IBorrowerOperations.sol";
+} from "../interfaces/core/IBorrowerOperations.sol";
 
 /**
  * @title Prisma Borrower Operations

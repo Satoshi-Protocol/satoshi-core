@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IPrismaBase} from "../interfaces/IPrismaBase.sol";
+import {IPrismaBase} from "../interfaces/dependencies/IPrismaBase.sol";
 
 /*
  * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and

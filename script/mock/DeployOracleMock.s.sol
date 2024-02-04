@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {OracleMock} from "../../src/mock/OracleMock.sol";
-import {IAggregatorV3Interface} from "../../src/interfaces/IAggregatorV3Interface.sol";
+import {IAggregatorV3Interface} from "../../src/interfaces/dependencies/IAggregatorV3Interface.sol";
 
 uint8 constant DECIMALS = 8;
 uint256 constant VERSION = 1;

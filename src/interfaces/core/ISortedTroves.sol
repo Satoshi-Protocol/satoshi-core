@@ -31,7 +31,7 @@ interface ISortedTroves {
 
     function remove(address _id) external;
 
-    function setAddresses(address _troveManagerAddr) external;
+    function setConfig(ITroveManager _troveManager) external;
 
     function contains(address _id) external view returns (bool);
 

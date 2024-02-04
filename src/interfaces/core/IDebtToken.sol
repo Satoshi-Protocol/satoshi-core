@@ -4,11 +4,11 @@ pragma solidity 0.8.13;
 import {IERC3156FlashBorrowerUpgradeable as IERC3156FlashBorrower} from
     "@openzeppelin/contracts-upgradeable/interfaces/IERC3156FlashBorrowerUpgradeable.sol";
 import {IOFT} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/interfaces/IOFT.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IGasPool} from "../interfaces/IGasPool.sol";
-import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
+import {ITroveManager} from "./ITroveManager.sol";
+import {IGasPool} from "./IGasPool.sol";
+import {IStabilityPool} from "./IStabilityPool.sol";
+import {IBorrowerOperations} from "./IBorrowerOperations.sol";
+import {IFactory} from "./IFactory.sol";
 
 interface IDebtToken is IOFT {
     function burn(address _account, uint256 _amount) external;

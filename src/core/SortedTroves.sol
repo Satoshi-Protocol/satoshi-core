@@ -3,9 +3,9 @@ pragma solidity 0.8.13;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {ISortedTroves, Node, Data} from "../interfaces/ISortedTroves.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
+import {ISortedTroves, Node, Data} from "../interfaces/core/ISortedTroves.sol";
 
 /**
  * @title Prisma Sorted Troves
@@ -35,9 +35,9 @@ contract SortedTroves is ISortedTroves, UUPSUpgradeable, PrismaOwnable {
         __PrismaOwnable_init(_prismaCore);
     }
 
-    function setAddresses(address _troveManagerAddress) external {
+    function setConfig(ITroveManager _troveManager) external {
         require(address(troveManager) == address(0), "Already set");
-        troveManager = ITroveManager(_troveManagerAddress);
+        troveManager = _troveManager;
     }
 
     /*

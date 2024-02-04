@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
+import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
+import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
 
 struct CombinedTroveData {
     address owner;

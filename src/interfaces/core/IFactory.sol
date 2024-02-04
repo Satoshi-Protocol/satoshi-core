@@ -2,15 +2,15 @@
 pragma solidity 0.8.13;
 
 import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {IStabilityPool} from "../interfaces/IStabilityPool.sol";
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
-import {ITroveManager} from "../interfaces/ITroveManager.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
-import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
-import {IPrismaOwnable} from "../interfaces/IPrismaOwnable.sol";
+import {IDebtToken} from "./IDebtToken.sol";
+import {IStabilityPool} from "./IStabilityPool.sol";
+import {IBorrowerOperations} from "./IBorrowerOperations.sol";
+import {ILiquidationManager} from "./ILiquidationManager.sol";
+import {ISortedTroves} from "./ISortedTroves.sol";
+import {ITroveManager} from "./ITroveManager.sol";
+import {IPrismaCore} from "./IPrismaCore.sol";
+import {IPriceFeed} from "../dependencies/IPriceFeed.sol";
+import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
 
 // commented values are suggested default parameters
 struct DeploymentParams {

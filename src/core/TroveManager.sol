@@ -9,13 +9,13 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {IBorrowerOperations} from "../interfaces/IBorrowerOperations.sol";
-import {IDebtToken} from "../interfaces/IDebtToken.sol";
-import {ISortedTroves} from "../interfaces/ISortedTroves.sol";
-import {IPriceFeed} from "../interfaces/IPriceFeed.sol";
-import {IGasPool} from "../interfaces/IGasPool.sol";
-import {ILiquidationManager} from "../interfaces/ILiquidationManager.sol";
-import {IPrismaCore} from "../interfaces/IPrismaCore.sol";
+import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
+import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
+import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
+import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
+import {IGasPool} from "../interfaces/core/IGasPool.sol";
+import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
+import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 import {
     ITroveManager,
     Trove,
@@ -25,7 +25,7 @@ import {
     RedemptionTotals,
     SingleRedemptionValues,
     RewardSnapshot
-} from "../interfaces/ITroveManager.sol";
+} from "../interfaces/core/ITroveManager.sol";
 
 /**
  * @title Prisma Trove Manager
@@ -49,7 +49,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
     IGasPool public gasPool;
     IDebtToken public debtToken;
 
-    IPriceFeed public priceFeed;
+    IPriceFeedAggregator public priceFeedAggregator;
     IERC20 public collateralToken;
 
     // A doubly linked list of Troves, sorted by their collateral ratios
@@ -172,6 +172,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
         IDebtToken _debtToken,
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
+        IPriceFeedAggregator _priceFeedAggregator,
         uint256 _gasCompensation
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
@@ -181,13 +182,13 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
         debtToken = _debtToken;
         borrowerOperations = _borrowerOperations;
         liquidationManager = _liquidationManager;
+        priceFeedAggregator = _priceFeedAggregator;
     }
 
-    function setAddresses(address _priceFeedAddress, address _sortedTrovesAddress, address _collateralToken) external {
+    function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external {
         require(address(sortedTroves) == address(0));
-        priceFeed = IPriceFeed(_priceFeedAddress);
-        sortedTroves = ISortedTroves(_sortedTrovesAddress);
-        collateralToken = IERC20(_collateralToken);
+        sortedTroves = _sortedTroves;
+        collateralToken = _collateralToken;
 
         systemDeploymentTime = block.timestamp;
         sunsetting = false;
@@ -206,14 +207,6 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
     function setPaused(bool _paused) external {
         require((_paused && msg.sender == guardian()) || msg.sender == owner(), "Unauthorized");
         paused = _paused;
-    }
-
-    /**
-     * @notice Sets a custom price feed for this trove manager
-     * @param _priceFeed Price feed address
-     */
-    function setPriceFeed(IPriceFeed _priceFeed) external onlyOwner {
-        priceFeed = _priceFeed;
     }
 
     /**
@@ -296,11 +289,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
     // --- Getters ---
 
     function fetchPrice() public returns (uint256) {
-        IPriceFeed _priceFeed = priceFeed;
-        if (address(_priceFeed) == address(0)) {
-            _priceFeed = PRISMA_CORE.priceFeed();
-        }
-        return _priceFeed.fetchPrice(collateralToken);
+        return priceFeedAggregator.fetchPrice(collateralToken);
     }
 
     function getWeekAndDay() public view returns (uint256, uint256) {
