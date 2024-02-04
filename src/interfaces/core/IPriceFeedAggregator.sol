@@ -24,8 +24,7 @@ interface IPriceFeedAggregator is IPrismaOwnable {
     error InvalidPriceFeedAddress();
     error InvalidFeedResponse(IPriceFeed priceFeed);
 
-    function initialize(IPrismaCore _prismaCore, IPriceFeed _nativeTokenFeed, OracleSetup[] memory _oracles)
-        external;
+    function initialize(IPrismaCore _prismaCore, IPriceFeed _nativeTokenFeed, OracleSetup[] memory _oracles) external;
 
     function fetchPrice(IERC20 _token) external returns (uint256);
 

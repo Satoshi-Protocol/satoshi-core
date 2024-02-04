@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-address constant NATIVE_TOKEN_FEED = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
+//NOTE: custom `PriceFeed.sol` contract should be deploy first
+address constant NATIVE_TOKEN_PRICE_FEED = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
 
 address constant PRISMA_CORE_OWNER = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;
 address constant PRISMA_CORE_GUARDIAN = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;

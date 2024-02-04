@@ -14,7 +14,10 @@ import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IFactory} from "../interfaces/core/IFactory.sol";
 import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 import {
-    IBorrowerOperations, BorrowerOperation, TroveManagerData, Balances
+    IBorrowerOperations,
+    BorrowerOperation,
+    TroveManagerData,
+    Balances
 } from "../interfaces/core/IBorrowerOperations.sol";
 
 /**

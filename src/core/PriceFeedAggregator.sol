@@ -26,13 +26,13 @@ contract PriceFeedAggregator is IPriceFeedAggregator, PrismaOwnable, UUPSUpgrade
         // No additional authorization logic is needed for this contract
     }
 
-    function initialize(IPrismaCore _prismaCore, IPriceFeed _nativeTokenFeed, OracleSetup[] memory _oracles)
+    function initialize(IPrismaCore _prismaCore, IPriceFeed _nativeTokenPriceFeed, OracleSetup[] memory _oracles)
         external
         initializer
     {
         __UUPSUpgradeable_init_unchained();
         __PrismaOwnable_init(_prismaCore);
-        _setPriceFeed(IERC20(address(0)), _nativeTokenFeed);
+        _setPriceFeed(IERC20(address(0)), _nativeTokenPriceFeed);
 
         for (uint256 i = 0; i < _oracles.length; i++) {
             OracleSetup memory o = _oracles[i];
@@ -62,7 +62,7 @@ contract PriceFeedAggregator is IPriceFeedAggregator, PrismaOwnable, UUPSUpgrade
 
     // Public functions -------------------------------------------------------------------------------------------------
 
-    function fetchPrice(IERC20 _token) public returns (uint256) {
+    function fetchPrice(IERC20 _token) public view returns (uint256) {
         OracleRecord memory oracle = oracleRecords[_token];
 
         uint256 rawPrice = oracle.priceFeed.fetchPrice();

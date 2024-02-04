@@ -145,7 +145,7 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
         uint256 _maxFeePercentage
     ) external;
 
-function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external;
+    function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external;
 
     function setParameters(
         uint256 _minuteDecayFactor,

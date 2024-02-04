@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 address constant FACTORY_ADDRESS = 0xDfAA53cB0Ce891485389fEBdcD547965906A8300;
 address constant PRICE_FEED_AGGREGATOR_ADDRESS = 0xDfAA53cB0Ce891485389fEBdcD547965906A8300;
+//NOTE: custom `PriceFeed.sol` contract for the collateral should be deploy first
 address constant PRICE_FEED_ADDRESS = 0xdAf9EF6c3d250C6e2015908f67071A0FF4D012B7;
 address constant COLLATERAL_ADDRESS = 0xc556bAe1e86B2aE9c22eA5E036b07E55E7596074;
 

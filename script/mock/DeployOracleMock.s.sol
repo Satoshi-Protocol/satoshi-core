@@ -3,13 +3,13 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {OracleMock} from "../../src/mock/OracleMock.sol";
-import {IAggregatorV3Interface} from "../../src/interfaces/dependencies/IAggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "../../src/interfaces/dependencies/AggregatorV3Interface.sol";
 
 uint8 constant DECIMALS = 8;
 uint256 constant VERSION = 1;
 
 contract DeployOracleMockScript is Script {
-    IAggregatorV3Interface internal oracleMock;
+    AggregatorV3Interface internal oracleMock;
 
     function setUp() public {}
 

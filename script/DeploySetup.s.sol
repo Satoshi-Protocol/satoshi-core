@@ -28,7 +28,7 @@ import {
     PRISMA_CORE_OWNER,
     PRISMA_CORE_GUARDIAN,
     PRISMA_CORE_FEE_RECEIVER,
-    NATIVE_TOKEN_FEED,
+    NATIVE_TOKEN_PRICE_FEED,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     DEBT_TOKEN_LAYER_ZERO_END_POINT,
@@ -108,11 +108,7 @@ contract DeploySetupScript is Script {
         assert(cpGasPoolAddr == address(gasPool));
 
         // PrismaCore
-        prismaCore = new PrismaCore(
-            PRISMA_CORE_OWNER,
-            PRISMA_CORE_GUARDIAN,
-            PRISMA_CORE_FEE_RECEIVER
-        );
+        prismaCore = new PrismaCore(PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, PRISMA_CORE_FEE_RECEIVER);
         assert(cpPrismaCoreAddr == address(prismaCore));
 
         // DebtToken
@@ -154,7 +150,7 @@ contract DeploySetupScript is Script {
         OracleSetup[] memory oracleSetups = new OracleSetup[](0); // empty array
         data = abi.encodeCall(
             IPriceFeedAggregator.initialize,
-            (IPrismaCore(cpPrismaCoreAddr), IPriceFeed(NATIVE_TOKEN_FEED), oracleSetups)
+            (IPrismaCore(cpPrismaCoreAddr), IPriceFeed(NATIVE_TOKEN_PRICE_FEED), oracleSetups)
         );
         proxy = address(new ERC1967Proxy(address(priceFeedAggregatorImpl), data));
         assert(proxy == cpPriceFeedAggregatorProxyAddr);

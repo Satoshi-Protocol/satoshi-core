@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.13;
 
-interface IAggregatorV3Interface {
+interface AggregatorV3Interface {
     function decimals() external view returns (uint8);
 
     function description() external view returns (string memory);
