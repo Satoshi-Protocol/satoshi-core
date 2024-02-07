@@ -23,7 +23,7 @@ abstract contract PrismaBase is Initializable, IPrismaBase {
         _disableInitializers();
     }
 
-    function __PrismaBase_init(uint256 _gasCompensation) internal initializer {
+    function __PrismaBase_init(uint256 _gasCompensation) internal {
         DEBT_GAS_COMPENSATION = _gasCompensation;
     }
 

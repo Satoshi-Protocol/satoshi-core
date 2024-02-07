@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {IDebtToken} from "./IDebtToken.sol";
 import {IStabilityPool} from "./IStabilityPool.sol";
 import {IBorrowerOperations} from "./IBorrowerOperations.sol";
@@ -10,6 +11,8 @@ import {ISortedTroves} from "./ISortedTroves.sol";
 import {ITroveManager} from "./ITroveManager.sol";
 import {IPrismaCore} from "./IPrismaCore.sol";
 import {IPriceFeed} from "../dependencies/IPriceFeed.sol";
+import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
+import {IGasPool} from "./IGasPool.sol";
 import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
 
 // commented values are suggested default parameters
@@ -31,19 +34,27 @@ interface IFactory is IPrismaOwnable {
 
     function deployNewInstance(IERC20 collateral, IPriceFeed priceFeed, DeploymentParams calldata params) external;
 
-    function borrowerOperations() external view returns (IBorrowerOperations);
+    function prismaCore() external view returns (IPrismaCore);
 
     function debtToken() external view returns (IDebtToken);
 
-    function liquidationManager() external view returns (ILiquidationManager);
+    function gasPool() external view returns (IGasPool);
 
-    function sortedTroves() external view returns (ISortedTroves);
+    function priceFeedAggregatorProxy() external view returns (IPriceFeedAggregator);
 
-    function stabilityPool() external view returns (IStabilityPool);
+    function borrowerOperationsProxy() external view returns (IBorrowerOperations);
+
+    function liquidationManagerProxy() external view returns (ILiquidationManager);
+
+    function stabilityPoolProxy() external view returns (IStabilityPool);
+
+    function sortedTrovesBeacon() external view returns (IBeacon);
+
+    function troveManagerBeacon() external view returns (IBeacon);
+
+    function gasCompensation() external view returns (uint256);
 
     function troveManagerCount() external view returns (uint256);
-
-    function troveManager() external view returns (ITroveManager);
 
     function troveManagers(uint256) external view returns (ITroveManager);
 }

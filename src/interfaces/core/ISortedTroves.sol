@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {IPrismaCore} from "./IPrismaCore.sol";
 import {ITroveManager} from "./ITroveManager.sol";
+import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
 
 // Information for a node in the list
 struct Node {
@@ -19,7 +20,7 @@ struct Data {
     mapping(address => Node) nodes; // Track the corresponding ids for each node in the list
 }
 
-interface ISortedTroves {
+interface ISortedTroves is IPrismaOwnable {
     event NodeAdded(address _id, uint256 _NICR);
     event NodeRemoved(address _id);
 

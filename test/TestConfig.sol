@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+/* Deploy setup */
+address constant DEPLOYER = 0x1234567890123456789012345678901234567890;
+address constant OWNER = 0x1111111111111111111111111111111111111111;
+address constant GUARDIAN = 0x2222222222222222222222222222222222222222;
+address constant FEE_RECEIVER = 0x3333333333333333333333333333333333333333;
+string constant DEBT_TOKEN_NAME = "TEST_TOKEN_NAME";
+string constant DEBT_TOKEN_SYMBOL = "TEST_TOKEN_SYMBOL";
+address constant DEBT_TOKEN_LAYER_ZERO_END_POINT = 0x6098e96a28E02f27B1e6BD381f870F1C8Bd169d3;
+uint256 constant GAS_COMPENSATION = 5e18;
+uint256 constant BO_MIN_NET_DEBT = 50e18;
+
+/* Deploy instance */
+address constant COLLATERAL_ADDRESS = 0x4444444444444444444444444444444444444444;
+// DeploymentParams
+uint256 constant MINUTE_DECAY_FACTOR = 999037758833783500; //  (half life of 12 hours)
+uint256 constant REDEMPTION_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
+uint256 constant MAX_REDEMPTION_FEE = 1e18; //  (100%)
+uint256 constant BORROWING_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
+uint256 constant MAX_BORROWING_FEE = 1e18 / 100 * 5; //  (5%)
+uint256 constant INTEREST_RATE_IN_BPS = 250; //  (2.5%)
+uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
+uint256 constant MCR = 11 * 1e17;

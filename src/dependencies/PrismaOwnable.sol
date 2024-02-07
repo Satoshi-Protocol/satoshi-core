@@ -13,7 +13,7 @@ import {IPrismaOwnable} from "../interfaces/dependencies/IPrismaOwnable.sol";
 abstract contract PrismaOwnable is Initializable, IPrismaOwnable {
     IPrismaCore public PRISMA_CORE;
 
-    function __PrismaOwnable_init(IPrismaCore _prismaCore) internal initializer {
+    function __PrismaOwnable_init(IPrismaCore _prismaCore) internal {
         PRISMA_CORE = _prismaCore;
     }
 

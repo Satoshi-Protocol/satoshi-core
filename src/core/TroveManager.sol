@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {SafeERC20Upgradeable as SafeERC20} from
-    "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
@@ -39,7 +37,7 @@ import {
  *             Functionality related to liquidations has been moved to `LiquidationManager`. This was
  *             necessary to avoid the restriction on deployed bytecode size.
  */
-contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeable {
+contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     using SafeERC20 for IERC20;
 
     // --- Connected contract declarations ---
@@ -156,16 +154,6 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
         _;
     }
 
-    constructor() {
-        _disableInitializers();
-    }
-
-    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
-    // solhint-disable-next-line no-empty-blocks
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-        // No additional authorization logic is needed for this contract
-    }
-
     function initialize(
         IPrismaCore _prismaCore,
         IGasPool _gasPool,
@@ -175,7 +163,6 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase, UUPSUpgradeab
         IPriceFeedAggregator _priceFeedAggregator,
         uint256 _gasCompensation
     ) external initializer {
-        __UUPSUpgradeable_init_unchained();
         __PrismaOwnable_init(_prismaCore);
         __PrismaBase_init(_gasCompensation);
         gasPool = _gasPool;

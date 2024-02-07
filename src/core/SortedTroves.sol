@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
@@ -15,7 +14,7 @@ import {ISortedTroves, Node, Data} from "../interfaces/core/ISortedTroves.sol";
  *             Originally derived from `SortedDoublyLinkedList`:
  *             https://github.com/livepeer/protocol/blob/master/contracts/libraries/SortedDoublyLL.sol
  */
-contract SortedTroves is ISortedTroves, UUPSUpgradeable, PrismaOwnable {
+contract SortedTroves is ISortedTroves, PrismaOwnable {
     ITroveManager public troveManager;
 
     Data public data;
@@ -24,14 +23,7 @@ contract SortedTroves is ISortedTroves, UUPSUpgradeable, PrismaOwnable {
         _disableInitializers();
     }
 
-    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
-    // solhint-disable-next-line no-empty-blocks
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-        // No additional authorization logic is needed for this contract
-    }
-
     function initialize(IPrismaCore _prismaCore) external initializer {
-        __UUPSUpgradeable_init_unchained();
         __PrismaOwnable_init(_prismaCore);
     }
 

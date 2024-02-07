@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
-import {OracleMock} from "../../src/mock/OracleMock.sol";
+import {OracleMock} from "../../src/mocks/OracleMock.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/AggregatorV3Interface.sol";
 
 uint8 constant DECIMALS = 8;

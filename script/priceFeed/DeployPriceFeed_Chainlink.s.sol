@@ -2,12 +2,12 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
-import {PriceFeedForChainlink} from "../../src/dependencies/priceFeed/PriceFeedForChainlink.sol";
+import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/AggregatorV3Interface.sol";
 import {ORIGINAL_PRICE_FEED_SOURCE_ADDRESS} from "./DeployPriceFeedConfig.sol";
 
-contract DeployPriceFeedForChainlinkScript is Script {
-    PriceFeedForChainlink internal priceFeedForChainlink;
+contract DeployPriceFeedChainlinkScript is Script {
+    PriceFeedChainlink internal priceFeedChainlink;
 
     function setUp() public {}
 
@@ -15,9 +15,9 @@ contract DeployPriceFeedForChainlinkScript is Script {
         vm.startBroadcast();
 
         AggregatorV3Interface originalPriceFeed = AggregatorV3Interface(ORIGINAL_PRICE_FEED_SOURCE_ADDRESS);
-        priceFeedForChainlink = new PriceFeedForChainlink(originalPriceFeed);
-        assert(priceFeedForChainlink.fetchPrice() > 0);
-        console.log("PriceFeedForChainlink deployed at:", address(priceFeedForChainlink));
+        priceFeedChainlink = new PriceFeedChainlink(originalPriceFeed);
+        assert(priceFeedChainlink.fetchPrice() > 0);
+        console.log("PriceFeedChainlink deployed at:", address(priceFeedChainlink));
 
         vm.stopBroadcast();
     }

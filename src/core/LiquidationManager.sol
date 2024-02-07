@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PrismaMath} from "../dependencies/PrismaMath.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {PrismaBase} from "../dependencies/PrismaBase.sol";

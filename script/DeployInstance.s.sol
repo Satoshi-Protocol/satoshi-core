@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "../src/interfaces/dependencies/AggregatorV3Interface.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";

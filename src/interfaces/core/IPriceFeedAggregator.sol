@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
 import {IPrismaCore} from "../core/IPrismaCore.sol";
 import {IPriceFeed} from "../dependencies/IPriceFeed.sol";
@@ -9,11 +9,6 @@ import {IPriceFeed} from "../dependencies/IPriceFeed.sol";
 struct OracleRecord {
     IPriceFeed priceFeed;
     uint8 decimals;
-}
-
-struct OracleSetup {
-    IERC20 token;
-    IPriceFeed priceFeed;
 }
 
 interface IPriceFeedAggregator is IPrismaOwnable {
@@ -24,7 +19,7 @@ interface IPriceFeedAggregator is IPrismaOwnable {
     error InvalidPriceFeedAddress();
     error InvalidFeedResponse(IPriceFeed priceFeed);
 
-    function initialize(IPrismaCore _prismaCore, IPriceFeed _nativeTokenFeed, OracleSetup[] memory _oracles) external;
+    function initialize(IPrismaCore _prismaCore) external;
 
     function fetchPrice(IERC20 _token) external returns (uint256);
 

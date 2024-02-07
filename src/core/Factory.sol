@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {ClonesUpgradeable as Clones} from "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
@@ -13,42 +15,48 @@ import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
 import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 import {DeploymentParams, IFactory} from "../interfaces/core/IFactory.sol";
+import {IGasPool} from "../interfaces/core/IGasPool.sol";
+import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 
-//NOTE: non-upgradeable contract
+//NOTE: non-upgradeable Factory contract
 
-/**
- * @title Prisma Trove Factory
- *     @notice Deploys cloned pairs of `TroveManager` and `SortedTroves` in order to
- *             add new collateral types within the system.
- */
 contract Factory is IFactory, PrismaOwnable {
-    using Clones for address;
-
+    IPrismaCore public immutable prismaCore;
     IDebtToken public immutable debtToken;
-    IStabilityPool public immutable stabilityPool;
-    ILiquidationManager public immutable liquidationManager;
-    IBorrowerOperations public immutable borrowerOperations;
-    ISortedTroves public immutable sortedTroves;
-    ITroveManager public immutable troveManager;
+    IGasPool public immutable gasPool;
+    IPriceFeedAggregator public immutable priceFeedAggregatorProxy;
+    IBorrowerOperations public immutable borrowerOperationsProxy;
+    ILiquidationManager public immutable liquidationManagerProxy;
+    IStabilityPool public immutable stabilityPoolProxy;
+    IBeacon public immutable sortedTrovesBeacon;
+    IBeacon public immutable troveManagerBeacon;
+    uint256 public immutable gasCompensation;
 
     ITroveManager[] public troveManagers;
 
     constructor(
         IPrismaCore _prismaCore,
         IDebtToken _debtToken,
-        IStabilityPool _stabilityPool,
-        IBorrowerOperations _borrowerOperations,
-        ISortedTroves _sortedTroves,
-        ITroveManager _troveManager,
-        ILiquidationManager _liquidationManager
+        IGasPool _gasPool,
+        IPriceFeedAggregator _priceFeedAggregatorProxy,
+        IBorrowerOperations _borrowerOperationsProxy,
+        ILiquidationManager _liquidationManagerProxy,
+        IStabilityPool _stabilityPoolProxy,
+        IBeacon _sortedTrovesBeacon,
+        IBeacon _troveManagerBeacon,
+        uint256 _gasCompensation
     ) {
         __PrismaOwnable_init(_prismaCore);
-        debtToken = IDebtToken(_debtToken);
-        stabilityPool = IStabilityPool(_stabilityPool);
-        borrowerOperations = IBorrowerOperations(_borrowerOperations);
-        sortedTroves = ISortedTroves(_sortedTroves);
-        troveManager = ITroveManager(_troveManager);
-        liquidationManager = ILiquidationManager(_liquidationManager);
+        prismaCore = _prismaCore;
+        debtToken = _debtToken;
+        gasPool = _gasPool;
+        priceFeedAggregatorProxy = _priceFeedAggregatorProxy;
+        borrowerOperationsProxy = _borrowerOperationsProxy;
+        liquidationManagerProxy = _liquidationManagerProxy;
+        stabilityPoolProxy = _stabilityPoolProxy;
+        sortedTrovesBeacon = _sortedTrovesBeacon;
+        troveManagerBeacon = _troveManagerBeacon;
+        gasCompensation = _gasCompensation;
     }
 
     function troveManagerCount() external view returns (uint256) {
@@ -59,25 +67,22 @@ contract Factory is IFactory, PrismaOwnable {
         external
         onlyOwner
     {
-        ITroveManager troveManagerClone =
-            ITroveManager(address(troveManager).cloneDeterministic(bytes32(bytes20(address(collateralToken)))));
-        troveManagers.push(troveManagerClone);
+        ISortedTroves sortedTrovesBeaconProxy = _deploySortedTrovesBeaconProxy();
+        ITroveManager troveManagerBeaconProxy = _deployTroveManagerBeaconProxy();
+        troveManagers.push(troveManagerBeaconProxy);
 
-        ISortedTroves sortedTrovesClone =
-            ISortedTroves(address(sortedTroves).cloneDeterministic(bytes32(bytes20(address(troveManagerClone)))));
-
-        troveManagerClone.setConfig(sortedTrovesClone, collateralToken);
-        sortedTrovesClone.setConfig(troveManagerClone);
+        sortedTrovesBeaconProxy.setConfig(troveManagerBeaconProxy);
+        troveManagerBeaconProxy.setConfig(sortedTrovesBeaconProxy, collateralToken);
 
         // verify that the oracle is correctly working
-        troveManagerClone.fetchPrice();
+        troveManagerBeaconProxy.fetchPrice();
 
-        stabilityPool.enableCollateral(collateralToken);
-        liquidationManager.enableTroveManager(troveManagerClone);
-        debtToken.enableTroveManager(troveManagerClone);
-        borrowerOperations.configureCollateral(troveManagerClone, collateralToken);
+        debtToken.enableTroveManager(troveManagerBeaconProxy);
+        stabilityPoolProxy.enableCollateral(collateralToken);
+        borrowerOperationsProxy.configureCollateral(troveManagerBeaconProxy, collateralToken);
+        liquidationManagerProxy.enableTroveManager(troveManagerBeaconProxy);
 
-        troveManagerClone.setParameters(
+        troveManagerBeaconProxy.setParameters(
             params.minuteDecayFactor,
             params.redemptionFeeFloor,
             params.maxRedemptionFee,
@@ -88,6 +93,27 @@ contract Factory is IFactory, PrismaOwnable {
             params.MCR
         );
 
-        emit NewDeployment(collateralToken, priceFeed, troveManagerClone, sortedTrovesClone);
+        emit NewDeployment(collateralToken, priceFeed, troveManagerBeaconProxy, sortedTrovesBeaconProxy);
+    }
+
+    function _deploySortedTrovesBeaconProxy() internal returns (ISortedTroves) {
+        bytes memory data = abi.encodeCall(ISortedTroves.initialize, prismaCore);
+        return ISortedTroves(address(new BeaconProxy(address(sortedTrovesBeacon), data)));
+    }
+
+    function _deployTroveManagerBeaconProxy() internal returns (ITroveManager) {
+        bytes memory data = abi.encodeCall(
+            ITroveManager.initialize,
+            (
+                prismaCore,
+                gasPool,
+                debtToken,
+                borrowerOperationsProxy,
+                liquidationManagerProxy,
+                priceFeedAggregatorProxy,
+                gasCompensation
+            )
+        );
+        return ITroveManager(address(new BeaconProxy(address(troveManagerBeacon), data)));
     }
 }

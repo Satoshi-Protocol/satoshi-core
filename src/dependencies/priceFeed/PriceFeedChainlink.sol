@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {IPriceFeed} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {AggregatorV3Interface} from "../../interfaces/dependencies/AggregatorV3Interface.sol";
 
-contract PriceFeedForChainlink is IPriceFeed {
+contract PriceFeedChainlink is IPriceFeed {
     AggregatorV3Interface internal priceFeed;
 
     constructor(AggregatorV3Interface _priceFeed) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPriceFeedAggregator} from "../core/IPriceFeedAggregator.sol";
 import {IPrismaCore} from "../core/IPrismaCore.sol";
 import {IBorrowerOperations} from "../core/IBorrowerOperations.sol";
@@ -214,6 +214,8 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
     function collateralToken() external view returns (IERC20);
 
     function dailyMintReward(uint256) external view returns (uint256);
+
+    function gasPool() external view returns (IGasPool);
 
     function debtToken() external view returns (IDebtToken);
 
