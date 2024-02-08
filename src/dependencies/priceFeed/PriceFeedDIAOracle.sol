@@ -16,7 +16,7 @@ contract PriceFeedDIAOracle is IPriceFeed {
     }
 
     function fetchPrice() external returns (uint256) {
-        (uint128 price, ) = _source.getValue(_key);
+        (uint128 price,) = _source.getValue(_key);
         if (price == 0) revert InvalidPriceUInt128(price);
         return uint256(price);
     }

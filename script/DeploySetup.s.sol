@@ -77,11 +77,12 @@ contract DeploySetupScript is Script {
     address cpPrismaCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
-    // upgradeable contracts
+    // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
+    // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
 
@@ -213,7 +214,7 @@ contract DeploySetupScript is Script {
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
         assert(proxy == cpStabilityPoolProxyAddr);
 
-        // SortedTroves
+        // SortedTrovesBeacon
         sortedTrovesBeacon = new UpgradeableBeacon(address(sortedTrovesImpl));
         assert(cpSortedTrovesBeaconAddr == address(sortedTrovesBeacon));
 

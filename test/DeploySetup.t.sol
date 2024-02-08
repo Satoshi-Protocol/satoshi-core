@@ -19,7 +19,7 @@ import {DebtToken} from "../src/core/DebtToken.sol";
 import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {Factory} from "../src/core/Factory.sol";
-import {DeployBase} from "./utils/DeployBase.t.sol";
+import {DeployBase} from "./DeployBase.t.sol";
 import {
     DEPLOYER,
     OWNER,

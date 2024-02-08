@@ -2,29 +2,34 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {SortedTroves} from "../../src/core/SortedTroves.sol";
-import {PriceFeedAggregator} from "../../src/core/PriceFeedAggregator.sol";
-import {BorrowerOperations} from "../../src/core/BorrowerOperations.sol";
-import {LiquidationManager} from "../../src/core/LiquidationManager.sol";
-import {StabilityPool} from "../../src/core/StabilityPool.sol";
-import {TroveManager} from "../../src/core/TroveManager.sol";
-import {GasPool} from "../../src/core/GasPool.sol";
-import {PrismaCore} from "../../src/core/PrismaCore.sol";
-import {DebtToken} from "../../src/core/DebtToken.sol";
-import {Factory} from "../../src/core/Factory.sol";
-import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
-import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
-import {IBorrowerOperations} from "../../src/interfaces/core/IBorrowerOperations.sol";
-import {ILiquidationManager} from "../../src/interfaces/core/ILiquidationManager.sol";
-import {IStabilityPool} from "../../src/interfaces/core/IStabilityPool.sol";
-import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
-import {IGasPool} from "../../src/interfaces/core/IGasPool.sol";
-import {IPrismaCore} from "../../src/interfaces/core/IPrismaCore.sol";
-import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
-import {IFactory} from "../../src/interfaces/core/IFactory.sol";
+import {SortedTroves} from "../src/core/SortedTroves.sol";
+import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
+import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
+import {LiquidationManager} from "../src/core/LiquidationManager.sol";
+import {StabilityPool} from "../src/core/StabilityPool.sol";
+import {TroveManager} from "../src/core/TroveManager.sol";
+import {GasPool} from "../src/core/GasPool.sol";
+import {PrismaCore} from "../src/core/PrismaCore.sol";
+import {DebtToken} from "../src/core/DebtToken.sol";
+import {Factory, DeploymentParams} from "../src/core/Factory.sol";
+import {RoundData, OracleMock} from "../src/mocks/OracleMock.sol";
+import {PriceFeedChainlink} from "../src/dependencies/priceFeed/PriceFeedChainlink.sol";
+import {AggregatorV3Interface} from "../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
+import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
+import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
+import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
+import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
+import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
+import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
+import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
+import {IPrismaCore} from "../src/interfaces/core/IPrismaCore.sol";
+import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {IFactory} from "../src/interfaces/core/IFactory.sol";
+import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -35,9 +40,9 @@ import {
     DEBT_TOKEN_LAYER_ZERO_END_POINT,
     GAS_COMPENSATION,
     BO_MIN_NET_DEBT
-} from "../TestConfig.sol";
+} from "./TestConfig.sol";
 
-contract DeployBase is Test {
+abstract contract DeployBase is Test {
     /* implementation contracts addresses */
     IPriceFeedAggregator priceFeedAggregatorImpl;
     IBorrowerOperations borrowerOperationsImpl;
@@ -83,25 +88,24 @@ contract DeployBase is Test {
 
     function setUp() public virtual {}
 
-    function _deployImplementationContracts(address deployer) internal {
-        vm.startPrank(deployer);
-
-        // check if implementation contracts are not deployed
-        assert(priceFeedAggregatorImpl == IPriceFeedAggregator(address(0)));
-        assert(borrowerOperationsImpl == IBorrowerOperations(address(0)));
-        assert(liquidationManagerImpl == ILiquidationManager(address(0)));
-        assert(stabilityPoolImpl == IStabilityPool(address(0)));
-        assert(sortedTrovesImpl == ISortedTroves(address(0)));
-        assert(troveManagerImpl == ITroveManager(address(0)));
-
-        priceFeedAggregatorImpl = new PriceFeedAggregator();
-        borrowerOperationsImpl = new BorrowerOperations();
-        liquidationManagerImpl = new LiquidationManager();
-        stabilityPoolImpl = new StabilityPool();
-        sortedTrovesImpl = new SortedTroves();
-        troveManagerImpl = new TroveManager();
-
-        vm.stopPrank();
+    function _deploySetupAndInstance(
+        address deployer,
+        address owner,
+        uint8 oracleMock_decimals,
+        uint256 oracleMock_version,
+        RoundData memory oracleMock_roundData,
+        IERC20 collateral,
+        DeploymentParams memory deploymentParams
+    ) internal {
+        _computeContractsAddress(deployer);
+        _deployImplementationContracts(deployer);
+        _deployNonUpgradeableContracts(deployer);
+        _deployUUPSUpgradeableContracts(deployer);
+        _deployBeaconContracts(deployer);
+        address priceFeedAddr =
+            _deployPriceFeed(deployer, oracleMock_decimals, oracleMock_version, oracleMock_roundData);
+        _setPriceFeedToPriceFeedAggregatorProxy(owner, collateral, IPriceFeed(priceFeedAddr));
+        _deployNewInstance(owner, collateral, IPriceFeed(priceFeedAddr), deploymentParams);
     }
 
     function _computeContractsAddress(address deployer) internal {
@@ -131,6 +135,27 @@ contract DeployBase is Test {
         cpTroveManagerBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
     }
 
+    function _deployImplementationContracts(address deployer) internal {
+        vm.startPrank(deployer);
+
+        // check if implementation contracts are not deployed
+        assert(priceFeedAggregatorImpl == IPriceFeedAggregator(address(0)));
+        assert(borrowerOperationsImpl == IBorrowerOperations(address(0)));
+        assert(liquidationManagerImpl == ILiquidationManager(address(0)));
+        assert(stabilityPoolImpl == IStabilityPool(address(0)));
+        assert(sortedTrovesImpl == ISortedTroves(address(0)));
+        assert(troveManagerImpl == ITroveManager(address(0)));
+
+        priceFeedAggregatorImpl = new PriceFeedAggregator();
+        borrowerOperationsImpl = new BorrowerOperations();
+        liquidationManagerImpl = new LiquidationManager();
+        stabilityPoolImpl = new StabilityPool();
+        sortedTrovesImpl = new SortedTroves();
+        troveManagerImpl = new TroveManager();
+
+        vm.stopPrank();
+    }
+
     function _deployNonUpgradeableContracts(address deployer) internal {
         _deployGasPool(deployer);
         _deployPrismaCore(deployer);
@@ -149,6 +174,21 @@ contract DeployBase is Test {
         _deploySortedTrovesBeacon(deployer);
         _deployTroveManagerBeacon(deployer);
     }
+
+    function _deployPriceFeed(address deployer, uint8 decimals, uint256 version, RoundData memory roundData)
+        internal
+        returns (address)
+    {
+        // deploy oracle mock contract to mcok price feed source
+        address oracleMockAddr = _deployOracleMock(deployer, decimals, version);
+        // update data to the oracle mock
+        _updateRoundData(deployer, oracleMockAddr, roundData);
+
+        // deploy price feed chainlink contract
+        return _deployPriceFeedChainlink(deployer, AggregatorV3Interface(oracleMockAddr));
+    }
+
+    /* ============ Deploy Non-upgradeable Contracts ============ */
 
     function _deployGasPool(address deployer) internal {
         vm.startPrank(deployer);
@@ -198,6 +238,8 @@ contract DeployBase is Test {
         );
         vm.stopPrank();
     }
+
+    /* ============ Deploy UUPS Proxies ============ */
 
     function _deployPriceFeedAggregatorProxy(address deployer) internal {
         vm.startPrank(deployer);
@@ -262,6 +304,8 @@ contract DeployBase is Test {
         vm.stopPrank();
     }
 
+    /* ============ Deploy Beacon Contracts ============ */
+
     function _deploySortedTrovesBeacon(address deployer) internal {
         vm.startPrank(deployer);
         assert(sortedTrovesImpl != ISortedTroves(address(0))); // check if implementation contract is deployed
@@ -275,6 +319,48 @@ contract DeployBase is Test {
         assert(troveManagerImpl != ITroveManager(address(0))); // check if implementation contract is deployed
         assert(troveManagerBeacon == UpgradeableBeacon(address(0))); // check if beacon contract is not deployed
         troveManagerBeacon = new UpgradeableBeacon(address(troveManagerImpl));
+        vm.stopPrank();
+    }
+
+    /* ============ Before Deploy Instance ============ */
+
+    function _deployOracleMock(address deployer, uint8 decimals, uint256 version) internal returns (address) {
+        vm.startPrank(deployer);
+        address oracleAddr = address(new OracleMock(decimals, version));
+        vm.stopPrank();
+        return oracleAddr;
+    }
+
+    function _updateRoundData(address caller, address oracleAddr, RoundData memory roundData) internal {
+        vm.startPrank(caller);
+        assert(oracleAddr != address(0)); // check if oracle contract is deployed
+        OracleMock(oracleAddr).updateRoundData(roundData);
+        vm.stopPrank();
+    }
+
+    function _deployPriceFeedChainlink(address deployer, AggregatorV3Interface oracle) internal returns (address) {
+        vm.startPrank(deployer);
+        assert(oracle != AggregatorV3Interface(address(0))); // check if oracle contract is deployed
+        address priceFeedChainlinkAddr = address(new PriceFeedChainlink(oracle));
+        vm.stopPrank();
+        return priceFeedChainlinkAddr;
+    }
+
+    function _setPriceFeedToPriceFeedAggregatorProxy(address owner, IERC20 collateral, IPriceFeed priceFeed) internal {
+        vm.startPrank(owner);
+        priceFeedAggregatorProxy.setPriceFeed(collateral, priceFeed);
+        vm.stopPrank();
+    }
+
+    /* ============ Deploy New Instance ============ */
+    function _deployNewInstance(
+        address owner,
+        IERC20 collateral,
+        IPriceFeed priceFeed,
+        DeploymentParams memory deploymentParams
+    ) internal {
+        vm.startPrank(owner);
+        factory.deployNewInstance(collateral, priceFeed, deploymentParams);
         vm.stopPrank();
     }
 }
