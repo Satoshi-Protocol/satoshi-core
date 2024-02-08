@@ -11,7 +11,6 @@ import {BorrowerOperations} from "../../src/core/BorrowerOperations.sol";
 import {LiquidationManager} from "../../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../../src/core/StabilityPool.sol";
 import {TroveManager} from "../../src/core/TroveManager.sol";
-import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {GasPool} from "../../src/core/GasPool.sol";
 import {PrismaCore} from "../../src/core/PrismaCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
@@ -26,8 +25,6 @@ import {IGasPool} from "../../src/interfaces/core/IGasPool.sol";
 import {IPrismaCore} from "../../src/interfaces/core/IPrismaCore.sol";
 import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
 import {IFactory} from "../../src/interfaces/core/IFactory.sol";
-import {AggregatorV3Interface} from "../../src/interfaces/dependencies/AggregatorV3Interface.sol";
-import {OracleMock, RoundData} from "../../src/mocks/OracleMock.sol";
 import {
     DEPLOYER,
     OWNER,

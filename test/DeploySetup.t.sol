@@ -2,9 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IPrismaCore} from "../src/interfaces/core/IPrismaCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
@@ -13,10 +11,6 @@ import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
-import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
-import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
-import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {PrismaCore} from "../src/core/PrismaCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
@@ -24,7 +18,6 @@ import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
 import {DebtToken} from "../src/core/DebtToken.sol";
 import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
-import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {DeployBase} from "./utils/DeployBase.t.sol";
 import {

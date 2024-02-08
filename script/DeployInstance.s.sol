@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AggregatorV3Interface} from "../src/interfaces/dependencies/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";

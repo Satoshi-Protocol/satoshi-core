@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {AggregatorV3Interface} from "../interfaces/dependencies/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "../interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 
 struct RoundData {
     int256 answer;

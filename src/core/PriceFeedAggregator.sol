@@ -53,7 +53,7 @@ contract PriceFeedAggregator is IPriceFeedAggregator, PrismaOwnable, UUPSUpgrade
 
     // Public functions -------------------------------------------------------------------------------------------------
 
-    function fetchPrice(IERC20 _token) public view returns (uint256) {
+    function fetchPrice(IERC20 _token) public returns (uint256) {
         OracleRecord memory oracle = oracleRecords[_token];
 
         uint256 rawPrice = oracle.priceFeed.fetchPrice();

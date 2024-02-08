@@ -2,9 +2,11 @@
 pragma solidity 0.8.13;
 
 interface IPriceFeed {
-    error InvalidPrice(int256 price);
+    // invalid price error for different types of price sources
+    error InvalidPriceInt256(int256 price);
+    error InvalidPriceUInt128(uint128 price);
 
-    function fetchPrice() external view returns (uint256);
+    function fetchPrice() external returns (uint256);
 
     function decimals() external view returns (uint8);
 }
