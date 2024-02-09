@@ -12,7 +12,7 @@ import {DeployBase} from "./DeployBase.t.sol";
 import {HintHelpers} from "./HintHelpers.sol";
 import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
 
-contract BorrowerOperationTest is Test, DeployBase, HintHelpers, TestConfig {
+contract BorrowerOperationTest is Test, DeployBase, TestConfig {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
@@ -77,7 +77,7 @@ contract BorrowerOperationTest is Test, DeployBase, HintHelpers, TestConfig {
         }
 
         // calc hint
-        (address upperHint, address lowerHint) = _getHint(
+        (address upperHint, address lowerHint) = HintHelpers.getHint(
             hintHelpers, sortedTrovesBeaconProxy, troveManagerBeaconProxy, collateralAmt, debtAmt, GAS_COMPENSATION
         );
         // tx execution
@@ -91,7 +91,7 @@ contract BorrowerOperationTest is Test, DeployBase, HintHelpers, TestConfig {
         uint256 user1DebtAmtAfter = debtToken.balanceOf(user1);
         uint256 user1CollateralAmtAfter = collateralMock.balanceOf(user1);
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-
+        
         // check state
         assert(feeReceiverDebtAmtAfter == feeReceiverDebtAmtBefore + borrowingFee);
         assert(gasPoolDebtAmtAfter == gasPoolDebtAmtBefore + GAS_COMPENSATION);

@@ -10,13 +10,13 @@ import {PrismaMath} from "../src/dependencies/PrismaMath.sol";
 import {DeployBase} from "./DeployBase.t.sol";
 import {TestConfig} from "./TestConfig.sol";
 
-abstract contract HintHelpers {
+library HintHelpers {
     using Math for uint256;
 
     uint256 internal constant TRIAL_NUMBER = 15;
     uint256 internal constant RANDOM_SEED = 42;
 
-    function _getHint(
+    function getHint(
         MultiCollateralHintHelpers hintHelpers,
         ISortedTroves sortedTrovesBeaconProxy,
         ITroveManager troveManagerBeaconProxy,
