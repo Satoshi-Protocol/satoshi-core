@@ -228,7 +228,6 @@ abstract contract DeployBase is Test {
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBorrowerOperations(cpBorrowerOperationsProxyAddr),
             IPrismaCore(cpPrismaCoreAddr),
-            DEBT_TOKEN_LAYER_ZERO_END_POINT,
             IFactory(cpFactoryAddr),
             IGasPool(cpGasPoolAddr),
             GAS_COMPENSATION

@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IERC3156FlashBorrowerUpgradeable as IERC3156FlashBorrower} from
-    "@openzeppelin/contracts-upgradeable/interfaces/IERC3156FlashBorrowerUpgradeable.sol";
-import {OFT, IERC20, ERC20} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/OFT.sol";
+import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
@@ -12,13 +11,7 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 
-/**
- * @title Prisma Debt Token "acUSD"
- *     @notice CDP minted against collateral deposits within `TroveManager`.
- *             This contract has a 1:n relationship with multiple deployments of `TroveManager`,
- *             each of which hold one collateral type which may be used to mint this token.
- */
-contract DebtToken is IDebtToken, OFT {
+contract DebtToken is IDebtToken, ERC20 {
     string public constant version = "1";
 
     // --- ERC 3156 Data ---
@@ -60,11 +53,10 @@ contract DebtToken is IDebtToken, OFT {
         IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
         IPrismaCore _prismaCore,
-        address _layerZeroEndpoint,
         IFactory _factory,
         IGasPool _gasPool,
         uint256 _gasCompensation
-    ) OFT(_name, _symbol, _layerZeroEndpoint) {
+    ) ERC20(_name, _symbol) {
         stabilityPool = _stabilityPool;
         prismaCore = _prismaCore;
         borrowerOperations = _borrowerOperations;
@@ -132,14 +124,14 @@ contract DebtToken is IDebtToken, OFT {
 
     // --- External functions ---
 
-    function transfer(address recipient, uint256 amount) public override(IDebtToken, IERC20, ERC20) returns (bool) {
+    function transfer(address recipient, uint256 amount) public override(IDebtToken, ERC20) returns (bool) {
         _requireValidRecipient(recipient);
         return super.transfer(recipient, amount);
     }
 
     function transferFrom(address sender, address recipient, uint256 amount)
         public
-        override(IDebtToken, IERC20, ERC20)
+        override(IDebtToken, ERC20)
         returns (bool)
     {
         _requireValidRecipient(recipient);

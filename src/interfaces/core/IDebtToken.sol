@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IERC3156FlashBorrowerUpgradeable as IERC3156FlashBorrower} from
-    "@openzeppelin/contracts-upgradeable/interfaces/IERC3156FlashBorrowerUpgradeable.sol";
-import {IOFT} from "@layerzerolabs/solidity-examples/contracts/token/oft/v1/interfaces/IOFT.sol";
+import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ITroveManager} from "./ITroveManager.sol";
 import {IGasPool} from "./IGasPool.sol";
 import {IStabilityPool} from "./IStabilityPool.sol";
 import {IBorrowerOperations} from "./IBorrowerOperations.sol";
 import {IFactory} from "./IFactory.sol";
 
-interface IDebtToken is IOFT {
+interface IDebtToken is IERC20 {
     function burn(address _account, uint256 _amount) external;
 
     function burnWithGasCompensation(address _account, uint256 _amount) external returns (bool);

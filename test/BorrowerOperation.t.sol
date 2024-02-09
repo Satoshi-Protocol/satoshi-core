@@ -32,9 +32,8 @@ contract BorrowerOperationTest is Test, DeployBase, HintHelpers, TestConfig {
 
         // deploy helper contract
         _deployHintHelpers(DEPLOYER);
-
     }
-    
+
     function testOpenTrove() public {
         // open trove params
         uint256 collateralAmt = 1e18;
@@ -45,47 +44,55 @@ contract BorrowerOperationTest is Test, DeployBase, HintHelpers, TestConfig {
         deal(address(collateralMock), user1, 10e18);
         collateralMock.approve(address(borrowerOperationsProxy), 1e18);
 
+        // state before
         uint256 feeReceiverDebtAmtBefore = debtToken.balanceOf(prismaCore.feeReceiver());
         uint256 gasPoolDebtAmtBefore = debtToken.balanceOf(address(gasPool));
         uint256 user1DebtAmtBefore = debtToken.balanceOf(user1);
         uint256 user1CollateralAmtBefore = collateralMock.balanceOf(user1);
         uint256 troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-       
-       // check BorrowingFeePaid event
+
         uint256 borrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(debtAmt);
-        vm.expectEmit(true, true, true, true, address(borrowerOperationsProxy));
-        emit BorrowingFeePaid(user1, collateralMock, borrowingFee);
 
-        // check TotalStakesUpdated event
-        uint256 stake = collateralAmt;
-        vm.expectEmit(true, true, true, true, address(troveManagerBeaconProxy));
-        emit TotalStakesUpdated(stake);
+        // {} too avoid stack too deep error
+        {
+            // check BorrowingFeePaid event
+            vm.expectEmit(true, true, true, true, address(borrowerOperationsProxy));
+            emit BorrowingFeePaid(user1, collateralMock, borrowingFee);
 
-        // check NodeAdded event
-        uint256 compositeDebt = borrowerOperationsProxy.getCompositeDebt(debtAmt);
-        uint256 totalDebt = compositeDebt + borrowingFee;
-        uint256 NICR = PrismaMath._computeNominalCR(collateralAmt, totalDebt);
-        vm.expectEmit(true, true, true, true, address(sortedTrovesBeaconProxy));
-        emit NodeAdded(user1, NICR);
+            // check TotalStakesUpdated event
+            uint256 stake = collateralAmt;
+            vm.expectEmit(true, true, true, true, address(troveManagerBeaconProxy));
+            emit TotalStakesUpdated(stake);
 
-        // check NewDeployment event
-        vm.expectEmit(true, true, true, true, address(troveManagerBeaconProxy));
-        emit TroveUpdated(user1, totalDebt, collateralAmt, stake, TroveManagerOperation.open);
-        
+            // check NodeAdded event
+            uint256 compositeDebt = borrowerOperationsProxy.getCompositeDebt(debtAmt);
+            uint256 totalDebt = compositeDebt + borrowingFee;
+            uint256 NICR = PrismaMath._computeNominalCR(collateralAmt, totalDebt);
+            vm.expectEmit(true, true, true, true, address(sortedTrovesBeaconProxy));
+            emit NodeAdded(user1, NICR);
+
+            // check NewDeployment event
+            vm.expectEmit(true, true, true, true, address(troveManagerBeaconProxy));
+            emit TroveUpdated(user1, totalDebt, collateralAmt, stake, TroveManagerOperation.open);
+        }
+
         // calc hint
-        (address upperHint, address lowerHint) =
-            _getHint(hintHelpers, sortedTrovesBeaconProxy, troveManagerBeaconProxy, collateralAmt, debtAmt, GAS_COMPENSATION);
+        (address upperHint, address lowerHint) = _getHint(
+            hintHelpers, sortedTrovesBeaconProxy, troveManagerBeaconProxy, collateralAmt, debtAmt, GAS_COMPENSATION
+        );
         // tx execution
         borrowerOperationsProxy.openTrove(
             troveManagerBeaconProxy, user1, maxFeePercentage, collateralAmt, debtAmt, upperHint, lowerHint
         );
 
-        // check state
+        // state after
         uint256 feeReceiverDebtAmtAfter = debtToken.balanceOf(prismaCore.feeReceiver());
         uint256 gasPoolDebtAmtAfter = debtToken.balanceOf(address(gasPool));
         uint256 user1DebtAmtAfter = debtToken.balanceOf(user1);
         uint256 user1CollateralAmtAfter = collateralMock.balanceOf(user1);
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
+
+        // check state
         assert(feeReceiverDebtAmtAfter == feeReceiverDebtAmtBefore + borrowingFee);
         assert(gasPoolDebtAmtAfter == gasPoolDebtAmtBefore + GAS_COMPENSATION);
         assert(user1DebtAmtAfter == user1DebtAmtBefore + debtAmt);
@@ -95,10 +102,10 @@ contract BorrowerOperationTest is Test, DeployBase, HintHelpers, TestConfig {
         vm.stopPrank();
     }
 
+    /* copied from contracts for event testing */
     event TroveUpdated(
         address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
-
     event BorrowingFeePaid(address indexed borrower, IERC20 indexed collateralToken, uint256 amount);
     event TotalStakesUpdated(uint256 _newTotalStakes);
     event NodeAdded(address _id, uint256 _NICR);

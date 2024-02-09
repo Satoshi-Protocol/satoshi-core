@@ -13,4 +13,3 @@ uint256 constant GAS_COMPENSATION = 5e18; // 5 SAT
 
 string constant DEBT_TOKEN_NAME = "Statoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
-address constant DEBT_TOKEN_LAYER_ZERO_END_POINT = 0x6098e96a28E02f27B1e6BD381f870F1C8Bd169d3;

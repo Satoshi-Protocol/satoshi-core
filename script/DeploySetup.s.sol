@@ -33,7 +33,6 @@ import {
     NATIVE_TOKEN_PRICE_FEED,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
-    DEBT_TOKEN_LAYER_ZERO_END_POINT,
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION
 } from "./DeploySetupConfig.sol";
@@ -142,7 +141,6 @@ contract DeploySetupScript is Script {
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBorrowerOperations(cpBorrowerOperationsProxyAddr),
             IPrismaCore(cpPrismaCoreAddr),
-            DEBT_TOKEN_LAYER_ZERO_END_POINT,
             IFactory(cpFactoryAddr),
             IGasPool(cpGasPoolAddr),
             GAS_COMPENSATION
