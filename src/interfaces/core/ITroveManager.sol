@@ -79,7 +79,6 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
     event TotalStakesUpdated(uint256 _newTotalStakes);
     event TroveIndexUpdated(address _borrower, uint256 _newIndex);
     event TroveSnapshotsUpdated(uint256 _L_collateral, uint256 _L_debt);
-    event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, uint8 _operation);
     event TroveUpdated(
         address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );

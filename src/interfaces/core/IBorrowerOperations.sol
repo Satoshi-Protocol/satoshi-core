@@ -32,7 +32,6 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
     event CollateralConfigured(ITroveManager troveManager, IERC20 indexed collateralToken);
     event TroveCreated(address indexed _borrower, uint256 arrayIndex);
     event TroveManagerRemoved(ITroveManager indexed troveManager);
-    event TroveUpdated(address indexed _borrower, uint256 _debt, uint256 _coll, uint256 stake, uint8 operation);
     event MinNetDebtUpdated(uint256 _minNetDebt);
 
     function initialize(
