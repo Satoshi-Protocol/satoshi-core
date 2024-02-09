@@ -29,7 +29,7 @@ struct DeploymentParams {
 
 interface IFactory is IPrismaOwnable {
     event NewDeployment(
-        IERC20 collateral, IPriceFeed priceFeed, ITroveManager troveManager, ISortedTroves sortedTroves
+        IERC20 indexed collateral, IPriceFeed priceFeed, ITroveManager troveManager, ISortedTroves sortedTroves
     );
 
     function deployNewInstance(IERC20 collateral, IPriceFeed priceFeed, DeploymentParams calldata params) external;

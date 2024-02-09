@@ -2,10 +2,12 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
@@ -43,6 +45,9 @@ import {
 } from "./TestConfig.sol";
 
 abstract contract DeployBase is Test {
+    /* mock contracts for testing */
+    IERC20 collateralMock;
+
     /* implementation contracts addresses */
     IPriceFeedAggregator priceFeedAggregatorImpl;
     IBorrowerOperations borrowerOperationsImpl;
@@ -63,6 +68,8 @@ abstract contract DeployBase is Test {
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
+    /* Helpers contracts */
+    MultiCollateralHintHelpers hintHelpers;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -86,7 +93,10 @@ abstract contract DeployBase is Test {
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
 
-    function setUp() public virtual {}
+    function setUp() public virtual {
+        // deploy ERC20
+        collateralMock = new ERC20("Collateral", "COLL");
+    }
 
     function _deploySetupAndInstance(
         address deployer,
@@ -96,16 +106,21 @@ abstract contract DeployBase is Test {
         RoundData memory oracleMock_roundData,
         IERC20 collateral,
         DeploymentParams memory deploymentParams
-    ) internal {
+    ) internal returns (ISortedTroves, ITroveManager) {
         _computeContractsAddress(deployer);
         _deployImplementationContracts(deployer);
         _deployNonUpgradeableContracts(deployer);
         _deployUUPSUpgradeableContracts(deployer);
         _deployBeaconContracts(deployer);
+
         address priceFeedAddr =
             _deployPriceFeed(deployer, oracleMock_decimals, oracleMock_version, oracleMock_roundData);
         _setPriceFeedToPriceFeedAggregatorProxy(owner, collateral, IPriceFeed(priceFeedAddr));
-        _deployNewInstance(owner, collateral, IPriceFeed(priceFeedAddr), deploymentParams);
+
+        (ISortedTroves sortedTrovesBeaconProxy, ITroveManager troveManagerBeaconProxy) =
+            _deployNewInstance(owner, collateral, IPriceFeed(priceFeedAddr), deploymentParams);
+
+        return (sortedTrovesBeaconProxy, troveManagerBeaconProxy);
     }
 
     function _computeContractsAddress(address deployer) internal {
@@ -353,15 +368,45 @@ abstract contract DeployBase is Test {
     }
 
     /* ============ Deploy New Instance ============ */
-    
+
+    event NewDeployment(
+        IERC20 indexed collateral, IPriceFeed priceFeed, ITroveManager troveManager, ISortedTroves sortedTroves
+    );
+
     function _deployNewInstance(
         address owner,
         IERC20 collateral,
         IPriceFeed priceFeed,
         DeploymentParams memory deploymentParams
-    ) internal {
+    ) internal returns (ISortedTroves, ITroveManager) {
         vm.startPrank(owner);
+
+        uint64 nonce = vm.getNonce(address(factory));
+        address cpSortedTrovesBeaconProxyAddr = vm.computeCreateAddress(address(factory), nonce);
+        address cpTroveManagerBeaconProxyAddr = vm.computeCreateAddress(address(factory), ++nonce);
+
+        // check NewDeployment event
+        vm.expectEmit(true, true, true, true, address(factory));
+        emit NewDeployment(
+            collateral,
+            priceFeed,
+            ITroveManager(cpTroveManagerBeaconProxyAddr),
+            ISortedTroves(cpSortedTrovesBeaconProxyAddr)
+        );
+
         factory.deployNewInstance(collateral, priceFeed, deploymentParams);
+
+        vm.stopPrank();
+
+        return (ISortedTroves(cpSortedTrovesBeaconProxyAddr), ITroveManager(cpTroveManagerBeaconProxyAddr));
+    }
+
+    /* ============ Deploy Helper Contracts ============ */
+
+    function _deployHintHelpers(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
+        hintHelpers = new MultiCollateralHintHelpers(address(borrowerOperationsProxy), GAS_COMPENSATION);
         vm.stopPrank();
     }
 }

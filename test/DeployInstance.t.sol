@@ -34,21 +34,21 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
 
         uint256 troveManagerCountBefore = factory.troveManagerCount();
 
-        _setPriceFeedToPriceFeedAggregatorProxy(OWNER, COLLATERAL, IPriceFeed(priceFeedAddr));
-        _deployNewInstance(OWNER, COLLATERAL, IPriceFeed(priceFeedAddr), deploymentParams);
+        _setPriceFeedToPriceFeedAggregatorProxy(OWNER, collateralMock, IPriceFeed(priceFeedAddr));
+        _deployNewInstance(OWNER, collateralMock, IPriceFeed(priceFeedAddr), deploymentParams);
 
         uint256 troveManagerCountAfter = factory.troveManagerCount();
 
         assert(troveManagerCountAfter == troveManagerCountBefore + 1);
 
-        uint256 stabilityPoolIndexByCollateral = stabilityPoolProxy.indexByCollateral(COLLATERAL);
-        assert(stabilityPoolProxy.collateralTokens(stabilityPoolIndexByCollateral - 1) == COLLATERAL); // index - 1
+        uint256 stabilityPoolIndexByCollateral = stabilityPoolProxy.indexByCollateral(collateralMock);
+        assert(stabilityPoolProxy.collateralTokens(stabilityPoolIndexByCollateral - 1) == collateralMock); // index - 1
 
         ITroveManager troveManagerBeaconProxy = factory.troveManagers(troveManagerCountAfter - 1);
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
         assert(sortedTrovesBeaconProxy.troveManager() == troveManagerBeaconProxy);
 
-        assert(troveManagerBeaconProxy.collateralToken() == COLLATERAL);
+        assert(troveManagerBeaconProxy.collateralToken() == collateralMock);
         assert(troveManagerBeaconProxy.systemDeploymentTime() != 0);
         assert(troveManagerBeaconProxy.sunsetting() == false);
         assert(troveManagerBeaconProxy.lastActiveIndexUpdate() != 0);
@@ -56,6 +56,6 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
         assert(debtToken.troveManager(troveManagerBeaconProxy) == true);
 
         (IERC20 collateralToken,) = borrowerOperationsProxy.troveManagersData(troveManagerBeaconProxy);
-        assert(collateralToken == COLLATERAL);
+        assert(collateralToken == collateralMock);
     }
 }

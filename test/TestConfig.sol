@@ -17,7 +17,6 @@ uint256 constant GAS_COMPENSATION = 5e18;
 uint256 constant BO_MIN_NET_DEBT = 50e18;
 
 /* Deploy instance */
-address constant COLLATERAL_ADDRESS = 0x4444444444444444444444444444444444444444;
 // DeploymentParams
 uint256 constant MINUTE_DECAY_FACTOR = 999037758833783500; //  (half life of 12 hours)
 uint256 constant REDEMPTION_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
@@ -31,7 +30,6 @@ uint256 constant MCR = 11 * 1e17;
 contract TestConfig {
     uint8 internal constant ORACLE_MOCK_DECIMALS = 8;
     uint256 internal constant ORACLE_MOCK_VERSION = 1;
-    IERC20 internal constant COLLATERAL = IERC20(COLLATERAL_ADDRESS);
 
     RoundData internal roundData =
         RoundData({answer: 4000000000000, startedAt: 1630000000, updatedAt: 1630000000, answeredInRound: 1});
