@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
@@ -228,7 +229,7 @@ contract DebtToken is IDebtToken, ERC20 {
                 keccak256(abi.encode(permitTypeHash, owner, spender, amount, _nonces[owner]++, deadline))
             )
         );
-        address recoveredAddress = ecrecover(digest, v, r, s);
+        address recoveredAddress = ECDSA.recover(digest, v, r, s);
         require(recoveredAddress == owner, "Debt: invalid signature");
         _approve(owner, spender, amount);
     }
