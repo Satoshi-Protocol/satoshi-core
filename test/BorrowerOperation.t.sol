@@ -91,7 +91,7 @@ contract BorrowerOperationTest is Test, DeployBase, TestConfig {
         uint256 user1DebtAmtAfter = debtToken.balanceOf(user1);
         uint256 user1CollateralAmtAfter = collateralMock.balanceOf(user1);
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        
+
         // check state
         assert(feeReceiverDebtAmtAfter == feeReceiverDebtAmtBefore + borrowingFee);
         assert(gasPoolDebtAmtAfter == gasPoolDebtAmtBefore + GAS_COMPENSATION);

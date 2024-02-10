@@ -17,3 +17,5 @@ docs/
 .VSCodeCounter
 
 src/mock
+
+.gas-snapshot
