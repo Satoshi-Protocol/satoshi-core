@@ -2,12 +2,12 @@
 pragma solidity ^0.8.13;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
-import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
-import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
+import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
+import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
+import {IMultiCollateralHintHelpers} from "../../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
+import {SatoshiMath} from "../../src/dependencies/SatoshiMath.sol";
 import {DeployBase} from "./DeployBase.t.sol";
-import {TestConfig} from "./TestConfig.sol";
+import {TestConfig} from "../TestConfig.sol";
 
 library HintLib {
     using Math for uint256;
@@ -16,7 +16,7 @@ library HintLib {
     uint256 internal constant RANDOM_SEED = 42;
 
     function getHint(
-        MultiCollateralHintHelpers hintHelpers,
+        IMultiCollateralHintHelpers hintHelpers,
         ISortedTroves sortedTrovesBeaconProxy,
         ITroveManager troveManagerBeaconProxy,
         uint256 collateralAmt,

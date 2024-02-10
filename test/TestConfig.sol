@@ -26,7 +26,7 @@ uint256 constant INTEREST_RATE_IN_BPS = 250; //  (2.5%)
 uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
 uint256 constant MCR = 11 * 1e17;
 
-contract TestConfig {
+abstract contract TestConfig {
     uint8 internal constant ORACLE_MOCK_DECIMALS = 8;
     uint256 internal constant ORACLE_MOCK_VERSION = 1;
 

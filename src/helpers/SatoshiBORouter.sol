@@ -6,40 +6,27 @@ import {IWETH} from "./interfaces/IWETH.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
+import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
 
 ///NOTE: This contract is to handle the native token and ERC20 for the borrower operations
-contract SatoshiBORouter {
+contract SatoshiBORouter is ISatoshiBORouter {
     IDebtToken public immutable debtToken;
     IBorrowerOperations public immutable borrowerOperationsProxy;
-    ITroveManager public immutable wrappedNativeTokenTroveManagerBeaconProxy;
     IWETH public immutable weth;
 
-    error NotWrappedNativeToken(address collateralToken, address weth);
     error MsgValueMismatch(uint256 msgValue, uint256 collAmount);
     error InvalidMsgValue(uint256 msgValue);
     error NativeTokenTransferFailed();
     error CannotWithdrawAndAddColl();
     error InvalidZeroAddress();
 
-    constructor(
-        IDebtToken _debtToken,
-        IBorrowerOperations _borrowerOperationsProxy,
-        ITroveManager _wrappedNativeTokenTroveManagerBeaconProxy,
-        IWETH _weth
-    ) {
+    constructor(IDebtToken _debtToken, IBorrowerOperations _borrowerOperationsProxy, IWETH _weth) {
         if (address(_debtToken) == address(0)) revert InvalidZeroAddress();
         if (address(_borrowerOperationsProxy) == address(0)) revert InvalidZeroAddress();
-        if (address(_wrappedNativeTokenTroveManagerBeaconProxy) == address(0)) revert InvalidZeroAddress();
         if (address(_weth) == address(0)) revert InvalidZeroAddress();
-
-        IERC20 collateralToken = _wrappedNativeTokenTroveManagerBeaconProxy.collateralToken();
-        if (address(collateralToken) != address(_weth)) {
-            revert NotWrappedNativeToken(address(collateralToken), address(_weth));
-        }
 
         debtToken = _debtToken;
         borrowerOperationsProxy = _borrowerOperationsProxy;
-        wrappedNativeTokenTroveManagerBeaconProxy = _wrappedNativeTokenTroveManagerBeaconProxy;
         weth = _weth;
     }
 

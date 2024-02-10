@@ -3,10 +3,10 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
-import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
-import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
+import {IBorrowerOperations} from "../../src/interfaces/core/IBorrowerOperations.sol";
+import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
+import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
+import {IMultiCollateralHintHelpers} from "../../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {HintLib} from "./HintLib.sol";
 
 abstract contract TroveBase is Test {
@@ -15,7 +15,7 @@ abstract contract TroveBase is Test {
         IBorrowerOperations borrowerOperationsProxy,
         ISortedTroves sortedTrovesBeaconProxy,
         ITroveManager troveManagerBeaconProxy,
-        MultiCollateralHintHelpers hintHelpers,
+        IMultiCollateralHintHelpers hintHelpers,
         uint256 gasCompensation,
         address caller,
         address account,

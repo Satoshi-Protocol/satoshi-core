@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {DeployBase} from "./DeployBase.t.sol";
+import {DeployBase} from "./utils/DeployBase.t.sol";
 import {DEPLOYER, OWNER, TestConfig} from "./TestConfig.sol";
 
 contract DeployInstanceTest is Test, DeployBase, TestConfig {

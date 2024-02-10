@@ -4,10 +4,11 @@ pragma solidity 0.8.13;
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
+import {IMultiCollateralHintHelpers} from "./interfaces/IMultiCollateralHintHelpers.sol";
 import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 
-contract MultiCollateralHintHelpers is SatoshiBase {
+contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase {
     IBorrowerOperations public immutable borrowerOperations;
 
     constructor(address _borrowerOperationsAddress, uint256 _gasCompensation) {

@@ -6,18 +6,20 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITroveManager.sol";
-import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
+import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
-import {DeployBase} from "./DeployBase.t.sol";
-import {HintLib} from "./HintLib.sol";
+import {DeployBase} from "./utils/DeployBase.t.sol";
+import {HintLib} from "./utils/HintLib.sol";
 import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
-import {TroveBase} from "./TroveBase.t.sol";
+import {TroveBase} from "./utils/TroveBase.t.sol";
+import {Events} from "./utils/Events.sol";
 
-contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
+contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
+    IMultiCollateralHintHelpers hintHelpers;
     address user1;
 
     function setUp() public override {
@@ -32,7 +34,7 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         );
 
         // deploy hint helper contract
-        _deployHintHelpers(DEPLOYER);
+        hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
     }
 
     function testOpenTrove() public {
@@ -856,13 +858,4 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
 
         vm.stopPrank();
     }
-
-    /* copied from contracts for event testing */
-    event TroveUpdated(
-        address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
-    );
-    event BorrowingFeePaid(address indexed borrower, IERC20 indexed collateralToken, uint256 amount);
-    event TotalStakesUpdated(uint256 _newTotalStakes);
-    event NodeAdded(address _id, uint256 _NICR);
-    event NodeRemoved(address _id);
 }

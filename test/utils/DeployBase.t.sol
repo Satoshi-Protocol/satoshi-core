@@ -7,31 +7,34 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
-import {SortedTroves} from "../src/core/SortedTroves.sol";
-import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
-import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
-import {LiquidationManager} from "../src/core/LiquidationManager.sol";
-import {StabilityPool} from "../src/core/StabilityPool.sol";
-import {TroveManager} from "../src/core/TroveManager.sol";
-import {GasPool} from "../src/core/GasPool.sol";
-import {SatoshiCore} from "../src/core/SatoshiCore.sol";
-import {DebtToken} from "../src/core/DebtToken.sol";
-import {Factory, DeploymentParams} from "../src/core/Factory.sol";
-import {RoundData, OracleMock} from "../src/mocks/OracleMock.sol";
-import {PriceFeedChainlink} from "../src/dependencies/priceFeed/PriceFeedChainlink.sol";
-import {AggregatorV3Interface} from "../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
-import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
-import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
-import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
-import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
-import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
-import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
-import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
-import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
-import {IFactory} from "../src/interfaces/core/IFactory.sol";
-import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
+import {MultiCollateralHintHelpers} from "../../src/helpers/MultiCollateralHintHelpers.sol";
+import {WETH9} from "../../src/mocks/WETH9.sol";
+import {SatoshiBORouter} from "../../src/helpers/SatoshiBORouter.sol";
+import {SortedTroves} from "../../src/core/SortedTroves.sol";
+import {PriceFeedAggregator} from "../../src/core/PriceFeedAggregator.sol";
+import {BorrowerOperations} from "../../src/core/BorrowerOperations.sol";
+import {LiquidationManager} from "../../src/core/LiquidationManager.sol";
+import {StabilityPool} from "../../src/core/StabilityPool.sol";
+import {TroveManager} from "../../src/core/TroveManager.sol";
+import {GasPool} from "../../src/core/GasPool.sol";
+import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
+import {DebtToken} from "../../src/core/DebtToken.sol";
+import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
+import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
+import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
+import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
+import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
+import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
+import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
+import {IBorrowerOperations} from "../../src/interfaces/core/IBorrowerOperations.sol";
+import {ILiquidationManager} from "../../src/interfaces/core/ILiquidationManager.sol";
+import {IStabilityPool} from "../../src/interfaces/core/IStabilityPool.sol";
+import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
+import {IGasPool} from "../../src/interfaces/core/IGasPool.sol";
+import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
+import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
+import {IFactory} from "../../src/interfaces/core/IFactory.sol";
+import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -41,7 +44,7 @@ import {
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
     BO_MIN_NET_DEBT
-} from "./TestConfig.sol";
+} from "../TestConfig.sol";
 
 abstract contract DeployBase is Test {
     /* mock contracts for testing */
@@ -67,8 +70,6 @@ abstract contract DeployBase is Test {
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
-    /* Helpers contracts */
-    MultiCollateralHintHelpers hintHelpers;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -401,10 +402,32 @@ abstract contract DeployBase is Test {
 
     /* ============ Deploy Helper Contracts ============ */
 
-    function _deployHintHelpers(address deployer) internal {
+    function _deployHintHelpers(address deployer) internal returns (address) {
         vm.startPrank(deployer);
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
-        hintHelpers = new MultiCollateralHintHelpers(address(borrowerOperationsProxy), GAS_COMPENSATION);
+        address hintHelpersAddr =
+            address(new MultiCollateralHintHelpers(address(borrowerOperationsProxy), GAS_COMPENSATION));
         vm.stopPrank();
+
+        return hintHelpersAddr;
+    }
+
+    function _deployWETH(address deployer) internal returns (address) {
+        vm.startPrank(deployer);
+        address wethAddr = address(new WETH9());
+        vm.stopPrank();
+
+        return wethAddr;
+    }
+
+    function _deploySatoshiBORouter(address deployer, IWETH weth) internal returns (address) {
+        vm.startPrank(deployer);
+        assert(debtToken != IDebtToken(address(0))); // check if debt token contract is deployed
+        assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
+        assert(weth != IWETH(address(0))); // check if WETH contract is deployed
+        address satoshiBORouterAddr = address(new SatoshiBORouter(debtToken, borrowerOperationsProxy, weth));
+        vm.stopPrank();
+
+        return satoshiBORouterAddr;
     }
 }
