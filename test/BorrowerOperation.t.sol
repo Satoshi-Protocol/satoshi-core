@@ -78,14 +78,16 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
             emit TroveUpdated(user1, totalDebt, collateralAmt, stake, TroveManagerOperation.open);
         }
 
-        // calc hint
-        (address upperHint, address lowerHint) = HintLib.getHint(
-            hintHelpers, sortedTrovesBeaconProxy, troveManagerBeaconProxy, collateralAmt, debtAmt, GAS_COMPENSATION
-        );
-        // tx execution
-        borrowerOperationsProxy.openTrove(
-            troveManagerBeaconProxy, user1, maxFeePercentage, collateralAmt, debtAmt, upperHint, lowerHint
-        );
+        {
+            // calc hint
+            (address upperHint, address lowerHint) = HintLib.getHint(
+                hintHelpers, sortedTrovesBeaconProxy, troveManagerBeaconProxy, collateralAmt, debtAmt, GAS_COMPENSATION
+            );
+            // tx execution
+            borrowerOperationsProxy.openTrove(
+                troveManagerBeaconProxy, user1, maxFeePercentage, collateralAmt, debtAmt, upperHint, lowerHint
+            );
+        }
 
         // state after
         uint256 feeReceiverDebtAmtAfter = debtToken.balanceOf(satoshiCore.feeReceiver());
@@ -95,11 +97,11 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
         // check state
-        assert(feeReceiverDebtAmtAfter == feeReceiverDebtAmtBefore + borrowingFee);
-        assert(gasPoolDebtAmtAfter == gasPoolDebtAmtBefore + GAS_COMPENSATION);
-        assert(user1DebtAmtAfter == user1DebtAmtBefore + debtAmt);
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore - collateralAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore + collateralAmt);
+        assertEq(feeReceiverDebtAmtAfter, feeReceiverDebtAmtBefore + borrowingFee);
+        assertEq(gasPoolDebtAmtAfter, gasPoolDebtAmtBefore + GAS_COMPENSATION);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore + debtAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore - collateralAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore + collateralAmt);
 
         vm.stopPrank();
     }
@@ -171,8 +173,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
         // check state
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore - addCollAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore + addCollAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore - addCollAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore + addCollAmt);
 
         vm.stopPrank();
     }
@@ -242,8 +244,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
         // check state
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore + withdrawCollAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore - withdrawCollAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore + withdrawCollAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore - withdrawCollAmt);
 
         vm.stopPrank();
     }
@@ -320,9 +322,9 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 debtTokenTotalSupplyAfter = debtToken.totalSupply();
 
         // check state
-        assert(user1DebtAmtAfter == user1DebtAmtBefore + withdrawDebtAmt);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore + withdrawDebtAmt);
         uint256 newBorrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(withdrawDebtAmt);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore + withdrawDebtAmt + newBorrowingFee);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore + withdrawDebtAmt + newBorrowingFee);
 
         vm.stopPrank();
     }
@@ -398,8 +400,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 debtTokenTotalSupplyAfter = debtToken.totalSupply();
 
         // check state
-        assert(user1DebtAmtAfter == user1DebtAmtBefore - repayDebtAmt);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore - repayDebtAmt);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore - repayDebtAmt);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore - repayDebtAmt);
 
         vm.stopPrank();
     }
@@ -493,10 +495,10 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 debtTokenTotalSupplyAfter = debtToken.totalSupply();
 
         // check state
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore - addCollAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore + addCollAmt);
-        assert(user1DebtAmtAfter == user1DebtAmtBefore - repayDebtAmt);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore - repayDebtAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore - addCollAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore + addCollAmt);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore - repayDebtAmt);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore - repayDebtAmt);
 
         vm.stopPrank();
     }
@@ -560,28 +562,30 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
             emit TroveUpdated(user1, totalDebt, totalCollAmt, stake, TroveManagerOperation.adjust);
         }
 
-        // calc hint
-        (address upperHint, address lowerHint) = HintLib.getHint(
-            hintHelpers,
-            sortedTrovesBeaconProxy,
-            troveManagerBeaconProxy,
-            totalCollAmt,
-            totalNetDebtAmt,
-            GAS_COMPENSATION
-        );
+        {
+            // calc hint
+            (address upperHint, address lowerHint) = HintLib.getHint(
+                hintHelpers,
+                sortedTrovesBeaconProxy,
+                troveManagerBeaconProxy,
+                totalCollAmt,
+                totalNetDebtAmt,
+                GAS_COMPENSATION
+            );
 
-        // tx execution
-        borrowerOperationsProxy.adjustTrove(
-            troveManagerBeaconProxy,
-            user1,
-            maxFeePercentage,
-            addCollAmt,
-            0, /* collWithdrawalAmt */
-            withdrawDebtAmt,
-            true, /* debtIncrease */
-            upperHint,
-            lowerHint
-        );
+            // tx execution
+            borrowerOperationsProxy.adjustTrove(
+                troveManagerBeaconProxy,
+                user1,
+                maxFeePercentage,
+                addCollAmt,
+                0, /* collWithdrawalAmt */
+                withdrawDebtAmt,
+                true, /* debtIncrease */
+                upperHint,
+                lowerHint
+            );
+        }
 
         // state after
         uint256 user1CollateralAmtAfter = collateralMock.balanceOf(user1);
@@ -590,11 +594,11 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 debtTokenTotalSupplyAfter = debtToken.totalSupply();
 
         // check state
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore - addCollAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore + addCollAmt);
-        assert(user1DebtAmtAfter == user1DebtAmtBefore + withdrawDebtAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore - addCollAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore + addCollAmt);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore + withdrawDebtAmt);
         uint256 newBorrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(withdrawDebtAmt);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore + withdrawDebtAmt + newBorrowingFee);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore + withdrawDebtAmt + newBorrowingFee);
 
         vm.stopPrank();
     }
@@ -686,10 +690,10 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 debtTokenTotalSupplyAfter = debtToken.totalSupply();
 
         // check state
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore + withdrawCollAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore - withdrawCollAmt);
-        assert(user1DebtAmtAfter == user1DebtAmtBefore - repayDebtAmt);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore - repayDebtAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore + withdrawCollAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore - withdrawCollAmt);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore - repayDebtAmt);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore - repayDebtAmt);
 
         vm.stopPrank();
     }
@@ -751,28 +755,30 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
             emit TroveUpdated(user1, totalDebt, totalCollAmt, stake, TroveManagerOperation.adjust);
         }
 
-        // calc hint
-        (address upperHint, address lowerHint) = HintLib.getHint(
-            hintHelpers,
-            sortedTrovesBeaconProxy,
-            troveManagerBeaconProxy,
-            totalCollAmt,
-            totalNetDebtAmt,
-            GAS_COMPENSATION
-        );
+        {
+            // calc hint
+            (address upperHint, address lowerHint) = HintLib.getHint(
+                hintHelpers,
+                sortedTrovesBeaconProxy,
+                troveManagerBeaconProxy,
+                totalCollAmt,
+                totalNetDebtAmt,
+                GAS_COMPENSATION
+            );
 
-        // tx execution
-        borrowerOperationsProxy.adjustTrove(
-            troveManagerBeaconProxy,
-            user1,
-            maxFeePercentage,
-            0, /* collAdditionAmt */
-            withdrawCollAmt,
-            withdrawDebtAmt,
-            true, /* debtIncrease */
-            upperHint,
-            lowerHint
-        );
+            // tx execution
+            borrowerOperationsProxy.adjustTrove(
+                troveManagerBeaconProxy,
+                user1,
+                maxFeePercentage,
+                0, /* collAdditionAmt */
+                withdrawCollAmt,
+                withdrawDebtAmt,
+                true, /* debtIncrease */
+                upperHint,
+                lowerHint
+            );
+        }
 
         // state after
         uint256 user1CollateralAmtAfter = collateralMock.balanceOf(user1);
@@ -781,11 +787,11 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 debtTokenTotalSupplyAfter = debtToken.totalSupply();
 
         // check state
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore + withdrawCollAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore - withdrawCollAmt);
-        assert(user1DebtAmtAfter == user1DebtAmtBefore + withdrawDebtAmt);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore + withdrawCollAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore - withdrawCollAmt);
+        assertEq(user1DebtAmtAfter, user1DebtAmtBefore + withdrawDebtAmt);
         uint256 newBorrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(withdrawDebtAmt);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore + withdrawDebtAmt + newBorrowingFee);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore + withdrawDebtAmt + newBorrowingFee);
 
         vm.stopPrank();
     }
@@ -843,10 +849,10 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig {
         uint256 troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
         // check state
-        assert(user1DebtAmtAfter == 0);
-        assert(debtTokenTotalSupplyAfter == debtTokenTotalSupplyBefore - repayDebtAmt - GAS_COMPENSATION);
-        assert(user1CollateralAmtAfter == user1CollateralAmtBefore + collateralAmt);
-        assert(troveManagerCollateralAmtAfter == troveManagerCollateralAmtBefore - collateralAmt);
+        assertEq(user1DebtAmtAfter, 0);
+        assertEq(debtTokenTotalSupplyAfter, debtTokenTotalSupplyBefore - repayDebtAmt - GAS_COMPENSATION);
+        assertEq(user1CollateralAmtAfter, user1CollateralAmtBefore + collateralAmt);
+        assertEq(troveManagerCollateralAmtAfter, troveManagerCollateralAmtBefore - collateralAmt);
 
         vm.stopPrank();
     }
