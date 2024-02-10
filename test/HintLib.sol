@@ -20,12 +20,12 @@ library HintLib {
         ISortedTroves sortedTrovesBeaconProxy,
         ITroveManager troveManagerBeaconProxy,
         uint256 collateralAmt,
-        uint256 debtAmt,
+        uint256 netDebtAmt,
         uint256 gasCompensation
     ) internal view returns (address, address) {
-        uint256 expectedFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(debtAmt);
-        uint256 expectedDebt = debtAmt + expectedFee + gasCompensation;
-        uint256 NICR = collateralAmt.mulDiv(SatoshiMath.NICR_PRECISION, expectedDebt);
+        uint256 borrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(netDebtAmt);
+        uint256 totalDebt = netDebtAmt + borrowingFee + gasCompensation;
+        uint256 NICR = collateralAmt.mulDiv(SatoshiMath.NICR_PRECISION, totalDebt);
         uint256 numTroves = sortedTrovesBeaconProxy.getSize();
         uint256 numTrials = numTroves * TRIAL_NUMBER;
         (address approxHint,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, NICR, numTrials, RANDOM_SEED);
