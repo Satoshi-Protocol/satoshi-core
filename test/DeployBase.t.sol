@@ -39,7 +39,6 @@ import {
     FEE_RECEIVER,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
-    DEBT_TOKEN_LAYER_ZERO_END_POINT,
     GAS_COMPENSATION,
     BO_MIN_NET_DEBT
 } from "./TestConfig.sol";

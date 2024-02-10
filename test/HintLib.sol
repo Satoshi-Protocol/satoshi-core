@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
@@ -10,7 +9,7 @@ import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase} from "./DeployBase.t.sol";
 import {TestConfig} from "./TestConfig.sol";
 
-library HintHelpers {
+library HintLib {
     using Math for uint256;
 
     uint256 internal constant TRIAL_NUMBER = 15;

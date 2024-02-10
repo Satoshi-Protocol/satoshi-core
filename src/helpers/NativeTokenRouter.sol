@@ -117,7 +117,7 @@ contract NativeTokenRouter {
             weth.approve(address(borrowerOperationsProxy), _collDeposit);
         }
 
-        if(!_isDebtIncrease && _debtChange > 0) {
+        if (!_isDebtIncrease && _debtChange > 0) {
             debtToken.transferFrom(msg.sender, address(this), _debtChange);
         }
 
@@ -139,7 +139,7 @@ contract NativeTokenRouter {
             if (!success) revert NativeTokenTransferFailed();
         }
 
-        if(_isDebtIncrease && _debtChange > 0) {
+        if (_isDebtIncrease && _debtChange > 0) {
             debtToken.transfer(account, _debtChange);
         }
     }
@@ -149,7 +149,9 @@ contract NativeTokenRouter {
             wrappedNativeTokenTroveManagerBeaconProxy.getTroveCollAndDebt(account);
 
         if (debtAmount > 0) {
-            debtToken.transferFrom(msg.sender, address(this), debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION());
+            debtToken.transferFrom(
+                msg.sender, address(this), debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION()
+            );
         }
 
         borrowerOperationsProxy.closeTrove(wrappedNativeTokenTroveManagerBeaconProxy, account);

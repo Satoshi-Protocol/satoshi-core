@@ -26,6 +26,7 @@ import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
+import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
@@ -62,6 +63,8 @@ contract DeploySetupScript is Script {
     /* Beacon contract */
     UpgradeableBeacon sortedTrovesBeacon;
     UpgradeableBeacon troveManagerBeacon;
+    /* Helpers contracts */
+    MultiCollateralHintHelpers hintHelpers;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -219,6 +222,9 @@ contract DeploySetupScript is Script {
         // TroveManagerBeacon
         troveManagerBeacon = new UpgradeableBeacon(address(troveManagerImpl));
         assert(cpTroveManagerBeaconAddr == address(troveManagerBeacon));
+
+        // MultiCollateralHintHelpers
+        hintHelpers = new MultiCollateralHintHelpers(address(borrowerOperationsProxy), GAS_COMPENSATION);
 
         vm.stopBroadcast();
     }
