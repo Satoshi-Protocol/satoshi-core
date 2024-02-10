@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {IDelegatedOps} from "../interfaces/dependencies/IDelegatedOps.sol";
 
 /**
- * @title Prisma Delegated Operations
+ * @title Satoshi Delegated Operations
  *     @notice Allows delegation to specific contract functionality. Useful for creating
  *             wrapper contracts to bundle multiple interactions into a single call.
  *

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {IPrismaCore} from "./IPrismaCore.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
 import {ITroveManager} from "./ITroveManager.sol";
-import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 
 // Information for a node in the list
 struct Node {
@@ -20,11 +20,11 @@ struct Data {
     mapping(address => Node) nodes; // Track the corresponding ids for each node in the list
 }
 
-interface ISortedTroves is IPrismaOwnable {
+interface ISortedTroves is ISatoshiOwnable {
     event NodeAdded(address _id, uint256 _NICR);
     event NodeRemoved(address _id);
 
-    function initialize(IPrismaCore _prismaCore) external;
+    function initialize(ISatoshiCore _satoshiCore) external;
 
     function insert(address _id, uint256 _NICR, address _prevId, address _nextId) external;
 

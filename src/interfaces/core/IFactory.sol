@@ -9,11 +9,11 @@ import {IBorrowerOperations} from "./IBorrowerOperations.sol";
 import {ILiquidationManager} from "./ILiquidationManager.sol";
 import {ISortedTroves} from "./ISortedTroves.sol";
 import {ITroveManager} from "./ITroveManager.sol";
-import {IPrismaCore} from "./IPrismaCore.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
 import {IPriceFeed} from "../dependencies/IPriceFeed.sol";
 import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {IGasPool} from "./IGasPool.sol";
-import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 
 // commented values are suggested default parameters
 struct DeploymentParams {
@@ -27,14 +27,14 @@ struct DeploymentParams {
     uint256 MCR; // 11 * 1e17  (110%)
 }
 
-interface IFactory is IPrismaOwnable {
+interface IFactory is ISatoshiOwnable {
     event NewDeployment(
         IERC20 indexed collateral, IPriceFeed priceFeed, ITroveManager troveManager, ISortedTroves sortedTroves
     );
 
     function deployNewInstance(IERC20 collateral, IPriceFeed priceFeed, DeploymentParams calldata params) external;
 
-    function prismaCore() external view returns (IPrismaCore);
+    function satoshiCore() external view returns (ISatoshiCore);
 
     function debtToken() external view returns (IDebtToken);
 

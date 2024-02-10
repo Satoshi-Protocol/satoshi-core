@@ -6,7 +6,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
-import {PrismaMath} from "../src/dependencies/PrismaMath.sol";
+import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase} from "./DeployBase.t.sol";
 import {TestConfig} from "./TestConfig.sol";
 
@@ -26,7 +26,7 @@ library HintHelpers {
     ) internal view returns (address, address) {
         uint256 expectedFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(debtAmt);
         uint256 expectedDebt = debtAmt + expectedFee + gasCompensation;
-        uint256 NICR = collateralAmt.mulDiv(PrismaMath.NICR_PRECISION, expectedDebt);
+        uint256 NICR = collateralAmt.mulDiv(SatoshiMath.NICR_PRECISION, expectedDebt);
         uint256 numTroves = sortedTrovesBeaconProxy.getSize();
         uint256 numTrials = numTroves * TRIAL_NUMBER;
         (address approxHint,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, NICR, numTrials, RANDOM_SEED);

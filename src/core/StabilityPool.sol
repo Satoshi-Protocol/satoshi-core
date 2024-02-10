@@ -4,23 +4,23 @@ pragma solidity 0.8.13;
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {PrismaMath} from "../dependencies/PrismaMath.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IFactory} from "../interfaces/core/IFactory.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
 
 /**
- * @title Prisma Stability Pool
+ * @title Satoshi Stability Pool
  *     @notice Based on Liquity's `StabilityPool`
  *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
  *
- *             Prisma's implementation is modified to support multiple collaterals. Deposits into
+ *             Satoshi's implementation is modified to support multiple collaterals. Deposits into
  *             the stability pool may be used to liquidate any supported collateral type.
  */
-contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
+contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
@@ -79,16 +79,14 @@ contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
     mapping(uint128 => mapping(uint128 => uint256[256])) public epochToScaleToSums;
 
     /*
-     * Similarly, the sum 'G' is used to calculate Prisma gains. During it's lifetime, each deposit d_t earns a Prisma gain of
+     * Similarly, the sum 'G' is used to calculate Satoshi gains. During it's lifetime, each deposit d_t earns a Satoshi gain of
      *  ( d_t * [G - G_t] )/P_t, where G_t is the depositor's snapshot of G taken at time t when  the deposit was made.
      *
-     *  Prisma reward events occur are triggered by depositor operations (new deposit, topup, withdrawal), and liquidations.
-     *  In each case, the Prisma reward is issued (i.e. G is updated), before other state changes are made.
+     *  Satoshi reward events occur are triggered by depositor operations (new deposit, topup, withdrawal), and liquidations.
+     *  In each case, the Satoshi reward is issued (i.e. G is updated), before other state changes are made.
      */
     mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToG;
 
-    // Error tracker for the error correction in the Prisma issuance calculation
-    uint256 public lastPrismaError;
     // Error trackers for the error correction in the offset calculation
     uint256[256] public lastCollateralError_Offset;
     uint256 public lastDebtLossError_Offset;
@@ -107,13 +105,13 @@ contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
     }
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IFactory _factory,
         ILiquidationManager _liquidationManager
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
-        __PrismaOwnable_init(_prismaCore);
+        __SatoshiOwnable_init(_satoshiCore);
         debtToken = _debtToken;
         factory = _factory;
         liquidationManager = _liquidationManager;
@@ -191,14 +189,14 @@ contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
 
     /*  provideToSP():
      *
-     * - Triggers a Prisma issuance, based on time passed since the last issuance. The Prisma issuance is shared between *all* depositors and front ends
+     * - Triggers a Satoshi issuance, based on time passed since the last issuance. The Satoshi issuance is shared between *all* depositors and front ends
      * - Tags the deposit with the provided front end tag param, if it's a new deposit
-     * - Sends depositor's accumulated gains (Prisma, collateral) to depositor
-     * - Sends the tagged front end's accumulated Prisma gains to the tagged front end
+     * - Sends depositor's accumulated gains (Satoshi, collateral) to depositor
+     * - Sends the tagged front end's accumulated Satoshi gains to the tagged front end
      * - Increases deposit and tagged front end's stake, and takes new snapshots for each.
      */
     function provideToSP(uint256 _amount) external {
-        require(!PRISMA_CORE.paused(), "Deposits are paused");
+        require(!SATOSHI_CORE.paused(), "Deposits are paused");
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
 
         _accrueDepositorCollateralGain(msg.sender);
@@ -219,10 +217,10 @@ contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
 
     /*  withdrawFromSP():
      *
-     * - Triggers a Prisma issuance, based on time passed since the last issuance. The Prisma issuance is shared between *all* depositors and front ends
+     * - Triggers a Satoshi issuance, based on time passed since the last issuance. The Satoshi issuance is shared between *all* depositors and front ends
      * - Removes the deposit's front end tag if it is a full withdrawal
-     * - Sends all depositor's accumulated gains (Prisma, collateral) to depositor
-     * - Sends the tagged front end's accumulated Prisma gains to the tagged front end
+     * - Sends all depositor's accumulated gains (Satoshi, collateral) to depositor
+     * - Sends the tagged front end's accumulated Satoshi gains to the tagged front end
      * - Decreases deposit and tagged front end's stake, and takes new snapshots for each.
      *
      * If _amount > userDeposit, the user withdraws all of their compounded deposit.
@@ -236,7 +234,7 @@ contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
-        uint256 debtToWithdraw = PrismaMath._min(_amount, compoundedDebtDeposit);
+        uint256 debtToWithdraw = SatoshiMath._min(_amount, compoundedDebtDeposit);
 
         if (debtToWithdraw > 0) {
             debtToken.returnFromPool(address(this), msg.sender, debtToWithdraw);
@@ -501,7 +499,7 @@ contract StabilityPool is IStabilityPool, PrismaOwnable, UUPSUpgradeable {
         return compoundedStake;
     }
 
-    // --- Sender functions for Debt deposit, collateral gains and Prisma gains ---
+    // --- Sender functions for Debt deposit, collateral gains and Satoshi gains ---
     function claimCollateralGains(address recipient, uint256[] calldata collateralIndexes) public virtual {
         _accrueDepositorCollateralGain(msg.sender);
 

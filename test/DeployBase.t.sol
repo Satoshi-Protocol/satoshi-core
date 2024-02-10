@@ -15,7 +15,7 @@ import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {GasPool} from "../src/core/GasPool.sol";
-import {PrismaCore} from "../src/core/PrismaCore.sol";
+import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {DebtToken} from "../src/core/DebtToken.sol";
 import {Factory, DeploymentParams} from "../src/core/Factory.sol";
 import {RoundData, OracleMock} from "../src/mocks/OracleMock.sol";
@@ -28,7 +28,7 @@ import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.so
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
-import {IPrismaCore} from "../src/interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
@@ -57,7 +57,7 @@ abstract contract DeployBase is Test {
     ITroveManager troveManagerImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
-    IPrismaCore prismaCore;
+    ISatoshiCore satoshiCore;
     IDebtToken debtToken;
     IFactory factory;
     /* UUPS proxy contracts */
@@ -81,7 +81,7 @@ abstract contract DeployBase is Test {
     address cpTroveManagerImplAddr;
     // non-upgradeable contracts
     address cpGasPoolAddr;
-    address cpPrismaCoreAddr;
+    address cpSatoshiCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
     // UUPS proxy contracts
@@ -137,7 +137,7 @@ abstract contract DeployBase is Test {
         cpTroveManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         // non-upgradeable contracts
         cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpPrismaCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
@@ -173,7 +173,7 @@ abstract contract DeployBase is Test {
 
     function _deployNonUpgradeableContracts(address deployer) internal {
         _deployGasPool(deployer);
-        _deployPrismaCore(deployer);
+        _deploySatoshiCore(deployer);
         _deployDebtToken(deployer);
         _deployFactory(deployer);
     }
@@ -212,10 +212,10 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _deployPrismaCore(address deployer) internal {
+    function _deploySatoshiCore(address deployer) internal {
         vm.startPrank(deployer);
         assert(gasPool != IGasPool(address(0))); // check if gas pool contract is deployed
-        prismaCore = new PrismaCore(OWNER, GUARDIAN, FEE_RECEIVER);
+        satoshiCore = new SatoshiCore(OWNER, GUARDIAN, FEE_RECEIVER);
         vm.stopPrank();
     }
 
@@ -227,7 +227,7 @@ abstract contract DeployBase is Test {
             DEBT_TOKEN_SYMBOL,
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IFactory(cpFactoryAddr),
             IGasPool(cpGasPoolAddr),
             GAS_COMPENSATION
@@ -239,7 +239,7 @@ abstract contract DeployBase is Test {
         vm.startPrank(deployer);
         assert(factory == IFactory(address(0))); // check if factory contract is not deployed
         factory = new Factory(
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IDebtToken(cpDebtTokenAddr),
             IGasPool(cpGasPoolAddr),
             IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
@@ -259,7 +259,7 @@ abstract contract DeployBase is Test {
         vm.startPrank(deployer);
         assert(priceFeedAggregatorImpl != IPriceFeedAggregator(address(0))); // check if implementation contract is deployed
         assert(priceFeedAggregatorProxy == IPriceFeedAggregator(address(0))); // check if proxy contract is not deployed
-        bytes memory data = abi.encodeCall(IPriceFeedAggregator.initialize, (IPrismaCore(cpPrismaCoreAddr)));
+        bytes memory data = abi.encodeCall(IPriceFeedAggregator.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         priceFeedAggregatorProxy =
             IPriceFeedAggregator(address(new ERC1967Proxy(address(priceFeedAggregatorImpl), data)));
         vm.stopPrank();
@@ -272,7 +272,7 @@ abstract contract DeployBase is Test {
         bytes memory data = abi.encodeCall(
             IBorrowerOperations.initialize,
             (
-                IPrismaCore(cpPrismaCoreAddr),
+                ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
                 BO_MIN_NET_DEBT,
@@ -290,7 +290,7 @@ abstract contract DeployBase is Test {
         bytes memory data = abi.encodeCall(
             ILiquidationManager.initialize,
             (
-                IPrismaCore(cpPrismaCoreAddr),
+                ISatoshiCore(cpSatoshiCoreAddr),
                 IStabilityPool(cpStabilityPoolProxyAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
                 IFactory(cpFactoryAddr),
@@ -308,7 +308,7 @@ abstract contract DeployBase is Test {
         bytes memory data = abi.encodeCall(
             IStabilityPool.initialize,
             (
-                IPrismaCore(cpPrismaCoreAddr),
+                ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
                 ILiquidationManager(cpLiquidationManagerProxyAddr)

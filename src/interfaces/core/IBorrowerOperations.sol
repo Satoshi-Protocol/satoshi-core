@@ -3,9 +3,9 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ITroveManager} from "./ITroveManager.sol";
-import {IPrismaCore} from "./IPrismaCore.sol";
-import {IPrismaBase} from "../dependencies/IPrismaBase.sol";
-import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
+import {ISatoshiBase} from "../dependencies/ISatoshiBase.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IDelegatedOps} from "../dependencies/IDelegatedOps.sol";
 import {IFactory} from "./IFactory.sol";
 import {IDebtToken} from "./IDebtToken.sol";
@@ -27,7 +27,7 @@ struct TroveManagerData {
     uint16 index;
 }
 
-interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
+interface IBorrowerOperations is ISatoshiOwnable, ISatoshiBase, IDelegatedOps {
     event BorrowingFeePaid(address indexed borrower, IERC20 indexed collateralToken, uint256 amount);
     event CollateralConfigured(ITroveManager troveManager, IERC20 indexed collateralToken);
     event TroveCreated(address indexed _borrower, uint256 arrayIndex);
@@ -35,7 +35,7 @@ interface IBorrowerOperations is IPrismaOwnable, IPrismaBase, IDelegatedOps {
     event MinNetDebtUpdated(uint256 _minNetDebt);
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IFactory _factory,
         uint256 _minNetDebt,

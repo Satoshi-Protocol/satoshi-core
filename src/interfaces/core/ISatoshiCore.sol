@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-interface IPrismaCore {
+interface ISatoshiCore {
     event FeeReceiverSet(address feeReceiver);
     event GuardianSet(address guardian);
     event NewOwnerAccepted(address oldOwner, address owner);

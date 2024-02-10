@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {IPrismaCore} from "../src/interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
@@ -11,7 +11,7 @@ import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
-import {PrismaCore} from "../src/core/PrismaCore.sol";
+import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
 import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
@@ -50,13 +50,13 @@ contract DeploySetupTest is Test, DeployBase {
         _deployGasPool(DEPLOYER);
         assert(cpGasPoolAddr == address(gasPool));
 
-        // PrismaCore
-        _deployPrismaCore(DEPLOYER);
-        assert(cpPrismaCoreAddr == address(prismaCore));
-        assert(prismaCore.owner() == OWNER);
-        assert(prismaCore.guardian() == GUARDIAN);
-        assert(prismaCore.feeReceiver() == FEE_RECEIVER);
-        assert(prismaCore.startTime() == (block.timestamp / 1 weeks) * 1 weeks);
+        // SatoshiCore
+        _deploySatoshiCore(DEPLOYER);
+        assert(cpSatoshiCoreAddr == address(satoshiCore));
+        assert(satoshiCore.owner() == OWNER);
+        assert(satoshiCore.guardian() == GUARDIAN);
+        assert(satoshiCore.feeReceiver() == FEE_RECEIVER);
+        assert(satoshiCore.startTime() == (block.timestamp / 1 weeks) * 1 weeks);
 
         // DebtToken
         _deployDebtToken(DEPLOYER);
@@ -89,7 +89,7 @@ contract DeploySetupTest is Test, DeployBase {
 
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
-        priceFeedAggregatorProxy.initialize(IPrismaCore(cpPrismaCoreAddr));
+        priceFeedAggregatorProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr));
 
         // BorrowerOperations
         _deployBorrowerOperationsProxy(DEPLOYER);
@@ -104,7 +104,7 @@ contract DeploySetupTest is Test, DeployBase {
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
         borrowerOperationsProxy.initialize(
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IDebtToken(cpDebtTokenAddr),
             IFactory(cpFactoryAddr),
             BO_MIN_NET_DEBT,
@@ -124,7 +124,7 @@ contract DeploySetupTest is Test, DeployBase {
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
         liquidationManagerProxy.initialize(
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBorrowerOperations(cpBorrowerOperationsProxyAddr),
             IFactory(cpFactoryAddr),
@@ -143,7 +143,7 @@ contract DeploySetupTest is Test, DeployBase {
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
         stabilityPoolProxy.initialize(
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IDebtToken(cpDebtTokenAddr),
             IFactory(cpFactoryAddr),
             ILiquidationManager(cpLiquidationManagerProxyAddr)

@@ -3,12 +3,12 @@ pragma solidity 0.8.13;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeedAggregator, OracleRecord} from "../interfaces/core/IPriceFeedAggregator.sol";
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
 
-contract PriceFeedAggregator is IPriceFeedAggregator, PrismaOwnable, UUPSUpgradeable {
+contract PriceFeedAggregator is IPriceFeedAggregator, SatoshiOwnable, UUPSUpgradeable {
     // Used to convert the raw price to an 18-digit precision uint
     uint256 public constant TARGET_DIGITS = 18;
 
@@ -26,9 +26,9 @@ contract PriceFeedAggregator is IPriceFeedAggregator, PrismaOwnable, UUPSUpgrade
         // No additional authorization logic is needed for this contract
     }
 
-    function initialize(IPrismaCore _prismaCore) external initializer {
+    function initialize(ISatoshiCore _satoshiCore) external initializer {
         __UUPSUpgradeable_init_unchained();
-        __PrismaOwnable_init(_prismaCore);
+        __SatoshiOwnable_init(_satoshiCore);
     }
 
     // Admin routines ---------------------------------------------------------------------------------------------------

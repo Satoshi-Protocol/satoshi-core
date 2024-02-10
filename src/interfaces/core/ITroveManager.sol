@@ -3,13 +3,13 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPriceFeedAggregator} from "../core/IPriceFeedAggregator.sol";
-import {IPrismaCore} from "../core/IPrismaCore.sol";
+import {ISatoshiCore} from "../core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../core/IBorrowerOperations.sol";
 import {ISortedTroves} from "../core/ISortedTroves.sol";
 import {IDebtToken} from "../core/IDebtToken.sol";
 import {ILiquidationManager} from "../core/ILiquidationManager.sol";
-import {IPrismaBase} from "../dependencies/IPrismaBase.sol";
-import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {ISatoshiBase} from "../dependencies/ISatoshiBase.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IGasPool} from "../core/IGasPool.sol";
 
 enum Status {
@@ -67,7 +67,7 @@ struct RewardSnapshot {
     uint256 debt;
 }
 
-interface ITroveManager is IPrismaOwnable, IPrismaBase {
+interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     event BaseRateUpdated(uint256 _baseRate);
     event CollateralSent(address _to, uint256 _amount);
     event LTermsUpdated(uint256 _L_collateral, uint256 _L_debt);
@@ -84,7 +84,7 @@ interface ITroveManager is IPrismaOwnable, IPrismaBase {
     );
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IGasPool _gasPool,
         IDebtToken _debtToken,
         IBorrowerOperations _borrowerOperations,

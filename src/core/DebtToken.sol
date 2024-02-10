@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
@@ -36,7 +36,7 @@ contract DebtToken is IDebtToken, ERC20 {
     mapping(address => uint256) private _nonces;
 
     // --- Addresses ---
-    IPrismaCore private immutable prismaCore;
+    ISatoshiCore private immutable satoshiCore;
     IStabilityPool public immutable stabilityPool;
     IBorrowerOperations public immutable borrowerOperations;
     IFactory public immutable factory;
@@ -52,13 +52,13 @@ contract DebtToken is IDebtToken, ERC20 {
         string memory _symbol,
         IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IFactory _factory,
         IGasPool _gasPool,
         uint256 _gasCompensation
     ) ERC20(_name, _symbol) {
         stabilityPool = _stabilityPool;
-        prismaCore = _prismaCore;
+        satoshiCore = _satoshiCore;
         borrowerOperations = _borrowerOperations;
         factory = _factory;
         gasPool = _gasPool;
@@ -79,7 +79,7 @@ contract DebtToken is IDebtToken, ERC20 {
         troveManager[_troveManager] = true;
     }
 
-    // --- Functions for intra-Prisma calls ---
+    // --- Functions for intra-Satoshi calls ---
 
     function mintWithGasCompensation(address _account, uint256 _amount) external returns (bool) {
         require(msg.sender == address(borrowerOperations));
@@ -203,7 +203,7 @@ contract DebtToken is IDebtToken, ERC20 {
         );
         _spendAllowance(address(receiver), address(this), amount + fee);
         _burn(address(receiver), amount);
-        _transfer(address(receiver), prismaCore.feeReceiver(), fee);
+        _transfer(address(receiver), satoshiCore.feeReceiver(), fee);
         return true;
     }
 

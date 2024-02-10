@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPrismaCore} from "./IPrismaCore.sol";
-import {IPrismaOwnable} from "../dependencies/IPrismaOwnable.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IDebtToken} from "./IDebtToken.sol";
 import {IFactory} from "./IFactory.sol";
 import {ILiquidationManager} from "./ILiquidationManager.sol";
@@ -30,7 +30,7 @@ struct Queue {
     uint16 nextSunsetIndexKey;
 }
 
-interface IStabilityPool is IPrismaOwnable {
+interface IStabilityPool is ISatoshiOwnable {
     event CollateralGainWithdrawn(address indexed _depositor, uint256[] _collateralAmounts);
     event CollateralOverwritten(IERC20 oldCollateralToken, IERC20 newCollateralToken);
     event DepositSnapshotUpdated(address indexed _depositor, uint256 _P, uint256 _G);
@@ -44,7 +44,7 @@ interface IStabilityPool is IPrismaOwnable {
     event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IFactory _factory,
         ILiquidationManager _liquidationManager
@@ -99,8 +99,6 @@ interface IStabilityPool is IPrismaOwnable {
     function getTotalDebtTokenDeposits() external view returns (uint256);
 
     function indexByCollateral(IERC20 collateral) external view returns (uint256 index);
-
-    function lastPrismaError() external view returns (uint256);
 
     function liquidationManager() external view returns (ILiquidationManager);
 }

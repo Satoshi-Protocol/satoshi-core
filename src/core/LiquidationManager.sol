@@ -3,10 +3,10 @@ pragma solidity 0.8.13;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {PrismaMath} from "../dependencies/PrismaMath.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {PrismaBase} from "../dependencies/PrismaBase.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
 import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
@@ -20,7 +20,7 @@ import {
 } from "../interfaces/core/ILiquidationManager.sol";
 
 /**
- * @title Prisma Liquidation Manager
+ * @title Satoshi Liquidation Manager
  *     @notice Based on Liquity's `TroveManager`
  *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
  *
@@ -45,7 +45,7 @@ import {
  *                the value of the debt is distributed between stability pool depositors. The remaining
  *                collateral is left claimable by the trove owner.
  */
-contract LiquidationManager is PrismaOwnable, PrismaBase, ILiquidationManager, UUPSUpgradeable {
+contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager, UUPSUpgradeable {
     IStabilityPool public stabilityPool;
     IBorrowerOperations public borrowerOperations;
     IFactory public factory;
@@ -66,15 +66,15 @@ contract LiquidationManager is PrismaOwnable, PrismaBase, ILiquidationManager, U
     }
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
         IFactory _factory,
         uint256 _gasCompensation
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
-        __PrismaOwnable_init(_prismaCore);
-        __PrismaBase_init(_gasCompensation);
+        __SatoshiOwnable_init(_satoshiCore);
+        __SatoshiBase_init(_gasCompensation);
         stabilityPool = _stabilityPool;
         borrowerOperations = _borrowerOperations;
         factory = _factory;
@@ -165,7 +165,7 @@ contract LiquidationManager is PrismaOwnable, PrismaBase, ILiquidationManager, U
                 address account = nextAccount;
                 nextAccount = sortedTrovesCached.getPrev(account);
 
-                uint256 TCR = PrismaMath._computeCR(entireSystemColl, entireSystemDebt);
+                uint256 TCR = SatoshiMath._computeCR(entireSystemColl, entireSystemDebt);
                 if (TCR >= CCR || ICR >= TCR) break;
 
                 singleLiquidation = _tryLiquidateWithCap(
@@ -277,7 +277,7 @@ contract LiquidationManager is PrismaOwnable, PrismaBase, ILiquidationManager, U
                         _liquidateNormalMode(troveManager, account, debtInStabPool, troveManagerValues.sunsetting);
                 } else {
                     if (troveManagerValues.sunsetting) continue;
-                    uint256 TCR = PrismaMath._computeCR(entireSystemColl, entireSystemDebt);
+                    uint256 TCR = SatoshiMath._computeCR(entireSystemColl, entireSystemDebt);
                     if (TCR >= CCR || ICR >= TCR) continue;
                     singleLiquidation = _tryLiquidateWithCap(
                         troveManager, account, debtInStabPool, troveManagerValues.MCR, troveManagerValues.price
@@ -458,7 +458,7 @@ contract LiquidationManager is PrismaOwnable, PrismaBase, ILiquidationManager, U
              *  - Send a fraction of the trove's collateral to the Stability Pool, equal to the fraction of its offset debt
              *
              */
-            debtToOffset = PrismaMath._min(_debt, _debtInStabPool);
+            debtToOffset = SatoshiMath._min(_debt, _debtInStabPool);
             collToSendToSP = (_coll * debtToOffset) / _debt;
             debtToRedistribute = _debt - debtToOffset;
             collToRedistribute = _coll - collToSendToSP;

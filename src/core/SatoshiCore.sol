@@ -2,19 +2,19 @@
 pragma solidity 0.8.13;
 
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 
 //NOTE: non-upgradeable
 
 /**
- * @title Prisma Core
+ * @title Satoshi Core
  *     @notice Single source of truth for system-wide values and contract ownership.
  *
- *             Ownership of this contract should be the Prisma DAO via `AdminVoting`.
- *             Other ownable Prisma contracts inherit their ownership from this contract
- *             using `PrismaOwnable`.
+ *             Ownership of this contract should be the Satoshi DAO via `AdminVoting`.
+ *             Other ownable Satoshi contracts inherit their ownership from this contract
+ *             using `SatoshiOwnable`.
  */
-contract PrismaCore is IPrismaCore {
+contract SatoshiCore is ISatoshiCore {
     address public feeReceiver;
 
     address public owner;

@@ -4,16 +4,16 @@ pragma solidity 0.8.13;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {PrismaBase} from "../dependencies/PrismaBase.sol";
-import {PrismaMath} from "../dependencies/PrismaMath.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
+import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {
     ITroveManager,
     Trove,
@@ -26,18 +26,18 @@ import {
 } from "../interfaces/core/ITroveManager.sol";
 
 /**
- * @title Prisma Trove Manager
+ * @title Satoshi Trove Manager
  *     @notice Based on Liquity's `TroveManager`
  *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
  *
- *             Prisma's implementation is modified so that multiple `TroveManager` and `SortedTroves`
+ *             Satoshi's implementation is modified so that multiple `TroveManager` and `SortedTroves`
  *             contracts are deployed in tandem, with each pair managing troves of a single collateral
  *             type.
  *
  *             Functionality related to liquidations has been moved to `LiquidationManager`. This was
  *             necessary to avoid the restriction on deployed bytecode size.
  */
-contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
+contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;
 
     // --- Connected contract declarations ---
@@ -155,7 +155,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     }
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IGasPool _gasPool,
         IDebtToken _debtToken,
         IBorrowerOperations _borrowerOperations,
@@ -163,8 +163,8 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
         IPriceFeedAggregator _priceFeedAggregator,
         uint256 _gasCompensation
     ) external initializer {
-        __PrismaOwnable_init(_prismaCore);
-        __PrismaBase_init(_gasCompensation);
+        __SatoshiOwnable_init(_satoshiCore);
+        __SatoshiBase_init(_gasCompensation);
         gasPool = _gasPool;
         debtToken = _debtToken;
         borrowerOperations = _borrowerOperations;
@@ -269,7 +269,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     function collectInterests() external {
         uint256 interestPayableCached = interestPayable;
         require(interestPayableCached > 0, "Nothing to collect");
-        debtToken.mint(PRISMA_CORE.feeReceiver(), interestPayableCached);
+        debtToken.mint(SATOSHI_CORE.feeReceiver(), interestPayableCached);
         interestPayable = 0;
     }
 
@@ -280,7 +280,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     }
 
     function getWeekAndDay() public view returns (uint256, uint256) {
-        uint256 duration = (block.timestamp - PRISMA_CORE.startTime());
+        uint256 duration = (block.timestamp - SATOSHI_CORE.startTime());
         uint256 week = duration / 1 weeks;
         uint256 day = (duration % 1 weeks) / 1 days;
         return (week, day);
@@ -364,7 +364,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     function getNominalICR(address _borrower) public view returns (uint256) {
         (uint256 currentCollateral, uint256 currentDebt) = getTroveCollAndDebt(_borrower);
 
-        uint256 NICR = PrismaMath._computeNominalCR(currentCollateral, currentDebt);
+        uint256 NICR = SatoshiMath._computeNominalCR(currentCollateral, currentDebt);
         return NICR;
     }
 
@@ -372,7 +372,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     function getCurrentICR(address _borrower, uint256 _price) public view returns (uint256) {
         (uint256 currentCollateral, uint256 currentDebt) = getTroveCollAndDebt(_borrower);
 
-        uint256 ICR = PrismaMath._computeCR(currentCollateral, currentDebt, _price);
+        uint256 ICR = SatoshiMath._computeCR(currentCollateral, currentDebt, _price);
         return ICR;
     }
 
@@ -435,7 +435,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
         uint256 redeemedDebtFraction = (_collateralDrawn * _price) / _totalDebtSupply;
 
         uint256 newBaseRate = decayedBaseRate + (redeemedDebtFraction / BETA);
-        newBaseRate = PrismaMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
+        newBaseRate = SatoshiMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
 
         // Update the baseRate state variable
         baseRate = newBaseRate;
@@ -455,7 +455,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     }
 
     function _calcRedemptionRate(uint256 _baseRate) internal view returns (uint256) {
-        return PrismaMath._min(
+        return SatoshiMath._min(
             redemptionFeeFloor + _baseRate,
             maxRedemptionFee // cap at a maximum of 100%
         );
@@ -482,7 +482,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     }
 
     function _calcBorrowingRate(uint256 _baseRate) internal view returns (uint256) {
-        return PrismaMath._min(borrowingFeeFloor + _baseRate, maxBorrowingFee);
+        return SatoshiMath._min(borrowingFeeFloor + _baseRate, maxBorrowingFee);
     }
 
     function getBorrowingFee(uint256 _debt) external view returns (uint256) {
@@ -511,7 +511,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
 
     function _calcDecayedBaseRate() internal view returns (uint256) {
         uint256 minutesPassed = (block.timestamp - lastFeeOperationTime) / SECONDS_IN_ONE_MINUTE;
-        uint256 decayFactor = PrismaMath._decPow(minuteDecayFactor, minutesPassed);
+        uint256 decayFactor = SatoshiMath._decPow(minuteDecayFactor, minutesPassed);
 
         return (baseRate * decayFactor) / DECIMAL_PRECISION;
     }
@@ -615,7 +615,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
 
         _requireUserAcceptsFee(totals.collateralFee, totals.totalCollateralDrawn, _maxFeePercentage);
 
-        _sendCollateral(PRISMA_CORE.feeReceiver(), totals.collateralFee);
+        _sendCollateral(SATOSHI_CORE.feeReceiver(), totals.collateralFee);
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;
 
@@ -641,7 +641,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
     ) internal returns (SingleRedemptionValues memory singleRedemption) {
         Trove storage t = troves[_borrower];
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
-        singleRedemption.debtLot = PrismaMath._min(_maxDebtAmount, t.debt - DEBT_GAS_COMPENSATION);
+        singleRedemption.debtLot = SatoshiMath._min(_maxDebtAmount, t.debt - DEBT_GAS_COMPENSATION);
 
         // Get the CollateralLot of equivalent value in USD
         singleRedemption.collateralLot = (singleRedemption.debtLot * DECIMAL_PRECISION) / _price;
@@ -657,7 +657,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
             _redeemCloseTrove(_borrower, DEBT_GAS_COMPENSATION, newColl);
             emit TroveUpdated(_borrower, 0, 0, 0, TroveManagerOperation.redeemCollateral);
         } else {
-            uint256 newNICR = PrismaMath._computeNominalCR(newColl, newDebt);
+            uint256 newNICR = SatoshiMath._computeNominalCR(newColl, newDebt);
             /*
              * If the provided hint is out of date, we bail since trying to reinsert without a good hint will almost
              * certainly result in running out of gas.
@@ -818,7 +818,7 @@ contract TroveManager is ITroveManager, PrismaOwnable, PrismaBase {
             t.coll = newColl;
         }
 
-        uint256 newNICR = PrismaMath._computeNominalCR(newColl, newDebt);
+        uint256 newNICR = SatoshiMath._computeNominalCR(newColl, newDebt);
         sortedTroves.reInsert(_borrower, newNICR, _upperHint, _lowerHint);
         uint256 newStake = _updateStakeAndTotalStakes(t);
         emit TroveUpdated(_borrower, newDebt, newColl, newStake, TroveManagerOperation.adjust);

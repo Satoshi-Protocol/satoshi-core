@@ -4,14 +4,14 @@ pragma solidity 0.8.13;
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {PrismaBase} from "../dependencies/PrismaBase.sol";
-import {PrismaMath} from "../dependencies/PrismaMath.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
+import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {DelegatedOps} from "../dependencies/DelegatedOps.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IFactory} from "../interfaces/core/IFactory.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {
     IBorrowerOperations,
     BorrowerOperation,
@@ -20,14 +20,14 @@ import {
 } from "../interfaces/core/IBorrowerOperations.sol";
 
 /**
- * @title Prisma Borrower Operations
+ * @title Satoshi Borrower Operations
  *     @notice Based on Liquity's `BorrowerOperations`
  *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/BorrowerOperations.sol
  *
- *             Prisma's implementation is modified to support multiple collaterals. There is a 1:n
+ *             Satoshi's implementation is modified to support multiple collaterals. There is a 1:n
  *             relationship between `BorrowerOperations` and each `TroveManager` / `SortedTroves` pair.
  */
-contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, DelegatedOps, IBorrowerOperations {
+contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, DelegatedOps, IBorrowerOperations {
     using SafeERC20 for IERC20;
 
     IDebtToken public debtToken;
@@ -77,15 +77,15 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
     }
 
     function initialize(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IFactory _factory,
         uint256 _minNetDebt,
         uint256 _gasCompensation
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
-        __PrismaOwnable_init(_prismaCore);
-        __PrismaBase_init(_gasCompensation);
+        __SatoshiOwnable_init(_satoshiCore);
+        __SatoshiBase_init(_gasCompensation);
         debtToken = _debtToken;
         factory = _factory;
         _setMinNetDebt(_minNetDebt);
@@ -182,7 +182,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
         address _upperHint,
         address _lowerHint
     ) external callerOrDelegated(account) {
-        require(!PRISMA_CORE.paused(), "Deposits are paused");
+        require(!SATOSHI_CORE.paused(), "Deposits are paused");
         IERC20 collateralToken;
         LocalVariables_openTrove memory vars;
         bool isRecoveryMode;
@@ -201,8 +201,8 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
 
         // ICR is based on the composite debt, i.e. the requested Debt amount + Debt borrowing fee + Debt gas comp.
         vars.compositeDebt = _getCompositeDebt(vars.netDebt);
-        vars.ICR = PrismaMath._computeCR(_collateralAmount, vars.compositeDebt, vars.price);
-        vars.NICR = PrismaMath._computeNominalCR(_collateralAmount, vars.compositeDebt);
+        vars.ICR = SatoshiMath._computeCR(_collateralAmount, vars.compositeDebt, vars.price);
+        vars.NICR = SatoshiMath._computeNominalCR(_collateralAmount, vars.compositeDebt);
 
         if (isRecoveryMode) {
             _requireICRisAboveCCR(vars.ICR);
@@ -239,7 +239,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
         address _upperHint,
         address _lowerHint
     ) external callerOrDelegated(account) {
-        require(!PRISMA_CORE.paused(), "Trove adjustments are paused");
+        require(!SATOSHI_CORE.paused(), "Trove adjustments are paused");
         _adjustTrove(troveManager, account, 0, _collateralAmount, 0, 0, false, _upperHint, _lowerHint);
     }
 
@@ -263,7 +263,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
         address _upperHint,
         address _lowerHint
     ) external callerOrDelegated(account) {
-        require(!PRISMA_CORE.paused(), "Withdrawals are paused");
+        require(!SATOSHI_CORE.paused(), "Withdrawals are paused");
         _adjustTrove(troveManager, account, _maxFeePercentage, 0, 0, _debtAmount, true, _upperHint, _lowerHint);
     }
 
@@ -289,7 +289,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
         address _upperHint,
         address _lowerHint
     ) external callerOrDelegated(account) {
-        require((_collDeposit == 0 && !_isDebtIncrease) || !PRISMA_CORE.paused(), "Trove adjustments are paused");
+        require((_collDeposit == 0 && !_isDebtIncrease) || !SATOSHI_CORE.paused(), "Trove adjustments are paused");
         require(_collDeposit == 0 || _collWithdrawal == 0, "BorrowerOperations: Cannot withdraw and add coll");
         _adjustTrove(
             troveManager,
@@ -407,7 +407,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
 
         _requireUserAcceptsFee(debtFee, _debtAmount, _maxFeePercentage);
 
-        debtToken.mint(PRISMA_CORE.feeReceiver(), debtFee);
+        debtToken.mint(SATOSHI_CORE.feeReceiver(), debtFee);
 
         emit BorrowingFeePaid(_caller, collateralToken, debtFee);
 
@@ -450,7 +450,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
          */
 
         // Get the trove's old ICR before the adjustment
-        uint256 oldICR = PrismaMath._computeCR(_vars.coll, _vars.debt, _vars.price);
+        uint256 oldICR = SatoshiMath._computeCR(_vars.coll, _vars.debt, _vars.price);
 
         // Get the trove's new ICR after the adjustment
         uint256 newICR = _getNewICRFromTroveChange(
@@ -521,7 +521,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
         (uint256 newColl, uint256 newDebt) =
             _getNewTroveAmounts(_coll, _debt, _collChange, _isCollIncrease, _debtChange, _isDebtIncrease);
 
-        uint256 newICR = PrismaMath._computeCR(newColl, newDebt, _price);
+        uint256 newICR = SatoshiMath._computeCR(newColl, newDebt, _price);
         return newICR;
     }
 
@@ -553,7 +553,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
         totalDebt = _isDebtIncrease ? totalDebt + _debtChange : totalDebt - _debtChange;
         totalColl = _isCollIncrease ? totalColl + _collChange : totalColl - _collChange;
 
-        uint256 newTCR = PrismaMath._computeCR(totalColl, totalDebt);
+        uint256 newTCR = SatoshiMath._computeCR(totalColl, totalDebt);
         return newTCR;
     }
 
@@ -570,7 +570,7 @@ contract BorrowerOperations is UUPSUpgradeable, PrismaOwnable, PrismaBase, Deleg
                 ++i;
             }
         }
-        amount = PrismaMath._computeCR(totalPricedCollateral, totalDebt);
+        amount = SatoshiMath._computeCR(totalPricedCollateral, totalDebt);
 
         return (amount, totalPricedCollateral, totalDebt);
     }

@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import {IPrismaCore} from "../src/interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
@@ -17,7 +17,7 @@ import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
-import {PrismaCore} from "../src/core/PrismaCore.sol";
+import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
 import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
@@ -27,9 +27,9 @@ import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {
-    PRISMA_CORE_OWNER,
-    PRISMA_CORE_GUARDIAN,
-    PRISMA_CORE_FEE_RECEIVER,
+    SATOSHI_CORE_OWNER,
+    SATOSHI_CORE_GUARDIAN,
+    SATOSHI_CORE_FEE_RECEIVER,
     NATIVE_TOKEN_PRICE_FEED,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
@@ -44,7 +44,7 @@ contract DeploySetupScript is Script {
 
     /* non-upgradeable contracts */
     IGasPool gasPool;
-    IPrismaCore prismaCore;
+    ISatoshiCore satoshiCore;
     IDebtToken debtToken;
     IFactory factory;
     /* implementation contracts addresses */
@@ -73,7 +73,7 @@ contract DeploySetupScript is Script {
     address cpTroveManagerImplAddr;
     // non-upgradeable contracts
     address cpGasPoolAddr;
-    address cpPrismaCoreAddr;
+    address cpSatoshiCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
     // UUPS proxy contracts
@@ -106,7 +106,7 @@ contract DeploySetupScript is Script {
         cpTroveManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         // non-upgradeable contracts
         cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpPrismaCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
@@ -130,9 +130,9 @@ contract DeploySetupScript is Script {
         gasPool = new GasPool();
         assert(cpGasPoolAddr == address(gasPool));
 
-        // PrismaCore
-        prismaCore = new PrismaCore(PRISMA_CORE_OWNER, PRISMA_CORE_GUARDIAN, PRISMA_CORE_FEE_RECEIVER);
-        assert(cpPrismaCoreAddr == address(prismaCore));
+        // SatoshiCore
+        satoshiCore = new SatoshiCore(SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER);
+        assert(cpSatoshiCoreAddr == address(satoshiCore));
 
         // DebtToken
         debtToken = new DebtToken(
@@ -140,7 +140,7 @@ contract DeploySetupScript is Script {
             DEBT_TOKEN_SYMBOL,
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IFactory(cpFactoryAddr),
             IGasPool(cpGasPoolAddr),
             GAS_COMPENSATION
@@ -149,7 +149,7 @@ contract DeploySetupScript is Script {
 
         // Factory
         factory = new Factory(
-            IPrismaCore(cpPrismaCoreAddr),
+            ISatoshiCore(cpSatoshiCoreAddr),
             IDebtToken(cpDebtTokenAddr),
             IGasPool(cpGasPoolAddr),
             IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
@@ -167,7 +167,7 @@ contract DeploySetupScript is Script {
         address proxy;
 
         // PriceFeedAggregator
-        data = abi.encodeCall(IPriceFeedAggregator.initialize, (IPrismaCore(cpPrismaCoreAddr)));
+        data = abi.encodeCall(IPriceFeedAggregator.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         proxy = address(new ERC1967Proxy(address(priceFeedAggregatorImpl), data));
         assert(proxy == cpPriceFeedAggregatorProxyAddr);
 
@@ -175,7 +175,7 @@ contract DeploySetupScript is Script {
         data = abi.encodeCall(
             IBorrowerOperations.initialize,
             (
-                IPrismaCore(cpPrismaCoreAddr),
+                ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
                 BO_MIN_NET_DEBT,
@@ -189,7 +189,7 @@ contract DeploySetupScript is Script {
         data = abi.encodeCall(
             ILiquidationManager.initialize,
             (
-                IPrismaCore(cpPrismaCoreAddr),
+                ISatoshiCore(cpSatoshiCoreAddr),
                 IStabilityPool(cpStabilityPoolProxyAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
                 IFactory(cpFactoryAddr),
@@ -203,7 +203,7 @@ contract DeploySetupScript is Script {
         data = abi.encodeCall(
             IStabilityPool.initialize,
             (
-                IPrismaCore(cpPrismaCoreAddr),
+                ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
                 ILiquidationManager(cpLiquidationManagerProxyAddr)

@@ -7,7 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITroveManager.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
-import {PrismaMath} from "../src/dependencies/PrismaMath.sol";
+import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase} from "./DeployBase.t.sol";
 import {HintHelpers} from "./HintHelpers.sol";
 import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
@@ -45,7 +45,7 @@ contract BorrowerOperationTest is Test, DeployBase, TestConfig {
         collateralMock.approve(address(borrowerOperationsProxy), 1e18);
 
         // state before
-        uint256 feeReceiverDebtAmtBefore = debtToken.balanceOf(prismaCore.feeReceiver());
+        uint256 feeReceiverDebtAmtBefore = debtToken.balanceOf(satoshiCore.feeReceiver());
         uint256 gasPoolDebtAmtBefore = debtToken.balanceOf(address(gasPool));
         uint256 user1DebtAmtBefore = debtToken.balanceOf(user1);
         uint256 user1CollateralAmtBefore = collateralMock.balanceOf(user1);
@@ -67,7 +67,7 @@ contract BorrowerOperationTest is Test, DeployBase, TestConfig {
             // check NodeAdded event
             uint256 compositeDebt = borrowerOperationsProxy.getCompositeDebt(debtAmt);
             uint256 totalDebt = compositeDebt + borrowingFee;
-            uint256 NICR = PrismaMath._computeNominalCR(collateralAmt, totalDebt);
+            uint256 NICR = SatoshiMath._computeNominalCR(collateralAmt, totalDebt);
             vm.expectEmit(true, true, true, true, address(sortedTrovesBeaconProxy));
             emit NodeAdded(user1, NICR);
 
@@ -86,7 +86,7 @@ contract BorrowerOperationTest is Test, DeployBase, TestConfig {
         );
 
         // state after
-        uint256 feeReceiverDebtAmtAfter = debtToken.balanceOf(prismaCore.feeReceiver());
+        uint256 feeReceiverDebtAmtAfter = debtToken.balanceOf(satoshiCore.feeReceiver());
         uint256 gasPoolDebtAmtAfter = debtToken.balanceOf(address(gasPool));
         uint256 user1DebtAmtAfter = debtToken.balanceOf(user1);
         uint256 user1CollateralAmtAfter = collateralMock.balanceOf(user1);

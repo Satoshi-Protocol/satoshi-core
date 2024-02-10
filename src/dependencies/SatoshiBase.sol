@@ -2,13 +2,13 @@
 pragma solidity 0.8.13;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IPrismaBase} from "../interfaces/dependencies/IPrismaBase.sol";
+import {ISatoshiBase} from "../interfaces/dependencies/ISatoshiBase.sol";
 
 /*
  * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
  * common functions.
  */
-abstract contract PrismaBase is Initializable, IPrismaBase {
+abstract contract SatoshiBase is Initializable, ISatoshiBase {
     uint256 public constant DECIMAL_PRECISION = 1e18;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, Recovery Mode is triggered.
@@ -23,7 +23,7 @@ abstract contract PrismaBase is Initializable, IPrismaBase {
         _disableInitializers();
     }
 
-    function __PrismaBase_init(uint256 _gasCompensation) internal {
+    function __SatoshiBase_init(uint256 _gasCompensation) internal {
         DEBT_GAS_COMPENSATION = _gasCompensation;
     }
 

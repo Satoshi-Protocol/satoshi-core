@@ -13,7 +13,7 @@ struct CombinedTroveData {
     uint256 snapshotDebt;
 }
 
-/*  Helper contract for grabbing Trove data for the front end. Not part of the core Prisma system. */
+/*  Helper contract for grabbing Trove data for the front end. Not part of the core Satoshi system. */
 contract MultiTroveGetter {
     constructor() {}
 

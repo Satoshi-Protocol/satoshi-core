@@ -5,7 +5,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
@@ -13,15 +13,15 @@ import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {DeploymentParams, IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 
 //NOTE: non-upgradeable Factory contract
 
-contract Factory is IFactory, PrismaOwnable {
-    IPrismaCore public immutable prismaCore;
+contract Factory is IFactory, SatoshiOwnable {
+    ISatoshiCore public immutable satoshiCore;
     IDebtToken public immutable debtToken;
     IGasPool public immutable gasPool;
     IPriceFeedAggregator public immutable priceFeedAggregatorProxy;
@@ -35,7 +35,7 @@ contract Factory is IFactory, PrismaOwnable {
     ITroveManager[] public troveManagers;
 
     constructor(
-        IPrismaCore _prismaCore,
+        ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IGasPool _gasPool,
         IPriceFeedAggregator _priceFeedAggregatorProxy,
@@ -46,8 +46,8 @@ contract Factory is IFactory, PrismaOwnable {
         IBeacon _troveManagerBeacon,
         uint256 _gasCompensation
     ) {
-        __PrismaOwnable_init(_prismaCore);
-        prismaCore = _prismaCore;
+        __SatoshiOwnable_init(_satoshiCore);
+        satoshiCore = _satoshiCore;
         debtToken = _debtToken;
         gasPool = _gasPool;
         priceFeedAggregatorProxy = _priceFeedAggregatorProxy;
@@ -97,7 +97,7 @@ contract Factory is IFactory, PrismaOwnable {
     }
 
     function _deploySortedTrovesBeaconProxy() internal returns (ISortedTroves) {
-        bytes memory data = abi.encodeCall(ISortedTroves.initialize, prismaCore);
+        bytes memory data = abi.encodeCall(ISortedTroves.initialize, satoshiCore);
         return ISortedTroves(address(new BeaconProxy(address(sortedTrovesBeacon), data)));
     }
 
@@ -105,7 +105,7 @@ contract Factory is IFactory, PrismaOwnable {
         bytes memory data = abi.encodeCall(
             ITroveManager.initialize,
             (
-                prismaCore,
+                satoshiCore,
                 gasPool,
                 debtToken,
                 borrowerOperationsProxy,

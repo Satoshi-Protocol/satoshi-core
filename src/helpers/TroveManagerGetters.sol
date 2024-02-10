@@ -10,7 +10,7 @@ struct Collateral {
     address[] troveManagers;
 }
 
-/*  Helper contract for grabbing Trove data for the front end. Not part of the core Prisma system. */
+/*  Helper contract for grabbing Trove data for the front end. Not part of the core Satoshi system. */
 contract TroveManagerGetters {
     IFactory public immutable factory;
 

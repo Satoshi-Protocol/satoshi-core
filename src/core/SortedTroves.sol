@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {PrismaOwnable} from "../dependencies/PrismaOwnable.sol";
-import {IPrismaCore} from "../interfaces/core/IPrismaCore.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {ISortedTroves, Node, Data} from "../interfaces/core/ISortedTroves.sol";
 
 /**
- * @title Prisma Sorted Troves
+ * @title Satoshi Sorted Troves
  *     @notice Based on Liquity's `SortedTroves`:
  *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/SortedTroves.sol
  *
  *             Originally derived from `SortedDoublyLinkedList`:
  *             https://github.com/livepeer/protocol/blob/master/contracts/libraries/SortedDoublyLL.sol
  */
-contract SortedTroves is ISortedTroves, PrismaOwnable {
+contract SortedTroves is ISortedTroves, SatoshiOwnable {
     ITroveManager public troveManager;
 
     Data public data;
@@ -23,8 +23,8 @@ contract SortedTroves is ISortedTroves, PrismaOwnable {
         _disableInitializers();
     }
 
-    function initialize(IPrismaCore _prismaCore) external initializer {
-        __PrismaOwnable_init(_prismaCore);
+    function initialize(ISatoshiCore _satoshiCore) external initializer {
+        __SatoshiOwnable_init(_satoshiCore);
     }
 
     function setConfig(ITroveManager _troveManager) external {
