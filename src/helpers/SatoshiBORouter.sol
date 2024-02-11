@@ -153,8 +153,8 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
     function closeTrove(ITroveManager troveManager, address account) external {
         (uint256 collAmount, uint256 debtAmount) = troveManager.getTroveCollAndDebt(account);
-
-        _beforeRepayDebt(debtAmount);
+        uint256 netDebtAmount = debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION();
+        _beforeRepayDebt(netDebtAmount);
 
         borrowerOperationsProxy.closeTrove(troveManager, account);
 
@@ -200,5 +200,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
         if (debtAmount == 0) return;
 
         debtToken.transfer(msg.sender, debtAmount);
+    }
+
+    receive() external payable {
+        // to receive native token
     }
 }

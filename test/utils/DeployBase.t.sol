@@ -46,6 +46,43 @@ import {
     BO_MIN_NET_DEBT
 } from "../TestConfig.sol";
 
+struct LocalVars {
+    // base vars
+    uint256 collAmt;
+    uint256 debtAmt;
+    uint256 maxFeePercentage;
+    uint256 borrowingFee;
+    uint256 compositeDebt;
+    uint256 totalCollAmt;
+    uint256 totalNetDebtAmt;
+    uint256 totalDebt;
+    uint256 stake;
+    uint256 NICR;
+    address upperHint;
+    address lowerHint;
+    // change trove state vars
+    uint256 addCollAmt;
+    uint256 withdrawCollAmt;
+    uint256 repayDebtAmt;
+    uint256 withdrawDebtAmt;
+    //before state vars
+    uint256 feeReceiverDebtAmtBefore;
+    uint256 gasPoolDebtAmtBefore;
+    uint256 userBalanceBefore;
+    uint256 userCollAmtBefore;
+    uint256 userDebtAmtBefore;
+    uint256 troveManagerCollateralAmtBefore;
+    uint256 debtTokenTotalSupplyBefore;
+    // after state vars
+    uint256 feeReceiverDebtAmtAfter;
+    uint256 gasPoolDebtAmtAfter;
+    uint256 userBalanceAfter;
+    uint256 userCollAmtAfter;
+    uint256 userDebtAmtAfter;
+    uint256 troveManagerCollateralAmtAfter;
+    uint256 debtTokenTotalSupplyAfter;
+}
+
 abstract contract DeployBase is Test {
     /* mock contracts for testing */
     IERC20 collateralMock;

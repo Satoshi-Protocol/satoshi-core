@@ -10,7 +10,7 @@ interface ISatoshiBORouter {
     function debtToken() external view returns (IDebtToken);
 
     function borrowerOperationsProxy() external view returns (IBorrowerOperations);
-        
+
     function weth() external view returns (IWETH);
 
     function openTrove(
