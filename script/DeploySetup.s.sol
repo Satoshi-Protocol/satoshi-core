@@ -16,6 +16,9 @@ import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
+import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
+import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
+import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
@@ -27,15 +30,16 @@ import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
+import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
 import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
     SATOSHI_CORE_FEE_RECEIVER,
-    NATIVE_TOKEN_PRICE_FEED,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     BO_MIN_NET_DEBT,
-    GAS_COMPENSATION
+    GAS_COMPENSATION,
+    WETH_ADDRESS
 } from "./DeploySetupConfig.sol";
 
 contract DeploySetupScript is Script {
@@ -64,7 +68,8 @@ contract DeploySetupScript is Script {
     UpgradeableBeacon sortedTrovesBeacon;
     UpgradeableBeacon troveManagerBeacon;
     /* Helpers contracts */
-    MultiCollateralHintHelpers hintHelpers;
+    IMultiCollateralHintHelpers hintHelpers;
+    ISatoshiBORouter satoshiBORouter;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -172,6 +177,7 @@ contract DeploySetupScript is Script {
         // PriceFeedAggregator
         data = abi.encodeCall(IPriceFeedAggregator.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         proxy = address(new ERC1967Proxy(address(priceFeedAggregatorImpl), data));
+        priceFeedAggregatorProxy = IPriceFeedAggregator(proxy);
         assert(proxy == cpPriceFeedAggregatorProxyAddr);
 
         // BorrowerOperations
@@ -186,6 +192,7 @@ contract DeploySetupScript is Script {
             )
         );
         proxy = address(new ERC1967Proxy(address(borrowerOperationsImpl), data));
+        borrowerOperationsProxy = IBorrowerOperations(proxy);
         assert(proxy == cpBorrowerOperationsProxyAddr);
 
         // LiquidationManager
@@ -200,6 +207,7 @@ contract DeploySetupScript is Script {
             )
         );
         proxy = address(new ERC1967Proxy(address(liquidationManagerImpl), data));
+        liquidationManagerProxy = ILiquidationManager(proxy);
         assert(proxy == cpLiquidationManagerProxyAddr);
 
         // StabilityPool
@@ -213,6 +221,7 @@ contract DeploySetupScript is Script {
             )
         );
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
+        stabilityPoolProxy = IStabilityPool(proxy);
         assert(proxy == cpStabilityPoolProxyAddr);
 
         // SortedTrovesBeacon
@@ -224,7 +233,30 @@ contract DeploySetupScript is Script {
         assert(cpTroveManagerBeaconAddr == address(troveManagerBeacon));
 
         // MultiCollateralHintHelpers
-        hintHelpers = new MultiCollateralHintHelpers(address(borrowerOperationsProxy), GAS_COMPENSATION);
+        hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
+
+        // SatoshiBORouter
+        satoshiBORouter = new SatoshiBORouter(debtToken, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
+
+        console.log("Deployed contracts:");
+        console.log("priceFeedAggregatorImpl:", address(priceFeedAggregatorImpl));
+        console.log("borrowerOperationsImpl:", address(borrowerOperationsImpl));
+        console.log("liquidationManagerImpl:", address(liquidationManagerImpl));
+        console.log("stabilityPoolImpl:", address(stabilityPoolImpl));
+        console.log("sortedTrovesImpl:", address(sortedTrovesImpl));
+        console.log("troveManagerImpl:", address(troveManagerImpl));
+        console.log("gasPool:", address(gasPool));
+        console.log("satoshiCore:", address(satoshiCore));
+        console.log("debtToken:", address(debtToken));
+        console.log("factory:", address(factory));
+        console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
+        console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
+        console.log("liquidationManagerProxy:", address(liquidationManagerProxy));
+        console.log("stabilityPoolProxy:", address(stabilityPoolProxy));
+        console.log("sortedTrovesBeacon:", address(sortedTrovesBeacon));
+        console.log("troveManagerBeacon:", address(troveManagerBeacon));
+        console.log("hintHelpers:", address(hintHelpers));
+        console.log("satoshiBORouter:", address(satoshiBORouter));
 
         vm.stopBroadcast();
     }

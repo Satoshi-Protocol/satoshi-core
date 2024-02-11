@@ -14,12 +14,6 @@ contract SatoshiBORouter is ISatoshiBORouter {
     IBorrowerOperations public immutable borrowerOperationsProxy;
     IWETH public immutable weth;
 
-    error MsgValueMismatch(uint256 msgValue, uint256 collAmount);
-    error InvalidMsgValue(uint256 msgValue);
-    error NativeTokenTransferFailed();
-    error CannotWithdrawAndAddColl();
-    error InvalidZeroAddress();
-
     constructor(IDebtToken _debtToken, IBorrowerOperations _borrowerOperationsProxy, IWETH _weth) {
         if (address(_debtToken) == address(0)) revert InvalidZeroAddress();
         if (address(_borrowerOperationsProxy) == address(0)) revert InvalidZeroAddress();

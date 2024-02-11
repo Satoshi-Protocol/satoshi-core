@@ -442,8 +442,7 @@ abstract contract DeployBase is Test {
     function _deployHintHelpers(address deployer) internal returns (address) {
         vm.startPrank(deployer);
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
-        address hintHelpersAddr =
-            address(new MultiCollateralHintHelpers(address(borrowerOperationsProxy), GAS_COMPENSATION));
+        address hintHelpersAddr = address(new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION));
         vm.stopPrank();
 
         return hintHelpersAddr;

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-//NOTE: custom `PriceFeed.sol` contract should be deploy first
-address constant NATIVE_TOKEN_PRICE_FEED = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
+address constant SATOSHI_CORE_OWNER = 0x3AFdDB93D86222669D77d76b50C0C4100454AcAa;
+address constant SATOSHI_CORE_GUARDIAN = 0x130730818D5C9a2Da5338422C755fcFDf1975147;
+address constant SATOSHI_CORE_FEE_RECEIVER = 0x33266D51E5f18d4864d0c04f22252E04c46408f7;
 
-address constant SATOSHI_CORE_OWNER = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;
-address constant SATOSHI_CORE_GUARDIAN = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;
-address constant SATOSHI_CORE_FEE_RECEIVER = 0x6e24f0fF0337edf4af9c67bFf22C402302fc94D3;
-
-uint256 constant BO_MIN_NET_DEBT = 50e18; // 50 SAT
+uint256 constant BO_MIN_NET_DEBT = 45e18; // 45 SAT
 uint256 constant GAS_COMPENSATION = 5e18; // 5 SAT
 
 string constant DEBT_TOKEN_NAME = "Statoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
+
+address constant WETH_ADDRESS = 0x51abb19F1ebc7B64040aFd0ef3C789d75C8707e0;

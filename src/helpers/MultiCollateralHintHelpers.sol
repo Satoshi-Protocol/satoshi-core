@@ -11,9 +11,9 @@ import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase {
     IBorrowerOperations public immutable borrowerOperations;
 
-    constructor(address _borrowerOperationsAddress, uint256 _gasCompensation) {
+    constructor(IBorrowerOperations _borrowerOperations, uint256 _gasCompensation) {
         __SatoshiBase_init(_gasCompensation);
-        borrowerOperations = IBorrowerOperations(_borrowerOperationsAddress);
+        borrowerOperations = _borrowerOperations;
     }
 
     // --- Functions ---

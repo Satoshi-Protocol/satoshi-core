@@ -26,7 +26,7 @@ import {
 } from "./DeployInstanceConfig.sol";
 
 contract DeployInstanceScript is Script {
-    uint256 internal DEPLOYMENT_PRIVATE_KEY;
+    uint256 internal OWNER_PRIVATE_KEY;
     IFactory internal factory;
     IERC20 internal collateral;
     IPriceFeedAggregator internal priceFeedAggregator;
@@ -34,7 +34,7 @@ contract DeployInstanceScript is Script {
     DeploymentParams internal deploymentParams;
 
     function setUp() public {
-        DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
+        OWNER_PRIVATE_KEY = uint256(vm.envBytes32("OWNER_PRIVATE_KEY"));
         factory = IFactory(FACTORY_ADDRESS);
         collateral = IERC20(COLLATERAL_ADDRESS);
         priceFeedAggregator = IPriceFeedAggregator(PRICE_FEED_AGGREGATOR_ADDRESS);
@@ -52,11 +52,19 @@ contract DeployInstanceScript is Script {
     }
 
     function run() public {
-        vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
+        vm.startBroadcast(OWNER_PRIVATE_KEY);
 
         priceFeedAggregator.setPriceFeed(collateral, priceFeed);
         DeploymentParams memory params = deploymentParams;
+        // (ISortedTroves sortedTrovesBeaconProxy, ITroveManager troveManagerBeaconProxy) =
         factory.deployNewInstance(collateral, priceFeed, params);
+
+        uint256 troveManagerCount = factory.troveManagerCount();
+        ITroveManager troveManagerBeaconProxy = factory.troveManagers(troveManagerCount - 1);
+        ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
+
+        console.log("SortedTrovesBeaconProxy: address:", address(sortedTrovesBeaconProxy));
+        console.log("TroveManagerBeaconProxy: address:", address(troveManagerBeaconProxy));
 
         vm.stopBroadcast();
     }

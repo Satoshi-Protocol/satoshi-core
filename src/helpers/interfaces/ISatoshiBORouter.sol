@@ -7,6 +7,12 @@ import {ITroveManager} from "../../interfaces/core/ITroveManager.sol";
 import {IWETH} from "./IWETH.sol";
 
 interface ISatoshiBORouter {
+    error MsgValueMismatch(uint256 msgValue, uint256 collAmount);
+    error InvalidMsgValue(uint256 msgValue);
+    error NativeTokenTransferFailed();
+    error CannotWithdrawAndAddColl();
+    error InvalidZeroAddress();
+
     function debtToken() external view returns (IDebtToken);
 
     function borrowerOperationsProxy() external view returns (IBorrowerOperations);

@@ -19,3 +19,5 @@ docs/
 src/mock
 
 .gas-snapshot
+
+local.txt
