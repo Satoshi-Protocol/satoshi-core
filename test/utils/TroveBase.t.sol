@@ -7,6 +7,7 @@ import {IBorrowerOperations} from "../../src/interfaces/core/IBorrowerOperations
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
 import {IMultiCollateralHintHelpers} from "../../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
+import {IStabilityPool} from "../../src/interfaces/core/IStabilityPool.sol";
 import {HintLib} from "./HintLib.sol";
 
 abstract contract TroveBase is Test {
@@ -38,6 +39,26 @@ abstract contract TroveBase is Test {
             troveManagerBeaconProxy, account, maxFeePercentage, collateralAmt, debtAmt, upperHint, lowerHint
         );
 
+        vm.stopPrank();
+    }
+
+    function provideToSP(
+        IStabilityPool stabilityPoolProxy,
+        address caller,
+        uint256 amount
+    ) internal {
+        vm.startPrank(caller);
+        stabilityPoolProxy.provideToSP(amount);
+        vm.stopPrank();
+    }
+
+    function withdrawFromSP(
+        IStabilityPool stabilityPoolProxy,
+        address caller,
+        uint256 amount
+    ) internal {
+        vm.startPrank(caller);
+        stabilityPoolProxy.withdrawFromSP(amount);
         vm.stopPrank();
     }
 }

@@ -11,7 +11,6 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
-
 /**
  * @title Satoshi Stability Pool
  *     @notice Based on Liquity's `StabilityPool`
@@ -56,7 +55,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
      * During its lifetime, a deposit's value evolves from d_t to d_t * P / P_t , where P_t
      * is the snapshot of P taken at the instant the deposit was made. 18-digit decimal.
      */
-    uint256 public P = DECIMAL_PRECISION;
+    uint256 public P; // init to DECIMAL_PRECISION
 
     uint256 public constant SCALE_FACTOR = 1e9;
 
@@ -115,6 +114,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         debtToken = _debtToken;
         factory = _factory;
         liquidationManager = _liquidationManager;
+        P = DECIMAL_PRECISION;
     }
 
     function enableCollateral(IERC20 _collateral) external {

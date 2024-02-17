@@ -21,3 +21,5 @@ src/mock
 .gas-snapshot
 
 local.txt
+
+lib/solidity-examples
