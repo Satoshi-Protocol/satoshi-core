@@ -19,6 +19,7 @@ import {TroveManager} from "../../src/core/TroveManager.sol";
 import {GasPool} from "../../src/core/GasPool.sol";
 import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
+import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
@@ -107,6 +108,8 @@ abstract contract DeployBase is Test {
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
+    /* DebetTokenTester contract */
+    DebtTokenTester debtTokenTester;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -129,6 +132,8 @@ abstract contract DeployBase is Test {
     // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
+    // Mock oracle
+    address oracleMockAddr;
 
     function setUp() public virtual {
         // deploy ERC20
@@ -232,7 +237,7 @@ abstract contract DeployBase is Test {
         returns (address)
     {
         // deploy oracle mock contract to mcok price feed source
-        address oracleMockAddr = _deployOracleMock(deployer, decimals, version);
+        oracleMockAddr = _deployOracleMock(deployer, decimals, version);
         // update data to the oracle mock
         _updateRoundData(deployer, oracleMockAddr, roundData);
 
@@ -465,5 +470,21 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
 
         return satoshiBORouterAddr;
+    }
+
+    /* ============ Deploy DebtTokenTester Contracts ============ */
+    function _deployDebtTokenTester() internal {
+        vm.startPrank(DEPLOYER);
+        debtTokenTester = new DebtTokenTester(
+            DEBT_TOKEN_NAME,
+            DEBT_TOKEN_SYMBOL,
+            stabilityPoolProxy,
+            borrowerOperationsProxy,
+            satoshiCore,
+            factory,
+            gasPool,
+            GAS_COMPENSATION
+        );
+        vm.stopPrank();
     }
 }
