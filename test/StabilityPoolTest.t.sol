@@ -306,9 +306,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     V Price Aggregator: Add timestamp check
     V DebtToken Operation: Flashloan, permit, erc20 functions…
     V Stability Pool: ProvideToSP, WithdrawToSP
-    - Fee calculation and claim: One time borrowing fee, interest rate…
+    V Fee calculation and claim: One time borrowing fee, interest rate…
     - Router review
     - Contract upgrade test
-    - Fee distrbute to Fee Receiver and interest to Reward Manager
+    V Fee distrbute to Fee Receiver and interest to Reward Manager
     */
 }

@@ -10,13 +10,13 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
-import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, REWARD_MANAGER} from "./TestConfig.sol";
+import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEIVER} from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 import {INTEREST_RATE_IN_BPS} from "./TestConfig.sol";
 
-contract InterestTest is Test, DeployBase, TroveBase, TestConfig, Events {
+contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
@@ -145,5 +145,15 @@ contract InterestTest is Test, DeployBase, TroveBase, TestConfig, Events {
             expectedDebt
         );
         assert(delta < 1000);
+    }
+
+    function test_OneTimeBorrowFee() public {
+        _openTrove(user1, 1e18, 1000e18);
+        // 365 days later
+        uint256 delta = SatoshiMath._getAbsoluteDifference(
+            debtToken.balanceOf(FEE_RECEIVER), 
+            5e18
+        );
+        assert(delta == 0);
     }
 }
