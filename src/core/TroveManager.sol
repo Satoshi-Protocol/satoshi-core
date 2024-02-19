@@ -268,7 +268,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function collectInterests() external {
         uint256 interestPayableCached = interestPayable;
-        require(interestPayableCached > 0, "Nothing to collect");
         debtToken.mint(SATOSHI_CORE.rewardManager(), interestPayableCached);
         interestPayable = 0;
     }

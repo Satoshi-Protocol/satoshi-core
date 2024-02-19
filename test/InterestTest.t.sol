@@ -10,7 +10,7 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
-import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
+import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, REWARD_MANAGER} from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
@@ -113,7 +113,37 @@ contract InterestTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assert(delta < 1000);
     }
 
-    // function test_CollectInterestToRewardManager() public {
+    function test_AccrueInterst2TroveCorrect() public {
+        // open a trove
+        _openTrove(user1, 1e18, 1000e18);
+        _openTrove(user2, 1e18, 1000e18);
+        (uint256 user1CollBefore, uint256 user1DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        (uint256 user2CollBefore, uint256 user2DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        
+        // 365 days later
+        vm.warp(block.timestamp + 365 days);
+        
+        (uint256 user1CollAfter, uint256 user1DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        (uint256 user2CollAfter, uint256 user2DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        assertEq(user1CollAfter, user1CollBefore);
+        assertEq(user2CollAfter, user2CollBefore);
+        
+        // check the debt
+        uint256 expectedDebt = (user1DebtBefore + user2DebtBefore) * (10000 + INTEREST_RATE_IN_BPS) / 10000;
+        uint256 delta = SatoshiMath._getAbsoluteDifference(expectedDebt, user1DebtAfter + user2DebtAfter);
+        assert(delta < 1000);
+    }
 
-    // }
+    function test_CollectInterestToRewardManager() public {
+        _openTrove(user1, 1e18, 1000e18);
+        // 365 days later
+        vm.warp(block.timestamp + 365 days);
+        _openTrove(user2, 1e18, 50e18);
+        uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
+        uint256 delta = SatoshiMath._getAbsoluteDifference(
+            debtToken.balanceOf(REWARD_MANAGER), 
+            expectedDebt
+        );
+        assert(delta < 1000);
+    }
 }

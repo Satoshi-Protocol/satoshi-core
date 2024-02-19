@@ -229,6 +229,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         //  and mint the DebtAmount to the caller and gas compensation for Gas Pool
         debtToken.mintWithGasCompensation(msg.sender, _debtAmount);
+
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     // Send collateral to a trove
@@ -241,6 +244,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     ) external callerOrDelegated(account) {
         require(!SATOSHI_CORE.paused(), "Trove adjustments are paused");
         _adjustTrove(troveManager, account, 0, _collateralAmount, 0, 0, false, _upperHint, _lowerHint);
+        
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     // Withdraw collateral from a trove
@@ -252,6 +258,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         address _lowerHint
     ) external callerOrDelegated(account) {
         _adjustTrove(troveManager, account, 0, 0, _collWithdrawal, 0, false, _upperHint, _lowerHint);
+
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     // Withdraw Debt tokens from a trove: mint new Debt tokens to the owner, and increase the trove's debt accordingly
@@ -265,6 +274,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     ) external callerOrDelegated(account) {
         require(!SATOSHI_CORE.paused(), "Withdrawals are paused");
         _adjustTrove(troveManager, account, _maxFeePercentage, 0, 0, _debtAmount, true, _upperHint, _lowerHint);
+
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     // Repay Debt tokens to a Trove: Burn the repaid Debt tokens, and reduce the trove's debt accordingly
@@ -276,6 +288,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         address _lowerHint
     ) external callerOrDelegated(account) {
         _adjustTrove(troveManager, account, 0, 0, 0, _debtAmount, false, _upperHint, _lowerHint);
+
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     function adjustTrove(
@@ -302,6 +317,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
             _upperHint,
             _lowerHint
         );
+
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     function _adjustTrove(
@@ -392,6 +410,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         // Burn the repaid Debt from the user's balance and the gas compensation from the Gas Pool
         debtToken.burnWithGasCompensation(msg.sender, debt - DEBT_GAS_COMPENSATION);
+
+        // collect interest payable to rewardManager
+        troveManager.collectInterests();
     }
 
     // --- Helper functions ---
