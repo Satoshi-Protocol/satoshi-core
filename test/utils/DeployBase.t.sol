@@ -41,6 +41,7 @@ import {
     OWNER,
     GUARDIAN,
     FEE_RECEIVER,
+    REWARD_MANAGER,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
@@ -257,7 +258,7 @@ abstract contract DeployBase is Test {
     function _deploySatoshiCore(address deployer) internal {
         vm.startPrank(deployer);
         assert(gasPool != IGasPool(address(0))); // check if gas pool contract is deployed
-        satoshiCore = new SatoshiCore(OWNER, GUARDIAN, FEE_RECEIVER);
+        satoshiCore = new SatoshiCore(OWNER, GUARDIAN, FEE_RECEIVER, REWARD_MANAGER);
         vm.stopPrank();
     }
 

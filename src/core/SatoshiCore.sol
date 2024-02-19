@@ -16,6 +16,7 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
  */
 contract SatoshiCore is ISatoshiCore {
     address public feeReceiver;
+    address public rewardManager;
 
     address public owner;
     address public pendingOwner;
@@ -35,13 +36,15 @@ contract SatoshiCore is ISatoshiCore {
     // Other contracts that require access to this should inherit `SystemStart`.
     uint256 public immutable startTime;
 
-    constructor(address _owner, address _guardian, address _feeReceiver) {
+    constructor(address _owner, address _guardian, address _feeReceiver, address _rewardManager) {
         owner = _owner;
         startTime = (block.timestamp / 1 weeks) * 1 weeks;
         guardian = _guardian;
         feeReceiver = _feeReceiver;
+        rewardManager = _rewardManager;
         emit GuardianSet(_guardian);
         emit FeeReceiverSet(_feeReceiver);
+        emit RewardManagerSet(_rewardManager);
     }
 
     modifier onlyOwner() {
@@ -50,7 +53,7 @@ contract SatoshiCore is ISatoshiCore {
     }
 
     /**
-     * @notice Set the receiver of all fees across the protocol
+     * @notice Set the receiver of one time borrow fee in the protocol
      * @param _feeReceiver Address of the fee's recipient
      */
     function setFeeReceiver(address _feeReceiver) external onlyOwner {
@@ -66,6 +69,15 @@ contract SatoshiCore is ISatoshiCore {
     function setGuardian(address _guardian) external onlyOwner {
         guardian = _guardian;
         emit GuardianSet(_guardian);
+    }
+
+    /**
+     * @notice Set the receiver of the fee in the protocol
+     * @param _rewardManager Address of the fee's recipient
+     */
+     function setRewardManager(address _rewardManager) external onlyOwner {
+        rewardManager = _rewardManager;
+        emit RewardManagerSet(rewardManager);
     }
 
     /**
