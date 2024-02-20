@@ -279,7 +279,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     /* @todo
     - BO: global state and personal state calculation, operations in normal mode and recovery mode
-    - TM: Trove operations, Redeem, remaining claimed Coll after redeem, Redistribution
+    V TM: Trove operations, Redeem, remaining claimed Coll after redeem
     V Liquidation: liquidate, liquidateTroves, batchLiquidateTroves, reward distribution
     V Price Aggregator: Add timestamp check
     V DebtToken Operation: Flashloan, permit, erc20 functions…
@@ -288,5 +288,6 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     - Router review
     - Contract upgrade test
     V Fee distrbute to Fee Receiver and interest to Reward Manager
+    - Redistribution
     */
 }

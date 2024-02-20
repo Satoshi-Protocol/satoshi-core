@@ -75,7 +75,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         (
             address firstRedemptionHint,
             uint256 partialRedemptionHintNICR,
-
+            uint256 truncatedDebtAmount
         ) = hintHelpers.getRedemptionHints(
                 troveManagerBeaconProxy,
                 redemptionAmount,
@@ -101,7 +101,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // redeem
         vm.prank(caller);
         troveManagerBeaconProxy.redeemCollateral(
-            redemptionAmount,
+            truncatedDebtAmount,
             firstRedemptionHint,
             upperPartialRedemptionHint,
             lowerPartialRedemptionHint,
@@ -137,6 +137,48 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(firstRedemptionHint, user3);
         assertEq(redemptionAmount, truncatedDebtAmount);
         console.log("partialRedemptionHintNICR: ", partialRedemptionHintNICR);
+    }
+
+    function test_PartialRedeem() public {
+        // skip bootstrapping time
+        vm.warp(block.timestamp + 14 days);
+        // price drop
+        _updateRoundData(
+            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
+
+        _openTrove(user1, 1000000e18, 133330e18);
+        _openTrove(user2, 1e18, 13793e18);
+        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user4, 1e18, 30000e18);
+        
+        uint256 redemptionAmount = 35000e18;
+
+        _redeemCollateral(user1, redemptionAmount);
+        (, uint256 debt4) = troveManagerBeaconProxy.getTroveCollAndDebt(user4);
+        (, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        assertEq(debt4, 0);
+        assert(debt3 < 20000e18);
+    }
+
+    function test_RedeemOnlyOneTrove() public {
+        // skip bootstrapping time
+        vm.warp(block.timestamp + 14 days);
+        // price drop
+        _updateRoundData(
+            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
+
+        _openTrove(user1, 1000000e18, 1000e18);
+        _openTrove(user2, 1e18, 50e18);
+        _openTrove(user3, 1e18, 80e18);
+
+        uint256 redemptionAmount = 30e18;
+
+        _redeemCollateral(user1, redemptionAmount);
+        (, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        assertEq(debt3, 554e17);
     }
 
     function test_redeem() public {

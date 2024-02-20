@@ -7,6 +7,7 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
+import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 
 /**
  * @title Satoshi Borrower Operations Router
@@ -42,11 +43,16 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
         _beforeAddColl(collateralToken, _collAmount);
 
+        uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
+        
         borrowerOperationsProxy.openTrove(
             troveManager, account, _maxFeePercentage, _collAmount, _debtAmount, _upperHint, _lowerHint
         );
 
-        _afterWithdrawDebt(_debtAmount);
+        uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
+        uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
+        require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
+        _afterWithdrawDebt(userDebtAmount);
     }
 
     function addColl(
@@ -70,11 +76,15 @@ contract SatoshiBORouter is ISatoshiBORouter {
         address _upperHint,
         address _lowerHint
     ) external {
+        IERC20 collateralToken = troveManager.collateralToken();
+        uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
+        
         borrowerOperationsProxy.withdrawColl(troveManager, account, _collWithdrawal, _upperHint, _lowerHint);
 
-        IERC20 collateralToken = troveManager.collateralToken();
-
-        _afterWithdrawColl(collateralToken, _collWithdrawal);
+        uint256 collTokenBalanceAfter = collateralToken.balanceOf(address(this));
+        uint256 userCollAmount = collTokenBalanceAfter - collTokenBalanceBefore;
+        require(userCollAmount == _collWithdrawal, "SatoshiBORouter: Collateral amount mismatch");
+        _afterWithdrawColl(collateralToken, userCollAmount);
     }
 
     function withdrawDebt(
@@ -85,11 +95,14 @@ contract SatoshiBORouter is ISatoshiBORouter {
         address _upperHint,
         address _lowerHint
     ) external {
+        uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
         borrowerOperationsProxy.withdrawDebt(
             troveManager, account, _maxFeePercentage, _debtAmount, _upperHint, _lowerHint
         );
-
-        _afterWithdrawDebt(_debtAmount);
+        uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
+        uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
+        require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
+        _afterWithdrawDebt(userDebtAmount);
     }
 
     function repayDebt(
@@ -122,6 +135,8 @@ contract SatoshiBORouter is ISatoshiBORouter {
         // add collateral
         _beforeAddColl(collateralToken, _collDeposit);
 
+        uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
+
         // repay debt
         if (!_isDebtIncrease) {
             _beforeRepayDebt(_debtChange);
@@ -139,12 +154,15 @@ contract SatoshiBORouter is ISatoshiBORouter {
             _lowerHint
         );
 
+        uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         // withdraw collateral
         _afterWithdrawColl(collateralToken, _collWithdrawal);
-
+        
         // withdraw debt
         if (_isDebtIncrease) {
-            _afterWithdrawDebt(_debtChange);
+            uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
+            require(userDebtAmount == _debtChange, "SatoshiBORouter: Debt amount mismatch");
+            _afterWithdrawDebt(userDebtAmount);
         }
     }
 
@@ -153,11 +171,15 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 netDebtAmount = debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION();
         _beforeRepayDebt(netDebtAmount);
 
+        IERC20 collateralToken = troveManager.collateralToken();
+        uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
+
         borrowerOperationsProxy.closeTrove(troveManager, account);
 
-        IERC20 collateralToken = troveManager.collateralToken();
-
-        _afterWithdrawColl(collateralToken, collAmount);
+        uint256 collTokenBalanceAfter = collateralToken.balanceOf(address(this));
+        uint256 userCollAmount = collTokenBalanceAfter - collTokenBalanceBefore;
+        require(userCollAmount == collAmount, "SatoshiBORouter: Collateral amount mismatch");
+        _afterWithdrawColl(collateralToken, userCollAmount);
     }
 
     function _beforeAddColl(IERC20 collateralToken, uint256 collAmount) private {
