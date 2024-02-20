@@ -15,6 +15,10 @@ abstract contract SatoshiOwnable is Initializable, ISatoshiOwnable {
     ISatoshiCore public SATOSHI_CORE;
     error InvalidSatoshiCore();
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function __SatoshiOwnable_init(ISatoshiCore _satoshiCore) internal {
         if(_satoshiCore.owner() == address(0)) revert InvalidSatoshiCore();
         SATOSHI_CORE = _satoshiCore;
