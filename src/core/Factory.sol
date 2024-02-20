@@ -18,8 +18,12 @@ import {DeploymentParams, IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 
-//NOTE: non-upgradeable Factory contract
-
+/**
+ * @title Factory Contract (Non-upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/Factory.sol
+ *
+ */
 contract Factory is IFactory, SatoshiOwnable {
     ISatoshiCore public immutable satoshiCore;
     IDebtToken public immutable debtToken;

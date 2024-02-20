@@ -7,27 +7,19 @@ import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 contract FlashloanTester is IERC3156FlashBorrower {
     IDebtToken lender;
 
-    constructor (IDebtToken lender_) {
+    constructor(IDebtToken lender_) {
         lender = lender_;
     }
 
     // ERC-3156 Flash loan callback
-    function onFlashLoan(
-        address initiator,
-        address token,
-        uint256 amount,
-        uint256 fee,
-        bytes calldata
-    ) public override returns(bytes32) {
+    function onFlashLoan(address initiator, address token, uint256 amount, uint256 fee, bytes calldata)
+        public
+        override
+        returns (bytes32)
+    {
         uint256 repayment = amount + fee;
-        require(
-            msg.sender == address(lender),
-            "FlashBorrower: Untrusted lender"
-        );
-        require(
-            initiator == address(this),
-            "FlashBorrower: Untrusted loan initiator"
-        );
+        require(msg.sender == address(lender), "FlashBorrower: Untrusted lender");
+        require(initiator == address(this), "FlashBorrower: Untrusted loan initiator");
         // do sth
         IDebtToken(token).approve(address(lender), repayment);
 
@@ -35,10 +27,7 @@ contract FlashloanTester is IERC3156FlashBorrower {
     }
 
     // Initiate a flash loan
-    function flashBorrow(
-        address token,
-        uint256 amount
-    ) public {
+    function flashBorrow(address token, uint256 amount) public {
         lender.flashLoan(IERC3156FlashBorrower(this), token, amount, "");
     }
 }

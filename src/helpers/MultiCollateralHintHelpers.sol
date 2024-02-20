@@ -8,6 +8,12 @@ import {IMultiCollateralHintHelpers} from "./interfaces/IMultiCollateralHintHelp
 import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 
+/**
+ * @title Multiple Collateral Hint Helpers Contract
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/helpers/MultiCollateralHintHelpers.sol
+ *
+ */
 contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase {
     IBorrowerOperations public immutable borrowerOperations;
 

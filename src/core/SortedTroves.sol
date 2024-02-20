@@ -7,12 +7,12 @@ import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {ISortedTroves, Node, Data} from "../interfaces/core/ISortedTroves.sol";
 
 /**
- * @title Satoshi Sorted Troves
- *     @notice Based on Liquity's `SortedTroves`:
- *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/SortedTroves.sol
+ * @title Sorted Troves Contract (Non-upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/SortedTroves.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/SortedTroves.sol
+ *        https://github.com/livepeer/protocol/blob/master/contracts/libraries/SortedDoublyLL.sol
  *
- *             Originally derived from `SortedDoublyLinkedList`:
- *             https://github.com/livepeer/protocol/blob/master/contracts/libraries/SortedDoublyLL.sol
  */
 contract SortedTroves is ISortedTroves, SatoshiOwnable {
     ITroveManager public troveManager;

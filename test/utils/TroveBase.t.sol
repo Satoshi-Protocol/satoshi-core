@@ -47,31 +47,19 @@ abstract contract TroveBase is Test {
         vm.stopPrank();
     }
 
-    function provideToSP(
-        IStabilityPool stabilityPoolProxy,
-        address caller,
-        uint256 amount
-    ) internal {
+    function provideToSP(IStabilityPool stabilityPoolProxy, address caller, uint256 amount) internal {
         vm.startPrank(caller);
         stabilityPoolProxy.provideToSP(amount);
         vm.stopPrank();
     }
 
-    function withdrawFromSP(
-        IStabilityPool stabilityPoolProxy,
-        address caller,
-        uint256 amount
-    ) internal {
+    function withdrawFromSP(IStabilityPool stabilityPoolProxy, address caller, uint256 amount) internal {
         vm.startPrank(caller);
         stabilityPoolProxy.withdrawFromSP(amount);
         vm.stopPrank();
     }
 
-    function updateRoundData(
-        address oracleMock,
-        address caller,
-        RoundData memory roundData
-    ) internal {
+    function updateRoundData(address oracleMock, address caller, RoundData memory roundData) internal {
         vm.startPrank(caller);
         IOracleMock(oracleMock).updateRoundData(roundData);
         vm.stopPrank();

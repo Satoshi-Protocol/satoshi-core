@@ -4,15 +4,12 @@ pragma solidity 0.8.13;
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 
-//NOTE: non-upgradeable
-
 /**
- * @title Satoshi Core
- *     @notice Single source of truth for system-wide values and contract ownership.
+ * @title SatoshiCore Contract (Non-upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/PrismaCore.sol
  *
- *             Ownership of this contract should be the Satoshi DAO via `AdminVoting`.
- *             Other ownable Satoshi contracts inherit their ownership from this contract
- *             using `SatoshiOwnable`.
+ *        Core contract to control the roles and permissions of the protocol
  */
 contract SatoshiCore is ISatoshiCore {
     address public feeReceiver;
@@ -72,10 +69,10 @@ contract SatoshiCore is ISatoshiCore {
     }
 
     /**
-     * @notice Set the receiver of the fee in the protocol
-     * @param _rewardManager Address of the fee's recipient
+     * @notice Set the reward manager address
+     * @param _rewardManager Reward manager address
      */
-     function setRewardManager(address _rewardManager) external onlyOwner {
+    function setRewardManager(address _rewardManager) external onlyOwner {
         rewardManager = _rewardManager;
         emit RewardManagerSet(rewardManager);
     }

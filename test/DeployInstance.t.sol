@@ -30,7 +30,7 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
     }
 
     function testDeployInstance() public {
-        address priceFeedAddr = _deployPriceFeed(DEPLOYER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, roundData);
+        address priceFeedAddr = _deployPriceFeed(DEPLOYER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData);
 
         uint256 troveManagerCountBefore = factory.troveManagerCount();
 

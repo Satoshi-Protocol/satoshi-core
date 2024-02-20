@@ -20,30 +20,10 @@ import {
 } from "../interfaces/core/ILiquidationManager.sol";
 
 /**
- * @title Satoshi Liquidation Manager
- *     @notice Based on Liquity's `TroveManager`
- *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
+ * @title Liquidation Manager Contract (Upgradable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/LiquidationManager.sol
  *
- *             This contract has a 1:n relationship with `TroveManager`, handling liquidations
- *             for every active collateral within the system.
- *
- *             Anyone can call to liquidate an eligible trove at any time. There is no requirement
- *             that liquidations happen in order according to trove ICRs. There are three ways that
- *             a liquidation can occur:
- *
- *             1. ICR <= 100
- *                The trove's entire debt and collateral is redistributed between remaining active troves.
- *
- *             2. 100 < ICR < MCR
- *                The trove is liquidated using stability pool deposits. The collateral is distributed
- *                amongst stability pool depositors. If the stability pool's balance is insufficient to
- *                completely repay the trove, the remaining debt and collateral is redistributed between
- *                the remaining active troves.
- *
- *             3. MCR <= ICR < TCR && TCR < CCR
- *                The trove is liquidated using stability pool deposits. Collateral equal to MCR of
- *                the value of the debt is distributed between stability pool depositors. The remaining
- *                collateral is left claimable by the trove owner.
  */
 contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager, UUPSUpgradeable {
     IStabilityPool public stabilityPool;

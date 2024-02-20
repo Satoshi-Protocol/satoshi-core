@@ -31,9 +31,6 @@ abstract contract TestConfig {
     uint8 internal constant ORACLE_MOCK_DECIMALS = 8;
     uint256 internal constant ORACLE_MOCK_VERSION = 1;
 
-    RoundData internal roundData =
-        RoundData({answer: 4000000000000, startedAt: 1630000000, updatedAt: 1630000000, answeredInRound: 1});
-
     DeploymentParams internal deploymentParams = DeploymentParams({
         minuteDecayFactor: MINUTE_DECAY_FACTOR,
         redemptionFeeFloor: REDEMPTION_FEE_FLOOR,

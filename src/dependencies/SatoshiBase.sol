@@ -4,9 +4,12 @@ pragma solidity 0.8.13;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ISatoshiBase} from "../interfaces/dependencies/ISatoshiBase.sol";
 
-/*
- * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
- * common functions.
+/**
+ * @title Satoshi Base Contract
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/dependencies/PrismaBase.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/Dependencies/LiquityBase.sol
+ *
  */
 abstract contract SatoshiBase is Initializable, ISatoshiBase {
     uint256 public constant DECIMAL_PRECISION = 1e18;

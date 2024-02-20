@@ -30,7 +30,7 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
 
         // setup contracts and deploy one instance
         (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
-            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, roundData, collateralMock, deploymentParams
+            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateralMock, deploymentParams
         );
 
         // deploy hint helper contract

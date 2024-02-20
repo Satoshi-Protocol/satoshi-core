@@ -11,13 +11,13 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
+
 /**
- * @title Satoshi Stability Pool
- *     @notice Based on Liquity's `StabilityPool`
- *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
+ * @title Stability Pool Contract (Upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/StabilityPool.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
  *
- *             Satoshi's implementation is modified to support multiple collaterals. Deposits into
- *             the stability pool may be used to liquidate any supported collateral type.
  */
 contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;

@@ -38,17 +38,8 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user4 = vm.addr(4);
 
         // setup contracts and deploy one instance
-        (
-            sortedTrovesBeaconProxy,
-            troveManagerBeaconProxy
-        ) = _deploySetupAndInstance(
-            DEPLOYER,
-            OWNER,
-            ORACLE_MOCK_DECIMALS,
-            ORACLE_MOCK_VERSION,
-            roundData,
-            collateralMock,
-            deploymentParams
+        (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
+            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateralMock, deploymentParams
         );
 
         // deploy hint helper contract
@@ -56,11 +47,7 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     // utils
-    function _openTrove(
-        address caller,
-        uint256 collateralAmt,
-        uint256 debtAmt
-    ) internal {
+    function _openTrove(address caller, uint256 collateralAmt, uint256 debtAmt) internal {
         TroveBase.openTrove(
             borrowerOperationsProxy,
             sortedTrovesBeaconProxy,
@@ -100,13 +87,13 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // open a trove
         _openTrove(user1, 1e18, 1000e18);
         (uint256 user1CollBefore, uint256 user1DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
-        
+
         // 365 days later
         vm.warp(block.timestamp + 365 days);
-        
+
         (uint256 user1CollAfter, uint256 user1DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
-        assertEq(user1CollAfter, user1CollBefore); 
-        
+        assertEq(user1CollAfter, user1CollBefore);
+
         // check the debt
         uint256 expectedDebt = user1DebtBefore * (10000 + INTEREST_RATE_IN_BPS) / 10000;
         uint256 delta = SatoshiMath._getAbsoluteDifference(expectedDebt, user1DebtAfter);
@@ -119,15 +106,15 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user2, 1e18, 1000e18);
         (uint256 user1CollBefore, uint256 user1DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
         (uint256 user2CollBefore, uint256 user2DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
-        
+
         // 365 days later
         vm.warp(block.timestamp + 365 days);
-        
+
         (uint256 user1CollAfter, uint256 user1DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
         (uint256 user2CollAfter, uint256 user2DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
         assertEq(user1CollAfter, user1CollBefore);
         assertEq(user2CollAfter, user2CollBefore);
-        
+
         // check the debt
         uint256 expectedDebt = (user1DebtBefore + user2DebtBefore) * (10000 + INTEREST_RATE_IN_BPS) / 10000;
         uint256 delta = SatoshiMath._getAbsoluteDifference(expectedDebt, user1DebtAfter + user2DebtAfter);
@@ -138,22 +125,19 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         // 365 days later
         vm.warp(block.timestamp + 365 days);
+        _updateRoundData(
+            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
         _openTrove(user2, 1e18, 50e18);
         uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
-        uint256 delta = SatoshiMath._getAbsoluteDifference(
-            debtToken.balanceOf(REWARD_MANAGER), 
-            expectedDebt
-        );
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(REWARD_MANAGER), expectedDebt);
         assert(delta < 1000);
     }
 
     function test_OneTimeBorrowFee() public {
         _openTrove(user1, 1e18, 1000e18);
         // 365 days later
-        uint256 delta = SatoshiMath._getAbsoluteDifference(
-            debtToken.balanceOf(FEE_RECEIVER), 
-            5e18
-        );
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(FEE_RECEIVER), 5e18);
         assert(delta == 0);
     }
 }

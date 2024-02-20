@@ -4,20 +4,12 @@ pragma solidity 0.8.13;
 import {IDelegatedOps} from "../interfaces/dependencies/IDelegatedOps.sol";
 
 /**
- * @title Satoshi Delegated Operations
- *     @notice Allows delegation to specific contract functionality. Useful for creating
- *             wrapper contracts to bundle multiple interactions into a single call.
+ * @title Delegated Operations Contract
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/dependencies/DelegatedOps.sol
  *
- *             Functions that supports delegation should include an `account` input allowing
- *             the delegated caller to indicate who they are calling on behalf of. In executing
- *             the call, all internal state updates should be applied for `account` and all
- *             value transfers should occur to or from the caller.
- *
- *             For example: a delegated call to `openTrove` should transfer collateral
- *             from the caller, create the debt position for `account`, and send newly
- *             minted tokens to the caller.
  */
-contract DelegatedOps is IDelegatedOps {
+abstract contract DelegatedOps is IDelegatedOps {
     // owner => caller => isApproved
     mapping(address => mapping(address => bool)) public isApprovedDelegate;
 

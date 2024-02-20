@@ -12,6 +12,13 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 
+/**
+ * @title Debt Token Contract (Non-upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/DebtToken.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/LUSDToken.sol
+ *
+ */
 contract DebtToken is IDebtToken, ERC20 {
     string public constant version = "1";
 

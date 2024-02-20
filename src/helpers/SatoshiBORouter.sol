@@ -8,7 +8,10 @@ import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
 
-///NOTE: This contract is to handle the native token and ERC20 for the borrower operations
+/**
+ * @title Satoshi Borrower Operations Router
+ *        Handle the native token and ERC20 for the borrower operations
+ */
 contract SatoshiBORouter is ISatoshiBORouter {
     IDebtToken public immutable debtToken;
     IBorrowerOperations public immutable borrowerOperationsProxy;

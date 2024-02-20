@@ -37,17 +37,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user4 = vm.addr(4);
 
         // setup contracts and deploy one instance
-        (
-            sortedTrovesBeaconProxy,
-            troveManagerBeaconProxy
-        ) = _deploySetupAndInstance(
-            DEPLOYER,
-            OWNER,
-            ORACLE_MOCK_DECIMALS,
-            ORACLE_MOCK_VERSION,
-            roundData,
-            collateralMock,
-            deploymentParams
+        (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
+            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateralMock, deploymentParams
         );
 
         // deploy hint helper contract
@@ -55,11 +46,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     // utils
-    function _openTrove(
-        address caller,
-        uint256 collateralAmt,
-        uint256 debtAmt
-    ) internal {
+    function _openTrove(address caller, uint256 collateralAmt, uint256 debtAmt) internal {
         TroveBase.openTrove(
             borrowerOperationsProxy,
             sortedTrovesBeaconProxy,
@@ -139,8 +126,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _updateRoundData(
             RoundData({
                 answer: 20500_00_000_000, // 20500
-                startedAt: 1630000000,
-                updatedAt: 1630000000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
                 answeredInRound: 2
             })
         );
@@ -157,13 +144,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertFalse(sortedTrovesBeaconProxy.contains(user3));
 
         // Confirm SP has decreased
-        uint256 stabilityPoolDebtAfter = stabilityPoolProxy
-            .getTotalDebtTokenDeposits();
+        uint256 stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertTrue(stabilityPoolDebtAfter < stabilityPoolDebtBefore);
-        assertEq(
-            stabilityPoolDebtAfter,
-            stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore
-        );
+        assertEq(stabilityPoolDebtAfter, stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore);
 
         // check the collateral gain by user1
         // uint256[] memory collateralGains = stabilityPoolProxy.getDepositorCollateralGain(user1);
@@ -183,8 +166,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _updateRoundData(
             RoundData({
                 answer: 10000_00_000_000, // 10000
-                startedAt: 1630000000,
-                updatedAt: 1630000000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
                 answeredInRound: 2
             })
         );
@@ -203,10 +186,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // Confirm SP has decreased
         uint256 stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertTrue(stabilityPoolDebtAfter < stabilityPoolDebtBefore);
-        assertEq(
-            stabilityPoolDebtAfter,
-            stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore
-        );
+        assertEq(stabilityPoolDebtAfter, stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore);
     }
 
     function testCorrectUpdateSnapshot() public {
@@ -223,8 +203,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _updateRoundData(
             RoundData({
                 answer: 20500_00_000_000, // 20500
-                startedAt: 1630000000,
-                updatedAt: 1630000000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
                 answeredInRound: 2
             })
         );
@@ -239,8 +219,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertTrue(SBefore > 0);
 
         // user4 before snapshot
-        (uint256 user4PBefore, uint256 user4GBefore, , ) = stabilityPoolProxy
-            .depositSnapshots(user4);
+        (uint256 user4PBefore, uint256 user4GBefore,,) = stabilityPoolProxy.depositSnapshots(user4);
         assertEq(user4PBefore, 0);
         assertEq(user4GBefore, 0);
 
@@ -248,8 +227,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _provideToSP(user4, 100e18);
 
         // user4 after snapshot
-        (uint256 user4PAfter, uint256 user4GAfter, , ) = stabilityPoolProxy
-            .depositSnapshots(user4);
+        (uint256 user4PAfter, uint256 user4GAfter,,) = stabilityPoolProxy.depositSnapshots(user4);
         assertEq(user4PAfter, PBefore);
         assertEq(user4GAfter, GBefore);
     }
@@ -281,8 +259,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _updateRoundData(
             RoundData({
                 answer: 20500_00_000_000, // 10000
-                startedAt: 1630000000,
-                updatedAt: 1630000000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
                 answeredInRound: 2
             })
         );
@@ -291,7 +269,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
 
         uint256[] memory user1CollGain = stabilityPoolProxy.getDepositorCollateralGain(user1);
-        
+
         // claim collateral gain
         _claimCollateralGains(user1);
 

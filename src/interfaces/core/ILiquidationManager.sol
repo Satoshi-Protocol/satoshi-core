@@ -9,13 +9,6 @@ import {IBorrowerOperations} from "./IBorrowerOperations.sol";
 import {IStabilityPool} from "./IStabilityPool.sol";
 import {IFactory} from "./IFactory.sol";
 
-/*
-     * --- Variable container structs for liquidations ---
-     *
-     * These structs are used to hold, return and assign variables inside the liquidation functions,
-     * in order to avoid the error: "CompilerError: Stack too deep".
-     **/
-
 struct TroveManagerValues {
     uint256 price;
     uint256 MCR;

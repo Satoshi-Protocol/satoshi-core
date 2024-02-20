@@ -26,16 +26,11 @@ import {
 } from "../interfaces/core/ITroveManager.sol";
 
 /**
- * @title Satoshi Trove Manager
- *     @notice Based on Liquity's `TroveManager`
- *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
+ * @title Trove Manager Contract (Upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/TroveManager.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
  *
- *             Satoshi's implementation is modified so that multiple `TroveManager` and `SortedTroves`
- *             contracts are deployed in tandem, with each pair managing troves of a single collateral
- *             type.
- *
- *             Functionality related to liquidations has been moved to `LiquidationManager`. This was
- *             necessary to avoid the restriction on deployed bytecode size.
  */
 contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;

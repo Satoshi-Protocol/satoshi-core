@@ -88,6 +88,7 @@ struct LocalVars {
 abstract contract DeployBase is Test {
     /* mock contracts for testing */
     IERC20 collateralMock;
+    RoundData internal initRoundData;
 
     /* implementation contracts addresses */
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -139,6 +140,12 @@ abstract contract DeployBase is Test {
     function setUp() public virtual {
         // deploy ERC20
         collateralMock = new ERC20("Collateral", "COLL");
+        initRoundData = RoundData({
+            answer: 4000000000000,
+            startedAt: block.timestamp,
+            updatedAt: block.timestamp,
+            answeredInRound: 1
+        });
     }
 
     function _deploySetupAndInstance(
@@ -242,8 +249,9 @@ abstract contract DeployBase is Test {
         // update data to the oracle mock
         _updateRoundData(deployer, oracleMockAddr, roundData);
 
+        assert(satoshiCore != ISatoshiCore(address(0)));
         // deploy price feed chainlink contract
-        return _deployPriceFeedChainlink(deployer, AggregatorV3Interface(oracleMockAddr));
+        return _deployPriceFeedChainlink(deployer, AggregatorV3Interface(oracleMockAddr), satoshiCore);
     }
 
     /* ============ Deploy Non-upgradeable Contracts ============ */
@@ -395,10 +403,10 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _deployPriceFeedChainlink(address deployer, AggregatorV3Interface oracle) internal returns (address) {
+    function _deployPriceFeedChainlink(address deployer, AggregatorV3Interface oracle, ISatoshiCore _satoshiCore) internal returns (address) {
         vm.startPrank(deployer);
         assert(oracle != AggregatorV3Interface(address(0))); // check if oracle contract is deployed
-        address priceFeedChainlinkAddr = address(new PriceFeedChainlink(oracle));
+        address priceFeedChainlinkAddr = address(new PriceFeedChainlink(oracle, _satoshiCore));
         vm.stopPrank();
         return priceFeedChainlinkAddr;
     }

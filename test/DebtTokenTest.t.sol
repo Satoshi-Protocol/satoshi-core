@@ -38,17 +38,8 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user4 = vm.addr(4);
 
         // setup contracts and deploy one instance
-        (
-            sortedTrovesBeaconProxy,
-            troveManagerBeaconProxy
-        ) = _deploySetupAndInstance(
-            DEPLOYER,
-            OWNER,
-            ORACLE_MOCK_DECIMALS,
-            ORACLE_MOCK_VERSION,
-            roundData,
-            collateralMock,
-            deploymentParams
+        (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
+            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateralMock, deploymentParams
         );
 
         // deploy hint helper contract
@@ -64,11 +55,7 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     // utils
-    function _openTrove(
-        address caller,
-        uint256 collateralAmt,
-        uint256 debtAmt
-    ) internal {
+    function _openTrove(address caller, uint256 collateralAmt, uint256 debtAmt) internal {
         TroveBase.openTrove(
             borrowerOperationsProxy,
             sortedTrovesBeaconProxy,
@@ -174,7 +161,7 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     function testFailBurnFromZero() public {
         vm.prank(address(debtTokenTester.borrowerOperations()));
-        debtTokenTester.burn(address(0) , 1e18);
+        debtTokenTester.burn(address(0), 1e18);
     }
 
     function testFailBurnInsufficientBalance() public {
@@ -195,7 +182,7 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testFailTransferInsufficientBalance() public {
         testMint();
         vm.prank(user1);
-        debtTokenTester.transfer(user2 , 3e18);
+        debtTokenTester.transfer(user2, 3e18);
     }
 
     function testFailTransferFromInsufficientApprove() public {

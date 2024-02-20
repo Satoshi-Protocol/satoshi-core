@@ -20,12 +20,11 @@ import {
 } from "../interfaces/core/IBorrowerOperations.sol";
 
 /**
- * @title Satoshi Borrower Operations
- *     @notice Based on Liquity's `BorrowerOperations`
- *             https://github.com/liquity/dev/blob/main/packages/contracts/contracts/BorrowerOperations.sol
+ * @title Borrower Operations Contract (Upgradable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/BorrowerOperations.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/BorrowerOperations.sol
  *
- *             Satoshi's implementation is modified to support multiple collaterals. There is a 1:n
- *             relationship between `BorrowerOperations` and each `TroveManager` / `SortedTroves` pair.
  */
 contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, DelegatedOps, IBorrowerOperations {
     using SafeERC20 for IERC20;
@@ -246,7 +245,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     ) external callerOrDelegated(account) {
         require(!SATOSHI_CORE.paused(), "Trove adjustments are paused");
         _adjustTrove(troveManager, account, 0, _collateralAmount, 0, 0, false, _upperHint, _lowerHint);
-        
+
         // collect interest payable to rewardManager
         if (troveManager.interestPayable() > 0) {
             troveManager.collectInterests();

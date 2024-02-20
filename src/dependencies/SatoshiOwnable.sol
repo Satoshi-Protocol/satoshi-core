@@ -6,14 +6,17 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ISatoshiOwnable} from "../interfaces/dependencies/ISatoshiOwnable.sol";
 
 /**
- * @title Satoshi Ownable
- *     @notice Contracts inheriting `SatoshiOwnable` have the same owner as `SatoshiCore`.
- *             The ownership cannot be independently modified or renounced.
+ * @title Satoshi Ownable Contract
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/dependencies/PrismaOwnable.sol
+ *
  */
 abstract contract SatoshiOwnable is Initializable, ISatoshiOwnable {
     ISatoshiCore public SATOSHI_CORE;
+    error InvalidSatoshiCore();
 
     function __SatoshiOwnable_init(ISatoshiCore _satoshiCore) internal {
+        if(_satoshiCore.owner() == address(0)) revert InvalidSatoshiCore();
         SATOSHI_CORE = _satoshiCore;
     }
 

@@ -6,12 +6,16 @@ interface IPriceFeed {
     error InvalidPriceInt256(int256 price);
     error InvalidPriceUInt128(uint128 price);
     error PriceTooOld();
-    error InvalidTime();
+    error InvalidMaxTimeThreshold();
 
     // Events
-    event DIAParamsUpdated(uint128 diaMaxTimeThreshold);
+    event MaxTimeThresholdUpdated(uint256 newMaxTimeThreshold);
 
     function fetchPrice() external returns (uint256);
 
     function decimals() external view returns (uint8);
+
+    function maxTimeThreshold() external view returns (uint256);
+
+    function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external;
 }

@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+/**
+ * @title Satoshi Math Library Contract
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/dependencies/PrismaMath.sol
+ *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/Dependencies/LiquityMath.sol
+ *
+ */
 library SatoshiMath {
     uint256 internal constant DECIMAL_PRECISION = 1e18;
 

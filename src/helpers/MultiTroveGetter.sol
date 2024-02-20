@@ -13,8 +13,13 @@ struct CombinedTroveData {
     uint256 snapshotDebt;
 }
 
-/*  Helper contract for grabbing Trove data for the front end. Not part of the core Satoshi system. */
-contract MultiTroveGetter {
+/**
+ * @title Multiple Trove Getter Contract
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/helpers/MultiTroveGetter.sol
+ *
+ */
+ contract MultiTroveGetter {
     constructor() {}
 
     function getMultipleSortedTroves(ITroveManager troveManager, int256 _startIdx, uint256 _count)

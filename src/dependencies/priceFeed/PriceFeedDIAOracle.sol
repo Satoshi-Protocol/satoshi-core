@@ -1,27 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeed} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {IDIAOracleV2} from "../../interfaces/dependencies/priceFeed/IDIAOracleV2.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
 
+/**
+ * @title PriceFeed Contract to integrate with DIA Oracle
+ *        Convert data from interface of DIA Oracle to Satoshi's IPriceFeed
+ */
 contract PriceFeedDIAOracle is IPriceFeed, SatoshiOwnable {
     IDIAOracleV2 internal immutable _source;
     uint8 internal immutable _decimals;
     string internal _key;
-    uint256 public diaMaxTimeThreshold;
+    uint256 public maxTimeThreshold;
 
-    constructor(IDIAOracleV2 source_, uint8 decimals_, string memory key_) {
+    constructor(IDIAOracleV2 source_, uint8 decimals_, string memory key_, ISatoshiCore _satoshiCore) {
+        __SatoshiOwnable_init(_satoshiCore);
         _source = source_;
         _decimals = decimals_;
         _key = key_;
-        diaMaxTimeThreshold = 86400;
+        maxTimeThreshold = 86400;
+        emit MaxTimeThresholdUpdated(86400);
     }
 
     function fetchPrice() external returns (uint256) {
         (uint128 price, uint128 lastUpdated) = _source.getValue(_key);
         if (price == 0) revert InvalidPriceUInt128(price);
-        if (block.timestamp - lastUpdated > diaMaxTimeThreshold) {
+        if (block.timestamp - uint256(lastUpdated) > maxTimeThreshold) {
             revert PriceTooOld();
         }
         return uint256(price);
@@ -31,12 +38,12 @@ contract PriceFeedDIAOracle is IPriceFeed, SatoshiOwnable {
         return _decimals;
     }
 
-    function updateDIAParams(uint128 _maxTime) public onlyOwner {
-        if (_maxTime <= 120) {
-            revert InvalidTime();
+    function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external onlyOwner {
+        if (_maxTimeThreshold <= 120) {
+            revert InvalidMaxTimeThreshold();
         }
 
-        diaMaxTimeThreshold = _maxTime;
-        emit DIAParamsUpdated(_maxTime);
+        maxTimeThreshold = _maxTimeThreshold;
+        emit MaxTimeThresholdUpdated(_maxTimeThreshold);
     }
 }

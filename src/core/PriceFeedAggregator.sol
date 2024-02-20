@@ -8,6 +8,13 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeedAggregator, OracleRecord} from "../interfaces/core/IPriceFeedAggregator.sol";
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
 
+/**
+ * @title PriceFeed Aggregator Contract (Upgradeable)
+ *        Mutated from:
+ *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/PriceFeed.sol
+ *
+ *        Handles multiple types of price feeds and converts their prices to 18-digit precision uint.
+ */
 contract PriceFeedAggregator is IPriceFeedAggregator, SatoshiOwnable, UUPSUpgradeable {
     // Used to convert the raw price to an 18-digit precision uint
     uint256 public constant TARGET_DIGITS = 18;

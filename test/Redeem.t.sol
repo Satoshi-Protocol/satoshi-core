@@ -38,17 +38,8 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user4 = vm.addr(4);
 
         // setup contracts and deploy one instance
-        (
-            sortedTrovesBeaconProxy,
-            troveManagerBeaconProxy
-        ) = _deploySetupAndInstance(
-            DEPLOYER,
-            OWNER,
-            ORACLE_MOCK_DECIMALS,
-            ORACLE_MOCK_VERSION,
-            roundData,
-            collateralMock,
-            deploymentParams
+        (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
+            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateralMock, deploymentParams
         );
 
         // deploy hint helper contract
@@ -56,11 +47,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     // utils
-    function _openTrove(
-        address caller,
-        uint256 collateralAmt,
-        uint256 debtAmt
-    ) internal {
+    function _openTrove(address caller, uint256 collateralAmt, uint256 debtAmt) internal {
         TroveBase.openTrove(
             borrowerOperationsProxy,
             sortedTrovesBeaconProxy,
@@ -90,12 +77,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // price drop
         _updateRoundData(
-            RoundData({
-                answer: 30500_00_000_000,
-                startedAt: 1630000000,
-                updatedAt: 1630000000,
-                answeredInRound: 1
-            })
+            RoundData({answer: 30500_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
         );
 
         uint256 price = troveManagerBeaconProxy.fetchPrice();
@@ -105,16 +87,8 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         (, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
         (, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
         uint256 redemptionAmount = debt2 + debt3;
-        (
-            address firstRedemptionHint,
-            uint256 partialRedemptionHintNICR,
-            uint256 truncatedDebtAmount
-        ) = hintHelpers.getRedemptionHints(
-                troveManagerBeaconProxy,
-                redemptionAmount,
-                price,
-                0
-            );
+        (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount) =
+            hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, price, 0);
 
         assertEq(firstRedemptionHint, user3);
         assertEq(redemptionAmount, truncatedDebtAmount);
@@ -127,9 +101,13 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user3, 1e18, 20000e18);
         // open with a high ICR
         _openTrove(user4, 100e18, 30000e18);
-        
+
         // skip bootstrapping time
         vm.warp(block.timestamp + 14 days);
+
+        _updateRoundData(
+            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
 
         uint256 price = troveManagerBeaconProxy.fetchPrice();
         // (, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
@@ -137,37 +115,17 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // (uint256 coll4, uint256 debt4) = troveManagerBeaconProxy
         //     .getTroveCollAndDebt(user4);
         uint256 redemptionAmount = debt3;
-        (
-            address firstRedemptionHint,
-            uint256 partialRedemptionHintNICR,
-            uint256 truncatedDebtAmount
-        ) = hintHelpers.getRedemptionHints(
-                troveManagerBeaconProxy,
-                redemptionAmount,
-                price,
-                0
-            );
+        (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount) =
+            hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, price, 0);
 
         assertEq(firstRedemptionHint, user3);
         assertEq(redemptionAmount, truncatedDebtAmount);
 
-        (
-            address hintAddress,,
-        ) = hintHelpers.getApproxHint(
-                troveManagerBeaconProxy,
-                partialRedemptionHintNICR,
-                10,
-                31337
-            );
+        (address hintAddress,,) =
+            hintHelpers.getApproxHint(troveManagerBeaconProxy, partialRedemptionHintNICR, 10, 31337);
 
-        (
-            address upperPartialRedemptionHint,
-            address lowerPartialRedemptionHint
-        ) = sortedTrovesBeaconProxy.findInsertPosition(
-                partialRedemptionHintNICR,
-                hintAddress,
-                hintAddress
-            );
+        (address upperPartialRedemptionHint, address lowerPartialRedemptionHint) =
+            sortedTrovesBeaconProxy.findInsertPosition(partialRedemptionHintNICR, hintAddress, hintAddress);
 
         // redeem
         vm.prank(user4);
