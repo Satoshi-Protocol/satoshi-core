@@ -14,7 +14,7 @@ import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEI
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
-import {INTEREST_RATE_IN_BPS} from "./TestConfig.sol";
+import {INTEREST_RATE_IN_BPS, GAS_COMPENSATION} from "./TestConfig.sol";
 
 contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
@@ -164,15 +164,12 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertTrue(sortedTrovesBeaconProxy.contains(user4));
 
         uint256 price = troveManagerBeaconProxy.fetchPrice();
-        // user3 claim surplus
         uint256 surplusBlance = troveManagerBeaconProxy.surplusBalances(user3);
+        
         vm.prank(user3);
         troveManagerBeaconProxy.claimCollateral(user3);
-        // uint256 expectedColl = coll3 - coll3 * debt3 / price; // @todo check the diff
-        // console.log("expectedColl", expectedColl);
-        // console.log(coll3 - expectedColl);
-        // assertTrue(SatoshiMath._approximatelyEqual(troveManagerBeaconProxy.surplusBalances(user3), expectedColl, 0));
-        // assertTrue(SatoshiMath._approximatelyEqual(collateralMock.balanceOf(user3), expectedColl, 10000));
+        uint256 expectedColl = coll3 - coll3 * (debt3 - GAS_COMPENSATION) / price;
         assertEq(collateralMock.balanceOf(user3), surplusBlance);
+        assertEq(collateralMock.balanceOf(user3), expectedColl);
     }
 }
