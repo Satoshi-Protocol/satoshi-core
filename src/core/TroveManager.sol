@@ -70,7 +70,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 public constant SUNSETTING_INTEREST_RATE = (INTEREST_PRECISION * 5000) / (10000 * SECONDS_IN_YEAR); //50%
 
     // During bootsrap period redemptions are not allowed
-    uint256 public constant BOOTSTRAP_PERIOD = 14 days;
+    uint256 public constant BOOTSTRAP_PERIOD = 1 hours;
 
     /*
      * BETA: 18 digit decimal. Parameter by which to divide the redeemed fraction, in order to calc the new base rate from a redemption.

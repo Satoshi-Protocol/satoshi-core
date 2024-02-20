@@ -22,7 +22,7 @@ struct DeploymentParams {
     uint256 maxRedemptionFee; // 1e18  (100%)
     uint256 borrowingFeeFloor; // 1e18 / 1000 * 5  (0.5%)
     uint256 maxBorrowingFee; // 1e18 / 100 * 5  (5%)
-    uint256 interestRateInBps; // 250 (2.5%)
+    uint256 interestRateInBps; // 450 (4.5%)
     uint256 maxDebt; // 1e18 * 1000000000 (1 billion)
     uint256 MCR; // 11 * 1e17  (110%)
 }
