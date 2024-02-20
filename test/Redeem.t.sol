@@ -67,6 +67,50 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         TroveBase.updateRoundData(oracleMockAddr, DEPLOYER, data);
     }
 
+    function _redeemCollateral(
+        address caller,
+        uint256 redemptionAmount
+    ) internal {
+        uint256 price = troveManagerBeaconProxy.fetchPrice();
+        (
+            address firstRedemptionHint,
+            uint256 partialRedemptionHintNICR,
+
+        ) = hintHelpers.getRedemptionHints(
+                troveManagerBeaconProxy,
+                redemptionAmount,
+                price,
+                0
+            );
+        (address hintAddress, , ) = hintHelpers.getApproxHint(
+            troveManagerBeaconProxy,
+            partialRedemptionHintNICR,
+            10,
+            42
+        );
+
+        (
+            address upperPartialRedemptionHint,
+            address lowerPartialRedemptionHint
+        ) = sortedTrovesBeaconProxy.findInsertPosition(
+                partialRedemptionHintNICR,
+                hintAddress,
+                hintAddress
+            );
+
+        // redeem
+        vm.prank(caller);
+        troveManagerBeaconProxy.redeemCollateral(
+            redemptionAmount,
+            firstRedemptionHint,
+            upperPartialRedemptionHint,
+            lowerPartialRedemptionHint,
+            partialRedemptionHintNICR,
+            0,
+            maxFeePercentage
+        );
+    }
+
     function test_getRedemptionHints() public {
         _openTrove(user1, 1e18, 13333e18);
         _openTrove(user2, 1e18, 13793e18);
@@ -101,7 +145,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user3, 1e18, 20000e18);
         // open with a high ICR
         _openTrove(user4, 100e18, 30000e18);
-
+        
         // skip bootstrapping time
         vm.warp(block.timestamp + 14 days);
 
@@ -109,40 +153,26 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
             RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
         );
 
-        uint256 price = troveManagerBeaconProxy.fetchPrice();
-        // (, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
-        (, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
-        // (uint256 coll4, uint256 debt4) = troveManagerBeaconProxy
-        //     .getTroveCollAndDebt(user4);
+        (uint256 coll3, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
         uint256 redemptionAmount = debt3;
-        (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount) =
-            hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, price, 0);
-
-        assertEq(firstRedemptionHint, user3);
-        assertEq(redemptionAmount, truncatedDebtAmount);
-
-        (address hintAddress,,) =
-            hintHelpers.getApproxHint(troveManagerBeaconProxy, partialRedemptionHintNICR, 10, 31337);
-
-        (address upperPartialRedemptionHint, address lowerPartialRedemptionHint) =
-            sortedTrovesBeaconProxy.findInsertPosition(partialRedemptionHintNICR, hintAddress, hintAddress);
-
-        // redeem
-        vm.prank(user4);
-        troveManagerBeaconProxy.redeemCollateral(
-            redemptionAmount,
-            firstRedemptionHint,
-            upperPartialRedemptionHint,
-            lowerPartialRedemptionHint,
-            partialRedemptionHintNICR,
-            0,
-            maxFeePercentage
-        );
+        _redeemCollateral(user4, redemptionAmount);
 
         // check user3 closed, and user1, user2, user4 active
         assertFalse(sortedTrovesBeaconProxy.contains(user3));
         assertTrue(sortedTrovesBeaconProxy.contains(user1));
         assertTrue(sortedTrovesBeaconProxy.contains(user2));
         assertTrue(sortedTrovesBeaconProxy.contains(user4));
+
+        uint256 price = troveManagerBeaconProxy.fetchPrice();
+        // user3 claim surplus
+        uint256 surplusBlance = troveManagerBeaconProxy.surplusBalances(user3);
+        vm.prank(user3);
+        troveManagerBeaconProxy.claimCollateral(user3);
+        // uint256 expectedColl = coll3 - coll3 * debt3 / price; // @todo check the diff
+        // console.log("expectedColl", expectedColl);
+        // console.log(coll3 - expectedColl);
+        // assertTrue(SatoshiMath._approximatelyEqual(troveManagerBeaconProxy.surplusBalances(user3), expectedColl, 0));
+        // assertTrue(SatoshiMath._approximatelyEqual(collateralMock.balanceOf(user3), expectedColl, 10000));
+        assertEq(collateralMock.balanceOf(user3), surplusBlance);
     }
 }

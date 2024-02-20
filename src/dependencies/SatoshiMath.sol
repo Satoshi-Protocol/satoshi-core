@@ -130,4 +130,8 @@ library SatoshiMath {
             return 2 ** 256 - 1;
         }
     }
+
+    function _approximatelyEqual(uint256 _a, uint256 _b, uint256 _tolerance) internal pure returns (bool) {
+        return _getAbsoluteDifference(_a, _b) <= _tolerance;
+    }
 }
