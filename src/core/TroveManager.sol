@@ -266,10 +266,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         MCR = _MCR;
     }
 
-    function collectInterests() external {
+    function collectInterests() public {
         uint256 interestPayableCached = interestPayable;
         require(interestPayableCached > 0, "Nothing to collect");
-        debtToken.mint(SATOSHI_CORE.feeReceiver(), interestPayableCached);
+        debtToken.mint(SATOSHI_CORE.rewardManager(), interestPayableCached);
         interestPayable = 0;
     }
 
@@ -627,6 +627,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         totalActiveDebt = totalActiveDebt - totals.totalDebtToRedeem;
         _sendCollateral(msg.sender, totals.collateralToSendToRedeemer);
         _resetState();
+
+        if (interestPayable > 0) {
+            collectInterests();
+        }
     }
 
     // Redeem as much collateral as possible from _borrower's Trove in exchange for debt up to _maxDebtAmount
@@ -730,6 +734,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         surplusBalances[msg.sender] = 0;
 
         collateralToken.safeTransfer(_receiver, claimableColl);
+
+        if (interestPayable > 0) {
+            collectInterests();
+        }
     }
 
     // --- Trove Adjustment functions ---

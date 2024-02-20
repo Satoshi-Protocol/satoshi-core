@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 interface ISatoshiCore {
+    event RewardManagerSet(address rewardManager);
     event FeeReceiverSet(address feeReceiver);
     event GuardianSet(address guardian);
     event NewOwnerAccepted(address oldOwner, address owner);
@@ -25,6 +26,8 @@ interface ISatoshiCore {
     function OWNERSHIP_TRANSFER_DELAY() external view returns (uint256);
 
     function feeReceiver() external view returns (address);
+
+    function rewardManager() external view returns (address);
 
     function guardian() external view returns (address);
 

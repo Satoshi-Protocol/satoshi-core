@@ -9,6 +9,11 @@ import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
 import {IMultiCollateralHintHelpers} from "../../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IStabilityPool} from "../../src/interfaces/core/IStabilityPool.sol";
 import {HintLib} from "./HintLib.sol";
+import {RoundData} from "../../src/mocks/OracleMock.sol";
+
+interface IOracleMock {
+    function updateRoundData(RoundData memory roundData) external;
+}
 
 abstract contract TroveBase is Test {
     /// @notice Internal function to open trove for the unit test that need to have an existing trove
@@ -59,6 +64,16 @@ abstract contract TroveBase is Test {
     ) internal {
         vm.startPrank(caller);
         stabilityPoolProxy.withdrawFromSP(amount);
+        vm.stopPrank();
+    }
+
+    function updateRoundData(
+        address oracleMock,
+        address caller,
+        RoundData memory roundData
+    ) internal {
+        vm.startPrank(caller);
+        IOracleMock(oracleMock).updateRoundData(roundData);
         vm.stopPrank();
     }
 }

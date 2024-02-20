@@ -35,6 +35,7 @@ import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
     SATOSHI_CORE_FEE_RECEIVER,
+    SATOSHI_CORE_REWARD_MANAGER,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     BO_MIN_NET_DEBT,
@@ -139,7 +140,7 @@ contract DeploySetupScript is Script {
         assert(cpGasPoolAddr == address(gasPool));
 
         // SatoshiCore
-        satoshiCore = new SatoshiCore(SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER);
+        satoshiCore = new SatoshiCore(SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, SATOSHI_CORE_REWARD_MANAGER);
         assert(cpSatoshiCoreAddr == address(satoshiCore));
 
         // DebtToken

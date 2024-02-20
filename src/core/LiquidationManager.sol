@@ -134,7 +134,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
                 trovesRemaining = 0;
                 break;
             }
-            if (ICR <= _100pct) {
+            if (ICR <= _100pct && _inRecoveryMode()) {
                 singleLiquidation = _liquidateWithoutSP(troveManager, account);
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
             } else if (ICR < troveManagerValues.MCR) {
@@ -242,7 +242,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
 
             // closed / non-existent troves return an ICR of type(uint).max and are ignored
             uint256 ICR = troveManager.getCurrentICR(account, troveManagerValues.price);
-            if (ICR <= _100pct) {
+            if (ICR <= _100pct && _inRecoveryMode()) {
                 singleLiquidation = _liquidateWithoutSP(troveManager, account);
             } else if (ICR < troveManagerValues.MCR) {
                 singleLiquidation =
@@ -489,5 +489,11 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
         totals.totalDebtToRedistribute = totals.totalDebtToRedistribute + singleLiquidation.debtToRedistribute;
         totals.totalCollToRedistribute = totals.totalCollToRedistribute + singleLiquidation.collToRedistribute;
         totals.totalCollSurplus = totals.totalCollSurplus + singleLiquidation.collSurplus;
+    }
+
+    function _inRecoveryMode() internal returns (bool) {
+        (uint256 _entireSystemColl, uint256 _entireSystemDebt) = borrowerOperations.getGlobalSystemBalances();
+        uint256 TCR = SatoshiMath._computeCR(_entireSystemColl, _entireSystemDebt);
+        return borrowerOperations.checkRecoveryMode(TCR);
     }
 }

@@ -376,7 +376,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         emit StabilityPoolDebtBalanceUpdated(newTotalDebtTokenDeposits);
     }
 
-    // --- Reward calculator functions for depositor and front end ---
+    // --- Reward calculator functions for depositor ---
 
     /* Calculates the collateral gain earned by the deposit since its last snapshots were taken.
      * Given by the formula:  E = d0 * (S - S(0))/P(0)
