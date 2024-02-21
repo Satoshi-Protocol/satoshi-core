@@ -276,18 +276,4 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check the collateral gain is as expected
         assertEq(user1CollGain[0], collateralMock.balanceOf(user1));
     }
-
-    /* @todo
-    - BO: global state and personal state calculation, operations in normal mode and recovery mode
-    V TM: Trove operations, Redeem, remaining claimed Coll after redeem
-    V Liquidation: liquidate, liquidateTroves, batchLiquidateTroves, reward distribution
-    V Price Aggregator: Add timestamp check
-    V DebtToken Operation: Flashloan, permit, erc20 functions…
-    V Stability Pool: ProvideToSP, WithdrawToSP
-    V Fee calculation and claim: One time borrowing fee, interest rate…
-    - Router review
-    - Contract upgrade test
-    V Fee distrbute to Fee Receiver and interest to Reward Manager
-    - Redistribution
-    */
 }

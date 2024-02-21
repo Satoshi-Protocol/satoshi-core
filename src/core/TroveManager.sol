@@ -74,7 +74,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 constant BETA = 2;
 
     // commented values are Liquity's fixed settings for each parameter
-    uint256 public minuteDecayFactor; // 999037758833783000  (half-life of 12 hours)
+    uint256 public minuteDecayFactor; // 999037758833783500  (half-life of 12 hours)
     uint256 public redemptionFeeFloor; // DECIMAL_PRECISION / 1000 * 5  (0.5%)
     uint256 public maxRedemptionFee; // DECIMAL_PRECISION  (100%)
     uint256 public borrowingFeeFloor; // DECIMAL_PRECISION / 1000 * 5  (0.5%)
