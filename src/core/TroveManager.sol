@@ -124,17 +124,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 public defaultedCollateral;
     uint256 public defaultedDebt;
 
-    mapping(address => uint256) private storedPendingReward;
-
-    // week -> total available rewards for 1 day within this week
-    uint256[65535] public dailyMintReward;
-
-    // week -> day -> total amount redeemed this day
-    uint32[7][65535] private totalMints;
-
-    // account -> data for latest activity
-    mapping(address => VolumeData) public accountLatestMint;
-
     mapping(address => Trove) public troves;
     mapping(address => uint256) public surplusBalances;
 
@@ -279,10 +268,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 week = duration / 1 weeks;
         uint256 day = (duration % 1 weeks) / 1 days;
         return (week, day);
-    }
-
-    function getTotalMints(uint256 week) external view returns (uint32[7] memory) {
-        return totalMints[week];
     }
 
     function getTroveOwnersCount() external view returns (uint256) {
@@ -743,8 +728,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _compositeDebt,
         uint256 NICR,
         address _upperHint,
-        address _lowerHint,
-        bool _isRecoveryMode
+        address _lowerHint
     ) external whenNotPaused returns (uint256 stake, uint256 arrayIndex) {
         _requireCallerIsBO();
         require(!sunsetting, "Cannot open while sunsetting");
@@ -765,7 +749,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         arrayIndex = TroveOwners.length - 1;
         t.arrayIndex = uint128(arrayIndex);
 
-        if (!_isRecoveryMode) _updateMintVolume(_borrower, _compositeDebt);
+        // if (!_isRecoveryMode) _updateMintVolume(_borrower, _compositeDebt);
 
         totalActiveCollateral = totalActiveCollateral + _collateralAmount;
         uint256 _newTotalDebt = supply + _compositeDebt;
@@ -775,7 +759,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     }
 
     function updateTroveFromAdjustment(
-        bool _isRecoveryMode,
         bool _isDebtIncrease,
         uint256 _debtChange,
         uint256 _netDebtChange,
@@ -799,7 +782,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         if (_debtChange > 0) {
             if (_isDebtIncrease) {
                 newDebt = newDebt + _netDebtChange;
-                if (!_isRecoveryMode) _updateMintVolume(_borrower, _netDebtChange);
+                // if (!_isRecoveryMode) _updateMintVolume(_borrower, _netDebtChange);
                 _increaseDebt(_receiver, _netDebtChange, _debtChange);
             } else {
                 newDebt = newDebt - _netDebtChange;
@@ -888,26 +871,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         sortedTrovesCached.remove(_borrower);
         t.arrayIndex = 0;
-    }
-
-    function _updateMintVolume(address account, uint256 initialAmount) internal {
-        uint32 amount = uint32(initialAmount / VOLUME_MULTIPLIER);
-        (uint256 week, uint256 day) = getWeekAndDay();
-        totalMints[week][day] += amount;
-
-        VolumeData memory data = accountLatestMint[account];
-        if (data.day == day && data.week == week) {
-            // if the caller made a previous redemption today, we only increase their redeemed amount
-            accountLatestMint[account].amount = data.amount + amount;
-        } else {
-            if (data.amount > 0) {
-                // if the caller made a previous redemption on a different day,
-                // calculate the emissions earned for that redemption
-                uint256 pending = (dailyMintReward[data.week] * data.amount) / totalMints[data.week][data.day];
-                storedPendingReward[account] += pending;
-            }
-            accountLatestMint[account] = VolumeData({week: uint32(week), day: uint32(day), amount: amount});
-        }
     }
 
     // Updates the baseRate state variable based on time elapsed since the last redemption or debt borrowing operation.

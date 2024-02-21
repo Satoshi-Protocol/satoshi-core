@@ -46,9 +46,6 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     // depositor => gains
     mapping(address => uint80[256]) public collateralGainsByDepositor;
 
-    // depositor => rewards
-    mapping(address => uint256) private storedPendingReward;
-
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
      * after a series of liquidations have occurred, each of which cancel some debt with the deposit.
      *

@@ -176,7 +176,6 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 redemptionAmount = 30e18;
 
         _redeemCollateral(user1, redemptionAmount);
-        (, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
         (, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
         assertEq(debt3, 554e17);
     }

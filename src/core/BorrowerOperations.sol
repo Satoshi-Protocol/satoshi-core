@@ -220,7 +220,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         // Create the trove
         (vars.stake, vars.arrayIndex) = troveManager.openTrove(
-            account, _collateralAmount, vars.compositeDebt, vars.NICR, _upperHint, _lowerHint, isRecoveryMode
+            account, _collateralAmount, vars.compositeDebt, vars.NICR, _upperHint, _lowerHint
         );
 
         // Move the collateral to the Trove Manager
@@ -388,7 +388,6 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         if (vars.isCollIncrease) collateralToken.safeTransferFrom(msg.sender, address(troveManager), vars.collChange);
 
         (vars.newColl, vars.newDebt, vars.stake) = troveManager.updateTroveFromAdjustment(
-            isRecoveryMode,
             _isDebtIncrease,
             vars.debtChange,
             vars.netDebtChange,

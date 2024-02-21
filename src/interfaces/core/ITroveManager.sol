@@ -130,8 +130,7 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         uint256 _compositeDebt,
         uint256 NICR,
         address _upperHint,
-        address _lowerHint,
-        bool _isRecoveryMode
+        address _lowerHint
     ) external returns (uint256 stake, uint256 arrayIndex);
 
     function redeemCollateral(
@@ -164,7 +163,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function updateBalances() external;
 
     function updateTroveFromAdjustment(
-        bool _isRecoveryMode,
         bool _isDebtIncrease,
         uint256 _debtChange,
         uint256 _netDebtChange,
@@ -200,8 +198,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
             uint256 activeInterestIndex
         );
 
-    function accountLatestMint(address) external view returns (uint32 amount, uint32 week, uint32 day);
-
     function activeInterestIndex() external view returns (uint256);
 
     function baseRate() external view returns (uint256);
@@ -211,8 +207,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function borrowingFeeFloor() external view returns (uint256);
 
     function collateralToken() external view returns (IERC20);
-
-    function dailyMintReward(uint256) external view returns (uint256);
 
     function gasPool() external view returns (IGasPool);
 
@@ -254,8 +248,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function getTotalActiveCollateral() external view returns (uint256);
 
     function getTotalActiveDebt() external view returns (uint256);
-
-    function getTotalMints(uint256 week) external view returns (uint32[7] memory);
 
     function getTroveCollAndDebt(address _borrower) external view returns (uint256 coll, uint256 debt);
 
