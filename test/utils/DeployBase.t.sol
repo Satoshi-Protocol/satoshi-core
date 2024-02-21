@@ -85,6 +85,18 @@ struct LocalVars {
     uint256 debtTokenTotalSupplyAfter;
 }
 
+struct LiquidationVars {
+    uint256 entireTroveDebt;
+    uint256 entireTroveColl;
+    uint256 collGasCompensation;
+    uint256 debtGasCompensation;
+    uint256 debtToOffset;
+    uint256 collToSendToSP;
+    uint256 debtToRedistribute;
+    uint256 collToRedistribute;
+    uint256 collSurplus;
+}
+
 abstract contract DeployBase is Test {
     /* mock contracts for testing */
     IERC20 collateralMock;

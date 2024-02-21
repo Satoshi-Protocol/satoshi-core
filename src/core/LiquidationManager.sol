@@ -305,7 +305,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
     }
 
     /**
-     * @dev Perform a "normal" liquidation, where 100% < ICR < MCR. The trove
+     * @dev Perform a "normal" liquidation, where ICR < MCR. The trove
      *          is liquidated as much as possible using the stability pool. Any
      *          remaining debt and collateral are redistributed between active troves.
      */
