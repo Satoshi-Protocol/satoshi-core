@@ -24,7 +24,6 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint128 public constant SUNSET_DURATION = 180 days;
-    uint256 constant REWARD_DURATION = 1 weeks;
 
     IDebtToken public debtToken;
     IFactory public factory;
