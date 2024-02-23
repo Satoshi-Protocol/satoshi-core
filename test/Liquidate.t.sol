@@ -85,14 +85,14 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function _convertDebtToColl(uint256 debt, uint256 price) internal pure returns (uint256) {
         return debt * 1e18 / price;
     }
-    
+
     function test_LiquidateICRLessThan100InRecoveryMode() public {
         LiquidationVars memory vars;
         // open troves
         _openTrove(user1, 1e18, 10000e18);
         _openTrove(user2, 1e18, 10000e18);
         _openTrove(user3, 1e18, 10000e18);
-        
+
         // reducing TCR below 150%, and all Troves below 100% ICR
         _updateRoundData(
             RoundData({
@@ -180,7 +180,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation);
         assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
-        
+
         // check redistribute the remaining debt to all Troves
         assertTrue(SatoshiMath._approximatelyEqual(debt1, user1ExpectedDebt, 1000));
         assertTrue(SatoshiMath._approximatelyEqual(debt3, user3ExpectedDebt, 1000));
@@ -197,7 +197,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user3, 1e18, 10000e18);
         _provideToSP(user2, 10000e18);
         _provideToSP(user3, 10000e18);
-        
+
         // reducing TCR below 150%, and all Troves 120% ICR
         _updateRoundData(
             RoundData({

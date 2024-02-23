@@ -14,7 +14,7 @@ contract PriceFeedChainlink is IPriceFeed, SatoshiOwnable {
     AggregatorV3Interface internal immutable _source;
     uint256 public maxTimeThreshold;
 
-    constructor(AggregatorV3Interface source_, ISatoshiCore _satoshiCore) {        
+    constructor(AggregatorV3Interface source_, ISatoshiCore _satoshiCore) {
         __SatoshiOwnable_init(_satoshiCore);
         _source = source_;
         maxTimeThreshold = 86400;

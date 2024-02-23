@@ -13,6 +13,7 @@ import {ISatoshiOwnable} from "../interfaces/dependencies/ISatoshiOwnable.sol";
  */
 abstract contract SatoshiOwnable is Initializable, ISatoshiOwnable {
     ISatoshiCore public SATOSHI_CORE;
+
     error InvalidSatoshiCore();
 
     constructor() {
@@ -20,7 +21,7 @@ abstract contract SatoshiOwnable is Initializable, ISatoshiOwnable {
     }
 
     function __SatoshiOwnable_init(ISatoshiCore _satoshiCore) internal {
-        if(_satoshiCore.owner() == address(0)) revert InvalidSatoshiCore();
+        if (_satoshiCore.owner() == address(0)) revert InvalidSatoshiCore();
         SATOSHI_CORE = _satoshiCore;
     }
 

@@ -415,7 +415,10 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _deployPriceFeedChainlink(address deployer, AggregatorV3Interface oracle, ISatoshiCore _satoshiCore) internal returns (address) {
+    function _deployPriceFeedChainlink(address deployer, AggregatorV3Interface oracle, ISatoshiCore _satoshiCore)
+        internal
+        returns (address)
+    {
         vm.startPrank(deployer);
         assert(oracle != AggregatorV3Interface(address(0))); // check if oracle contract is deployed
         address priceFeedChainlinkAddr = address(new PriceFeedChainlink(oracle, _satoshiCore));

@@ -126,7 +126,12 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // 365 days later
         vm.warp(block.timestamp + 365 days);
         _updateRoundData(
-            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
         );
         _openTrove(user2, 1e18, 50e18);
         uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;

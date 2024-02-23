@@ -16,7 +16,7 @@ struct Collateral {
  *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/helpers/TroveManagerGetters.sol
  *
  */
- contract TroveManagerGetters {
+contract TroveManagerGetters {
     IFactory public immutable factory;
 
     constructor(IFactory _factory) {

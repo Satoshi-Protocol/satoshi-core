@@ -3,15 +3,7 @@ pragma solidity 0.8.13;
 
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
-
-struct CombinedTroveData {
-    address owner;
-    uint256 debt;
-    uint256 coll;
-    uint256 stake;
-    uint256 snapshotCollateral;
-    uint256 snapshotDebt;
-}
+import {IMultiTroveGetter, CombinedTroveData} from "./interfaces/IMultiTroveGetter.sol";
 
 /**
  * @title Multiple Trove Getter Contract
@@ -19,7 +11,7 @@ struct CombinedTroveData {
  *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/helpers/MultiTroveGetter.sol
  *
  */
- contract MultiTroveGetter {
+contract MultiTroveGetter is IMultiTroveGetter {
     constructor() {}
 
     function getMultipleSortedTroves(ITroveManager troveManager, int256 _startIdx, uint256 _count)

@@ -44,7 +44,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         _beforeAddColl(collateralToken, _collAmount);
 
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
-        
+
         borrowerOperationsProxy.openTrove(
             troveManager, account, _maxFeePercentage, _collAmount, _debtAmount, _upperHint, _lowerHint
         );
@@ -78,7 +78,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
     ) external {
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
-        
+
         borrowerOperationsProxy.withdrawColl(troveManager, account, _collWithdrawal, _upperHint, _lowerHint);
 
         uint256 collTokenBalanceAfter = collateralToken.balanceOf(address(this));
@@ -157,7 +157,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         // withdraw collateral
         _afterWithdrawColl(collateralToken, _collWithdrawal);
-        
+
         // withdraw debt
         if (_isDebtIncrease) {
             uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;

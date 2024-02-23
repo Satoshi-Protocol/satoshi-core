@@ -67,36 +67,14 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         TroveBase.updateRoundData(oracleMockAddr, DEPLOYER, data);
     }
 
-    function _redeemCollateral(
-        address caller,
-        uint256 redemptionAmount
-    ) internal {
+    function _redeemCollateral(address caller, uint256 redemptionAmount) internal {
         uint256 price = troveManagerBeaconProxy.fetchPrice();
-        (
-            address firstRedemptionHint,
-            uint256 partialRedemptionHintNICR,
-            uint256 truncatedDebtAmount
-        ) = hintHelpers.getRedemptionHints(
-                troveManagerBeaconProxy,
-                redemptionAmount,
-                price,
-                0
-            );
-        (address hintAddress, , ) = hintHelpers.getApproxHint(
-            troveManagerBeaconProxy,
-            partialRedemptionHintNICR,
-            10,
-            42
-        );
+        (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount) =
+            hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, price, 0);
+        (address hintAddress,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, partialRedemptionHintNICR, 10, 42);
 
-        (
-            address upperPartialRedemptionHint,
-            address lowerPartialRedemptionHint
-        ) = sortedTrovesBeaconProxy.findInsertPosition(
-                partialRedemptionHintNICR,
-                hintAddress,
-                hintAddress
-            );
+        (address upperPartialRedemptionHint, address lowerPartialRedemptionHint) =
+            sortedTrovesBeaconProxy.findInsertPosition(partialRedemptionHintNICR, hintAddress, hintAddress);
 
         // redeem
         vm.prank(caller);
@@ -121,7 +99,12 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // price drop
         _updateRoundData(
-            RoundData({answer: 30500_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+            RoundData({
+                answer: 30500_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
         );
 
         uint256 price = troveManagerBeaconProxy.fetchPrice();
@@ -144,14 +127,19 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.warp(block.timestamp + 14 days);
         // price drop
         _updateRoundData(
-            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
         );
 
         _openTrove(user1, 1000000e18, 133330e18);
         _openTrove(user2, 1e18, 13793e18);
         _openTrove(user3, 1e18, 20000e18);
         _openTrove(user4, 1e18, 30000e18);
-        
+
         uint256 redemptionAmount = 35000e18;
 
         _redeemCollateral(user1, redemptionAmount);
@@ -166,7 +154,12 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.warp(block.timestamp + 14 days);
         // price drop
         _updateRoundData(
-            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
         );
 
         _openTrove(user1, 1000000e18, 1000e18);
@@ -186,12 +179,17 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user3, 1e18, 20000e18);
         // open with a high ICR
         _openTrove(user4, 100e18, 30000e18);
-        
+
         // skip bootstrapping time
         vm.warp(block.timestamp + 14 days);
 
         _updateRoundData(
-            RoundData({answer: 40000_00_000_000, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
         );
 
         (uint256 coll3, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
@@ -206,7 +204,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         uint256 price = troveManagerBeaconProxy.fetchPrice();
         uint256 surplusBlance = troveManagerBeaconProxy.surplusBalances(user3);
-        
+
         vm.prank(user3);
         troveManagerBeaconProxy.claimCollateral(user3);
         uint256 expectedColl = coll3 - coll3 * (debt3 - GAS_COMPENSATION) / price;

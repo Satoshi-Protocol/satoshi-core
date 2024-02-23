@@ -17,6 +17,7 @@ import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
+import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
@@ -30,6 +31,7 @@ import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
+import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
 import {
     SATOSHI_CORE_OWNER,
@@ -70,6 +72,7 @@ contract DeploySetupScript is Script {
     UpgradeableBeacon troveManagerBeacon;
     /* Helpers contracts */
     IMultiCollateralHintHelpers hintHelpers;
+    IMultiTroveGetter multiTroveGetter;
     ISatoshiBORouter satoshiBORouter;
 
     /* computed contracts for deployment */
@@ -237,6 +240,9 @@ contract DeploySetupScript is Script {
 
         // MultiCollateralHintHelpers
         hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
+        
+        // MultiTroveGetter
+        multiTroveGetter = new MultiTroveGetter();
 
         // SatoshiBORouter
         satoshiBORouter = new SatoshiBORouter(debtToken, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
@@ -259,6 +265,7 @@ contract DeploySetupScript is Script {
         console.log("sortedTrovesBeacon:", address(sortedTrovesBeacon));
         console.log("troveManagerBeacon:", address(troveManagerBeacon));
         console.log("hintHelpers:", address(hintHelpers));
+        console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiBORouter:", address(satoshiBORouter));
 
         vm.stopBroadcast();
