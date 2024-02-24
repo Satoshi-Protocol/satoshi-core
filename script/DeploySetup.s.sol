@@ -240,7 +240,7 @@ contract DeploySetupScript is Script {
 
         // MultiCollateralHintHelpers
         hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
-        
+
         // MultiTroveGetter
         multiTroveGetter = new MultiTroveGetter();
 

@@ -14,7 +14,7 @@ import {IMultiTroveGetter, CombinedTroveData} from "./interfaces/IMultiTroveGett
 contract MultiTroveGetter is IMultiTroveGetter {
     constructor() {}
 
-    function getMultipleSortedTroves(ITroveManager troveManager, int256 _startIdx, uint256 _count)
+    function getMultipleSortedTroves(ITroveManager troveManager, int256 _startIdx, uint256 _count, uint256 price)
         external
         view
         returns (CombinedTroveData[] memory _troves)
@@ -43,9 +43,9 @@ contract MultiTroveGetter is IMultiTroveGetter {
             }
 
             if (descend) {
-                _troves = _getMultipleSortedTrovesFromHead(troveManager, sortedTroves, startIdx, _count);
+                _troves = _getMultipleSortedTrovesFromHead(troveManager, sortedTroves, startIdx, _count, price);
             } else {
-                _troves = _getMultipleSortedTrovesFromTail(troveManager, sortedTroves, startIdx, _count);
+                _troves = _getMultipleSortedTrovesFromTail(troveManager, sortedTroves, startIdx, _count, price);
             }
         }
     }
@@ -54,7 +54,8 @@ contract MultiTroveGetter is IMultiTroveGetter {
         ITroveManager troveManager,
         ISortedTroves sortedTroves,
         uint256 _startIdx,
-        uint256 _count
+        uint256 _count,
+        uint256 price
     ) internal view returns (CombinedTroveData[] memory _troves) {
         address currentTroveowner = sortedTroves.getFirst();
 
@@ -76,8 +77,19 @@ contract MultiTroveGetter is IMultiTroveGetter {
                 ,
                 ,
             ) = troveManager.troves(currentTroveowner);
+
             (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) =
                 troveManager.rewardSnapshots(currentTroveowner);
+
+            _troves[idx].nominalICR = troveManager.getNominalICR(currentTroveowner);
+            _troves[idx].currentICR = troveManager.getCurrentICR(currentTroveowner, price);
+
+            (
+                _troves[idx].entireDebt,
+                _troves[idx].entireColl,
+                _troves[idx].pendingDebtReward,
+                _troves[idx].pendingCollReward
+            ) = troveManager.getEntireDebtAndColl(currentTroveowner);
 
             currentTroveowner = sortedTroves.getNext(currentTroveowner);
         }
@@ -87,7 +99,8 @@ contract MultiTroveGetter is IMultiTroveGetter {
         ITroveManager troveManager,
         ISortedTroves sortedTroves,
         uint256 _startIdx,
-        uint256 _count
+        uint256 _count,
+        uint256 price
     ) internal view returns (CombinedTroveData[] memory _troves) {
         address currentTroveowner = sortedTroves.getLast();
 
@@ -109,8 +122,19 @@ contract MultiTroveGetter is IMultiTroveGetter {
                 ,
                 ,
             ) = troveManager.troves(currentTroveowner);
+
             (_troves[idx].snapshotCollateral, _troves[idx].snapshotDebt) =
                 troveManager.rewardSnapshots(currentTroveowner);
+
+            _troves[idx].nominalICR = troveManager.getNominalICR(currentTroveowner);
+            _troves[idx].currentICR = troveManager.getCurrentICR(currentTroveowner, price);
+
+            (
+                _troves[idx].entireDebt,
+                _troves[idx].entireColl,
+                _troves[idx].pendingDebtReward,
+                _troves[idx].pendingCollReward
+            ) = troveManager.getEntireDebtAndColl(currentTroveowner);
 
             currentTroveowner = sortedTroves.getPrev(currentTroveowner);
         }
