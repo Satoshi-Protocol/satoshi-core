@@ -25,6 +25,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user2;
     address user3;
     address user4;
+    address user5;
     uint256 maxFeePercentage = 0.05e18; // 5%
 
     function setUp() public override {
@@ -35,6 +36,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user2 = vm.addr(2);
         user3 = vm.addr(3);
         user4 = vm.addr(4);
+        user5 = vm.addr(5);
 
         // setup contracts and deploy one instance
         (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
@@ -126,6 +128,58 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation);
         assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
+    }
+
+    function test_Liquidate2ICRLessThan100InRecoveryMode() public {
+        LiquidationVars memory vars;
+        // open troves
+        _openTrove(user1, 1e18, 10000e18);
+        _openTrove(user2, 1e18, 10000e18);
+        _openTrove(user3, 1e18, 10000e18);
+        _openTrove(user4, 1e18, 10000e18);
+
+        // reducing TCR below 150%, and all Troves below 100% ICR
+        _updateRoundData(
+            RoundData({
+                answer: 10000_00_000_000, // 10000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+
+        (uint256 coll1, uint256 debt1) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        (uint256 coll2Before, uint256 debt2Before) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (uint256 coll3Before, uint256 debt3Before) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        vars.collToRedistribute = (coll1 - coll1 / 200);
+        vars.debtToRedistribute = debt1;
+        vars.collGasCompensation = coll1 / 200;
+        vars.debtGasCompensation = GAS_COMPENSATION;
+
+        vm.startPrank(user5);
+        // redistibute the collateral and debt
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user1);
+
+        (uint256 coll2, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (uint256 coll3, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+
+        assertEq(coll2, coll2Before + vars.collToRedistribute / 3);
+        assertEq(debt2, debt2Before + vars.debtToRedistribute / 3);
+        assertEq(coll3, coll3Before + vars.collToRedistribute / 3);
+        assertEq(debt3, debt3Before + vars.debtToRedistribute / 3);
+
+        // check user4 gets the reward for liquidation
+        assertEq(collateralMock.balanceOf(user5), vars.collGasCompensation);
+        assertEq(debtToken.balanceOf(user5), vars.debtGasCompensation);
+
+        // liquidate user2
+        // redistibute the collateral and debt
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
+        (uint256 coll3_2, uint256 debt3_2) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        vars.collToRedistribute = coll3 - coll3 / 200;
+        vars.debtToRedistribute = debt3;
+        require(SatoshiMath._approximatelyEqual(coll3_2, coll3 + vars.collToRedistribute / 2, 1000));
+        require(SatoshiMath._approximatelyEqual(debt3_2, debt3 + vars.debtToRedistribute / 2, 1000));
     }
 
     function test_LiquidateSPNotEnoughInNormalMode() public {

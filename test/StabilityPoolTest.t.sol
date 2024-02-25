@@ -27,6 +27,18 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user4;
     uint256 maxFeePercentage = 0.05e18; // 5%
 
+    struct StabilityPoolVars {
+        uint256 collGainBefore;
+        uint256 collGainAfter;
+        uint256 stakeBefore;
+        uint256 stakeAfter;
+        uint256 stabilityPoolDebtBefore;
+        uint256 stabilityPoolDebtAfter;
+        uint256 PBefore;
+        uint256 SBefore;
+        uint256 GBefore;
+    }
+
     function setUp() public override {
         super.setUp();
 
@@ -84,24 +96,26 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     // deposit to SP and check the stake amount in SP
     function testProvideToSP() public {
+        StabilityPoolVars memory vars;
         // open trove
         _openTrove(user1, 1e18, 10000e18);
-        uint256 stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertEq(stabilityPoolDebtBefore, 0);
+        vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertEq(vars.stabilityPoolDebtBefore, 0);
 
         // deposit to SP
         _provideToSP(user1, 200e18);
-        uint256 stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertEq(stabilityPoolDebtAfter, 200e18);
+        vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertEq(vars.stabilityPoolDebtAfter, 200e18);
     }
 
     // withdraw from SP and check the stake amount in SP
     function testWithdrawFromSPFull() public {
+        StabilityPoolVars memory vars;
         // open trove
         _openTrove(user1, 1e18, 10000e18);
 
-        uint256 stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertEq(stabilityPoolDebtBefore, 0);
+        vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertEq(vars.stabilityPoolDebtBefore, 0);
 
         // deposit to SP
         _provideToSP(user1, 200e18);
@@ -110,11 +124,12 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // withdraw from SP
         _withdrawFromSP(user1, 200e18);
-        uint256 stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertEq(stabilityPoolDebtAfter, 0);
+        vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertEq(vars.stabilityPoolDebtAfter, 0);
     }
 
     function testLiquidateInNormalModeICRLessThanMCR() public {
+        StabilityPoolVars memory vars;
         // whale opens trove
         _openTrove(user1, 100e18, 185000e18);
         _provideToSP(user1, 100000e18);
@@ -132,9 +147,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
             })
         );
 
-        uint256 stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        (, uint256 user2DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
-        (, uint256 user3DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        (uint256 user2CollBefore, uint256 user2DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (uint256 user3CollBefore, uint256 user3DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
 
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user3);
@@ -144,17 +159,19 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertFalse(sortedTrovesBeaconProxy.contains(user3));
 
         // Confirm SP has decreased
-        uint256 stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertTrue(stabilityPoolDebtAfter < stabilityPoolDebtBefore);
-        assertEq(stabilityPoolDebtAfter, stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore);
+        vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertTrue(vars.stabilityPoolDebtAfter < vars.stabilityPoolDebtBefore);
+        assertEq(vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore);
 
         // check the collateral gain by user1
-        // uint256[] memory collateralGains = stabilityPoolProxy.getDepositorCollateralGain(user1);
-        // console.log("collateralGains", collateralGains[0]);
-        // assertEq(collateralGains[0], (user2CollBefore + user3CollBefore) * 995 / 1000);
+        // vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user1)[0];
+        // console.log("collGainBefore: ", vars.collGainBefore);
+        // console.log((user2CollBefore + user3CollBefore) * 995 / 1000);
+        // assertEq(vars.collGainBefore, (user2CollBefore + user3CollBefore) * 995 / 1000);
     }
 
     function testLiquidateInNormalModeICRLessThan100() public {
+        StabilityPoolVars memory vars;
         // whale opens trove
         _openTrove(user1, 100e18, 185000e18);
         _provideToSP(user1, 100000e18);
@@ -172,7 +189,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
             })
         );
 
-        uint256 stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
         (, uint256 user2DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
         (, uint256 user3DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
 
@@ -184,12 +201,13 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertFalse(sortedTrovesBeaconProxy.contains(user3));
 
         // Confirm SP has decreased
-        uint256 stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertTrue(stabilityPoolDebtAfter < stabilityPoolDebtBefore);
-        assertEq(stabilityPoolDebtAfter, stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore);
+        vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertTrue(vars.stabilityPoolDebtAfter < vars.stabilityPoolDebtBefore);
+        assertEq(vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - user2DebtBefore - user3DebtBefore);
     }
 
     function testCorrectUpdateSnapshot() public {
+        StabilityPoolVars memory vars;
         // whale opens trove
         _openTrove(user1, 100e18, 185000e18);
         _provideToSP(user1, 100000e18);
@@ -212,11 +230,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user3);
 
-        uint256 PBefore = stabilityPoolProxy.P();
-        uint256 SBefore = stabilityPoolProxy.epochToScaleToSums(0, 0, 0);
-        uint256 GBefore = stabilityPoolProxy.epochToScaleToG(0, 0);
-        assertTrue(PBefore > 0);
-        assertTrue(SBefore > 0);
+        vars.PBefore = stabilityPoolProxy.P();
+        vars.SBefore = stabilityPoolProxy.epochToScaleToSums(0, 0, 0);
+        vars.GBefore = stabilityPoolProxy.epochToScaleToG(0, 0);
+        assertTrue(vars.PBefore > 0);
+        assertTrue(vars.SBefore > 0);
 
         // user4 before snapshot
         (uint256 user4PBefore, uint256 user4GBefore,,) = stabilityPoolProxy.depositSnapshots(user4);
@@ -228,8 +246,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // user4 after snapshot
         (uint256 user4PAfter, uint256 user4GAfter,,) = stabilityPoolProxy.depositSnapshots(user4);
-        assertEq(user4PAfter, PBefore);
-        assertEq(user4GAfter, GBefore);
+        assertEq(user4PAfter, vars.PBefore);
+        assertEq(user4GAfter, vars.GBefore);
     }
 
     function testTryToProvideMoreThanBlanace() public {
@@ -249,11 +267,15 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function testClaimCollGain() public {
+        StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 100e18, 185000e18);
-        _provideToSP(user1, 100000e18);
+        _openTrove(user1, 1000e18, 185000e18);
+        _provideToSP(user1, 70000e18);
         // 1 tove opened
         _openTrove(user2, 1e18, 20000e18);
+        _provideToSP(user2, 19000e18);
+        // user3 opens trove
+        _openTrove(user3, 1e18, 20000e18);
 
         // price drops: user2's and user3's Troves fall below MCR, whale doesn't
         _updateRoundData(
@@ -268,12 +290,28 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // liquidate user2
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
 
-        uint256[] memory user1CollGain = stabilityPoolProxy.getDepositorCollateralGain(user1);
+        vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
 
-        // claim collateral gain
-        _claimCollateralGains(user1);
+        // user2 claim collateral gain
+        _claimCollateralGains(user2);
 
         // check the collateral gain is as expected
-        assertEq(user1CollGain[0], collateralMock.balanceOf(user1));
+        assertEq(vars.collGainBefore, collateralMock.balanceOf(user2));
+
+        // check the gain is 0 after claiming
+        vars.collGainAfter = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
+        assertEq(vars.collGainAfter, 0);
+
+        // liqidate user3
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user3);
+        vars.collGainAfter = stabilityPoolProxy.collateralGainsByDepositor(user2, 0);
+        assertEq(vars.collGainAfter, collateralMock.balanceOf(user2) - vars.collGainBefore);
+
+        // user2 claim collateral gain
+        _claimCollateralGains(user2);
+
+        // check the gain is 0 after claiming
+        vars.collGainAfter = stabilityPoolProxy.collateralGainsByDepositor(user2, 0);
+        assertEq(vars.collGainAfter, 0);
     }
 }

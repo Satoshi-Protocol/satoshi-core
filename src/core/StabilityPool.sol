@@ -515,6 +515,9 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
                 ++i;
             }
         }
+
+        uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
+        _updateSnapshots(msg.sender, compoundedDebtDeposit);
         emit CollateralGainWithdrawn(msg.sender, collateralGains);
     }
 
