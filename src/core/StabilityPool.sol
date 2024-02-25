@@ -497,6 +497,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
     // --- Sender functions for Debt deposit, collateral gains and Satoshi gains ---
     function claimCollateralGains(address recipient, uint256[] calldata collateralIndexes) public virtual {
+        uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
+        uint128 depositTimestamp = accountDeposits[msg.sender].timestamp;
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 loopEnd = collateralIndexes.length;
@@ -515,8 +517,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
                 ++i;
             }
         }
-
-        uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
+        accountDeposits[msg.sender] = AccountDeposit({ amount: uint128(compoundedDebtDeposit), timestamp: depositTimestamp });
         _updateSnapshots(msg.sender, compoundedDebtDeposit);
         emit CollateralGainWithdrawn(msg.sender, collateralGains);
     }
