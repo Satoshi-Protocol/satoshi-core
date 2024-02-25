@@ -7,7 +7,7 @@ import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {DeployBase} from "./utils/DeployBase.t.sol";
-import {DEPLOYER, OWNER, TestConfig} from "./TestConfig.sol";
+import {DEPLOYER, OWNER, GUARDIAN,TestConfig} from "./TestConfig.sol";
 
 contract DeployInstanceTest is Test, DeployBase, TestConfig {
     function setUp() public override {
@@ -31,6 +31,9 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
 
     function testDeployInstance() public {
         address priceFeedAddr = _deployPriceFeed(DEPLOYER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData);
+        assert(IPriceFeed(priceFeedAddr).owner() == OWNER);
+        assert(IPriceFeed(priceFeedAddr).guardian() == GUARDIAN);
+        assert(IPriceFeed(priceFeedAddr).SATOSHI_CORE() == satoshiCore);
 
         uint256 troveManagerCountBefore = factory.troveManagerCount();
 
