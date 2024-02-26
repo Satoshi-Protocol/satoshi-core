@@ -7,7 +7,7 @@ import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {DeployBase} from "./utils/DeployBase.t.sol";
-import {DEPLOYER, OWNER, GUARDIAN,TestConfig} from "./TestConfig.sol";
+import {DEPLOYER, OWNER, GUARDIAN, TestConfig} from "./TestConfig.sol";
 
 contract DeployInstanceTest is Test, DeployBase, TestConfig {
     function setUp() public override {

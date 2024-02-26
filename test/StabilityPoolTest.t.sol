@@ -106,6 +106,13 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         (vars.userCollBefore[3], vars.userDebtBefore[3]) = troveManagerBeaconProxy.getTroveCollAndDebt(user4);
     }
 
+    function _recordUserStateAfterToVar(StabilityPoolVars memory vars) internal view {
+        (vars.userCollAfter[0], vars.userDebtAfter[0]) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        (vars.userCollAfter[1], vars.userDebtAfter[1]) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (vars.userCollAfter[2], vars.userDebtAfter[2]) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        (vars.userCollAfter[3], vars.userDebtAfter[3]) = troveManagerBeaconProxy.getTroveCollAndDebt(user4);
+    }
+
     // deposit to SP and check the stake amount in SP
     function testProvideToSP() public {
         StabilityPoolVars memory vars;
@@ -172,7 +179,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // Confirm SP has decreased
         vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertTrue(vars.stabilityPoolDebtAfter < vars.stabilityPoolDebtBefore);
-        assertEq(vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - vars.userDebtBefore[1] - vars.userDebtBefore[2]);
+        assertEq(
+            vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - vars.userDebtBefore[1] - vars.userDebtBefore[2]
+        );
 
         // check the collateral gain by user1
         // vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user1)[0];
@@ -214,7 +223,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // Confirm SP has decreased
         vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertTrue(vars.stabilityPoolDebtAfter < vars.stabilityPoolDebtBefore);
-        assertEq(vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - vars.userDebtBefore[1] - vars.userDebtBefore[2]);
+        assertEq(
+            vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - vars.userDebtBefore[1] - vars.userDebtBefore[2]
+        );
     }
 
     function testCorrectUpdateSnapshot() public {
@@ -280,18 +291,21 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testClaimCollGain() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 1000e18, 185000e18);
-        _provideToSP(user1, 70000e18);
+        _openTrove(user1, 10000e18, 185000e18);
         // 1 tove opened
         _openTrove(user2, 1e18, 20000e18);
-        _provideToSP(user2, 19000e18);
         // user3 opens trove
         _openTrove(user3, 1e18, 20000e18);
+
+        _provideToSP(user1, 70000e18);
+        _provideToSP(user2, 20000e18);
+
+        _recordUserStateBeforeToVar(vars);
 
         // price drops: user2's and user3's Troves fall below MCR, whale doesn't
         _updateRoundData(
             RoundData({
-                answer: 20500_00_000_000, // 10000
+                answer: 20000_00_000_000, // 20000
                 startedAt: block.timestamp,
                 updatedAt: block.timestamp,
                 answeredInRound: 2
@@ -300,8 +314,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // liquidate user2
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
+        // check user2 trove is liquidated
+        assertFalse(sortedTrovesBeaconProxy.contains(user2));
 
         vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
+        assert(vars.collGainBefore > 0);
 
         // user2 claim collateral gain
         _claimCollateralGains(user2);
@@ -315,14 +332,22 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // liqidate user3
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user3);
-        vars.collGainAfter = stabilityPoolProxy.collateralGainsByDepositor(user2, 0);
-        assertEq(vars.collGainAfter, collateralMock.balanceOf(user2) - vars.collGainBefore);
+        // check user3 trove is liquidated
+        assertFalse(sortedTrovesBeaconProxy.contains(user3));
+
+        vars.collGainAfter = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
+        assertApproxEqAbs(vars.collGainBefore, vars.collGainAfter, 10000);
+
+        _recordUserStateAfterToVar(vars);
+        // check user1 trove reamins the same
+        assertEq(vars.userCollBefore[0], vars.userCollAfter[0]);
+        assertEq(vars.userDebtBefore[0], vars.userDebtAfter[0]);
 
         // user2 claim collateral gain
         _claimCollateralGains(user2);
 
         // check the gain is 0 after claiming
-        vars.collGainAfter = stabilityPoolProxy.collateralGainsByDepositor(user2, 0);
+        vars.collGainAfter = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
         assertEq(vars.collGainAfter, 0);
     }
 
@@ -338,9 +363,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user3, 1e18, 20000e18);
 
         _recordUserStateBeforeToVar(vars);
-        
+
         // price drops: user2's and user3's Troves fall below MCR, whale doesn't (normal mode)
-         _updateRoundData(
+        _updateRoundData(
             RoundData({
                 answer: 20500_00_000_000, // 10000
                 startedAt: block.timestamp,
@@ -352,7 +377,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 get the compounded debt after
         vars.stakeBefore = stabilityPoolProxy.getCompoundedDebtDeposit(user1);
         assertEq(vars.stakeBefore, 20000e18);
-        
+
         vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
         // liquidate user2
         liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
@@ -362,7 +387,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 get the compounded debt after
         vars.stakeAfter = stabilityPoolProxy.getCompoundedDebtDeposit(user1);
         assert(vars.stakeAfter < vars.stakeBefore);
-        assertTrue(SatoshiMath._approximatelyEqual(vars.stakeAfter, vars.stakeBefore - vars.userDebtBefore[1] / 2, 100000));
+        assertTrue(
+            SatoshiMath._approximatelyEqual(vars.stakeAfter, vars.stakeBefore - vars.userDebtBefore[1] / 2, 100000)
+        );
 
         vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertEq(vars.stabilityPoolDebtAfter, vars.stabilityPoolDebtBefore - vars.userDebtBefore[1]);
@@ -373,5 +400,56 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(stabilityPoolProxy.getCompoundedDebtDeposit(user1), 0);
         assertEq(stabilityPoolProxy.getCompoundedDebtDeposit(user2), 0);
         assertEq(stabilityPoolProxy.getTotalDebtTokenDeposits(), 0);
+
+        // try to withdraw from SP
+        vm.warp(block.timestamp + 1);
+        assertEq(debtToken.balanceOf(user2), 0);
+        _withdrawFromSP(user2, 1e18);
+        assertEq(debtToken.balanceOf(user2), 0);
+    }
+
+    function test_2lquidateAndProvide() public {
+        StabilityPoolVars memory vars;
+        // whale opens trove
+        _openTrove(user1, 10000e18, 185000e18);
+        // 1 tove opened
+        _openTrove(user2, 1e18, 20000e18);
+        // user3 opens trove
+        _openTrove(user3, 1e18, 20000e18);
+
+        // provide to SP
+        _provideToSP(user1, 50000e18);
+        _provideToSP(user2, 10000e18);
+
+        _recordUserStateBeforeToVar(vars);
+
+        // price drops: user2's and user3's Troves fall below MCR, whale doesn't (normal mode)
+        _updateRoundData(
+            RoundData({
+                answer: 20500_00_000_000, // 10000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 2
+            })
+        );
+
+        // liquidate user2
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
+
+        _claimCollateralGains(user2);
+
+        // liquidate user3
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user3);
+
+        _claimCollateralGains(user2);
+
+        // provide to SP
+        uint256 provideAmt = 10000e18;
+        _provideToSP(user2, provideAmt);
+
+        // check the stake amount in SP
+        vars.stakeAfter = stabilityPoolProxy.getCompoundedDebtDeposit(user2);
+        uint256 expectedStake = 2 * provideAmt - (vars.userDebtBefore[1] + vars.userDebtBefore[2]) / 6;
+        assertTrue(SatoshiMath._approximatelyEqual(vars.stakeAfter, expectedStake, 10000));
     }
 }
