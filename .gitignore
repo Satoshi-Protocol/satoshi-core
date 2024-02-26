@@ -23,3 +23,5 @@ src/mock
 local.txt
 
 lib/solidity-examples
+
+*.info
