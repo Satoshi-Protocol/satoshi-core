@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-address constant FACTORY_ADDRESS = 0xB5dE77ab88551aA1ed3EE293f740C17Bc40de454;
-address constant PRICE_FEED_AGGREGATOR_ADDRESS = 0x07B3f02441Fdd20673b2F02c820bB6CEeB09628E;
+address constant FACTORY_ADDRESS = 0xeD542cBE7E19ebC80D4592e2dAb4A2ddA757cCd3;
+address constant PRICE_FEED_AGGREGATOR_ADDRESS = 0xa5bbcC8D0cFC12E91b042ca5cF8C92c16Fa24927;
 
 //NOTE: custom `PriceFeed.sol` contract for the collateral should be deploy first
-address constant PRICE_FEED_ADDRESS = 0xfA3646d4578e97ca950b99010dbD701e6AFf6836;
+address constant PRICE_FEED_ADDRESS = 0xEA22DfEB2cDFD3b21575c8877A635474f39f8F3b;
 address constant COLLATERAL_ADDRESS = 0x51abb19F1ebc7B64040aFd0ef3C789d75C8707e0;
 
 uint256 constant MINUTE_DECAY_FACTOR = 999037758833783500; //  (half life of 12 hours)
