@@ -82,6 +82,7 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     event TroveUpdated(
         address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
+    event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
 
     function initialize(
         ISatoshiCore _satoshiCore,

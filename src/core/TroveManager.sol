@@ -24,6 +24,7 @@ import {
     SingleRedemptionValues,
     RewardSnapshot
 } from "../interfaces/core/ITroveManager.sol";
+import {IVault} from "../interfaces/core/IVault.sol";
 
 /**
  * @title Trove Manager Contract (Upgradeable)
@@ -41,6 +42,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     ILiquidationManager public liquidationManager;
     IGasPool public gasPool;
     IDebtToken public debtToken;
+    IVault public vault;
 
     IPriceFeedAggregator public priceFeedAggregator;
     IERC20 public collateralToken;
@@ -119,6 +121,14 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     uint256 public defaultedCollateral;
     uint256 public defaultedDebt;
+
+    // Reward token emission
+    uint256 public rewardIntegral;
+    uint128 public rewardRate; // fixed
+    uint256 public lastUpdate;
+
+    mapping(address => uint256) public rewardIntegralFor;
+    mapping(address => uint256) private storedPendingReward;
 
     mapping(address => Trove) public troves;
     mapping(address => uint256) public surplusBalances;
@@ -212,6 +222,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
         uint256 _MCR
+        // uint128 _rewardRate
     ) public {
         require(!sunsetting, "Cannot change after sunset");
         require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
@@ -233,6 +244,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         borrowingFeeFloor = _borrowingFeeFloor;
         maxBorrowingFee = _maxBorrowingFee;
         maxSystemDebt = _maxSystemDebt;
+        // @todo
+        // rewardRate = _rewardRate;
 
         require(_interestRateInBPS <= MAX_INTEREST_RATE_IN_BPS, "Interest > Maximum");
 
@@ -745,7 +758,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         arrayIndex = TroveOwners.length - 1;
         t.arrayIndex = uint128(arrayIndex);
 
-        // if (!_isRecoveryMode) _updateMintVolume(_borrower, _compositeDebt);
+        _updateIntegrals(_borrower, 0, supply);
 
         totalActiveCollateral = totalActiveCollateral + _collateralAmount;
         uint256 _newTotalDebt = supply + _compositeDebt;
@@ -898,6 +911,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         Trove storage t = troves[_borrower];
         if (t.status == Status.active) {
             uint256 troveInterestIndex = t.activeInterestIndex;
+            uint256 supply = totalActiveDebt;
             uint256 currentInterestIndex = _accrueActiveInterests();
             debt = t.debt;
             uint256 prevDebt = debt;
@@ -924,6 +938,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             if (prevDebt != debt) {
                 t.debt = debt;
             }
+            _updateIntegrals(_borrower, prevDebt, supply);
         }
         return (coll, debt);
     }
@@ -1140,6 +1155,80 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             currentInterestIndex =
                 currentInterestIndex + Math.mulDiv(currentInterestIndex, interestFactor, INTEREST_PRECISION);
         }
+    }
+
+    // --- Reward Emission ---
+    function _updateIntegrals(address account, uint256 balance, uint256 supply) internal { // account, predebt, supply
+        uint256 integral = _updateRewardIntegral(supply);
+        _updateIntegralForAccount(account, balance, integral);
+    }
+
+    function _updateIntegralForAccount(address account, uint256 balance, uint256 currentIntegral) internal {
+        uint256 integralFor = rewardIntegralFor[account];
+
+        if (currentIntegral > integralFor) {
+            storedPendingReward[account] += (balance * (currentIntegral - integralFor)) / 1e18;
+            rewardIntegralFor[account] = currentIntegral;
+        }
+    }
+
+    //@audit if the supply is less than pre??
+    function _updateRewardIntegral(uint256 supply) internal returns (uint256 integral) {
+        require(lastUpdate <= block.timestamp, "Invalid last update");
+        uint256 duration = block.timestamp - lastUpdate;
+        integral = rewardIntegral; // global integral
+        if (duration > 0) {
+            lastUpdate = block.timestamp;
+            if (supply > 0) {
+                integral += (duration * rewardRate * 1e18) / supply;
+                rewardIntegral = integral;
+            }
+        }
+
+        return integral;
+    }
+
+    // --- Reward Claim functions ---
+
+    function claimReward(address receiver) external returns (uint256) {
+        uint256 amount = _claimReward(msg.sender);
+
+        // @todo
+        if (amount > 0) {
+            vault.transferAllocatedTokens(msg.sender, receiver, amount);
+        }
+        emit RewardClaimed(msg.sender, receiver, amount);
+        return amount;
+    }
+
+    function _claimReward(address account) internal returns (uint256) {
+        _applyPendingRewards(account);
+        uint256 amount = storedPendingReward[account];
+        if (amount > 0) storedPendingReward[account] = 0;
+
+        return amount;
+    }
+
+    function claimableReward(address account) external view returns (uint256) {
+        // previously calculated rewards
+        uint256 amount = storedPendingReward[account];
+
+        // pending active debt rewards
+        uint256 duration = block.timestamp - lastUpdate;
+        uint256 integral = rewardIntegral;
+        if (duration > 0) {
+            uint256 supply = totalActiveDebt;
+            if (supply > 0) {
+                integral += (duration * rewardRate * 1e18) / supply;
+            }
+        }
+        uint256 integralFor = rewardIntegralFor[account];
+
+        if (integral > integralFor) {
+            amount += (troves[account].debt * (integral - integralFor)) / 1e18;
+        }
+
+        return amount;
     }
 
     // --- Requires ---

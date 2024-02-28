@@ -29,6 +29,10 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     IFactory public factory;
     ILiquidationManager public liquidationManager;
 
+    // OSHI reward
+    uint128 public rewardRate;
+    uint32 public lastUpdate;
+
     // collateral => index
     mapping(IERC20 => uint256) public indexByCollateral;
     IERC20[] public collateralTokens;
@@ -74,15 +78,17 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     mapping(uint128 => mapping(uint128 => uint256[256])) public epochToScaleToSums;
 
     /*
-     * Similarly, the sum 'G' is used to calculate Satoshi gains. During it's lifetime, each deposit d_t earns a Satoshi gain of
-     *  ( d_t * [G - G_t] )/P_t, where G_t is the depositor's snapshot of G taken at time t when  the deposit was made.
+     * Similarly, the sum 'G' is used to calculate OSHI gains. During it's lifetime, each deposit d_t earns a OSHI gain of
+     *  ( d_t * [G - G_t] )/P_t, where G_t is the depositor's snapshot of G taken at time t when the deposit was made.
      *
-     *  Satoshi reward events occur are triggered by depositor operations (new deposit, topup, withdrawal), and liquidations.
-     *  In each case, the Satoshi reward is issued (i.e. G is updated), before other state changes are made.
+     *  OSHI reward events occur are triggered by depositor operations (new deposit, topup, withdrawal), and liquidations.
+     *  In each case, the OSHI reward is issued (i.e. G is updated), before other state changes are made.
      */
     mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToG;
 
-    // Error trackers for the error correction in the offset calculation
+    // Error tracker for the error correction in the OSHI issuance calculation
+    uint public lastOSHIError;
+    // Error trackers for the error correction in the OSHI offset calculation
     uint256[256] public lastCollateralError_Offset;
     uint256 public lastDebtLossError_Offset;
 
@@ -195,6 +201,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         require(!SATOSHI_CORE.paused(), "Deposits are paused");
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
 
+        _triggerOSHIIssuance();
+        
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
@@ -227,6 +235,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         require(initialDeposit > 0, "StabilityPool: User must have a non-zero deposit");
         require(depositTimestamp < block.timestamp, "!Deposit and withdraw same block");
 
+        _triggerOSHIIssuance();
+        
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
@@ -557,5 +567,61 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         }
 
         emit DepositSnapshotUpdated(_depositor, currentP, currentG);
+    }
+
+    // --- OSHI issuance functions ---
+    function _triggerOSHIIssuance() internal {
+        _updateG(_OSHIIssuance());
+        lastUpdate = uint32(block.timestamp);
+    }
+
+    function _OSHIIssuance() internal returns (uint256) {
+        uint256 duration = block.timestamp - lastUpdate;
+        return duration * rewardRate;
+    }
+
+    function _updateG(uint256 _OSHIIssuance) internal {
+        uint256 totalDebt = totalDebtTokenDeposits; // cached to save an SLOAD
+        /*
+         * When total deposits is 0, G is not updated. In this case, the OSHI issued can not be obtained by later
+         * depositors - it is missed out on, and remains in the balanceof the Treasury contract.
+         *
+         */
+        if (totalDebt == 0 || _OSHIIssuance == 0) {
+            return;
+        }
+
+        uint256 oshiPerUnitStaked;
+        oshiPerUnitStaked = _computeOSHIPerUnitStaked(_OSHIIssuance, totalDebt);
+        uint128 currentEpochCached = currentEpoch;
+        uint128 currentScaleCached = currentScale;
+        uint256 marginalOSHIGain = oshiPerUnitStaked * P;
+        uint256 newG = epochToScaleToG[currentEpochCached][currentScaleCached] + marginalOSHIGain;
+        epochToScaleToG[currentEpochCached][currentScaleCached] = newG;
+
+        emit G_Updated(newG, currentEpochCached, currentScaleCached);
+    }
+
+    function _computeOSHIPerUnitStaked(uint256 _OSHIIssuance, uint256 _totalDebtTokenDeposits)
+        internal
+        returns (uint256)
+    {
+        /*
+        * Calculate the OSHI-per-unit staked.  Division uses a "feedback" error correction, to keep the
+        * cumulative error low in the running total G:
+        *
+        * 1) Form a numerator which compensates for the floor division error that occurred the last time this
+        * function was called.
+        * 2) Calculate "per-unit-staked" ratio.
+        * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
+        * 4) Store this error for use in the next correction when this function is called.
+        * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
+        */
+        uint256 OSHINumerator = (_OSHIIssuance * DECIMAL_PRECISION) + lastOSHIError;
+
+        uint256 OSHIPerUnitStaked = OSHINumerator / _totalDebtTokenDeposits;
+        lastOSHIError = OSHINumerator - (OSHIPerUnitStaked * _totalDebtTokenDeposits);
+
+        return OSHIPerUnitStaked;
     }
 }
