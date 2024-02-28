@@ -26,6 +26,8 @@ uint256 constant MAX_BORROWING_FEE = 1e18 / 100 * 5; //  (5%)
 uint256 constant INTEREST_RATE_IN_BPS = 500; //  (5%)
 uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
 uint256 constant MCR = 11 * 1e17;
+
+/* Constants */
 uint256 constant LIQUIDATION_FEE = 200; //  (0.5%)
 
 abstract contract TestConfig {
