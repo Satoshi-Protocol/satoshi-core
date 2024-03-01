@@ -24,7 +24,7 @@ import {
     SingleRedemptionValues,
     RewardSnapshot
 } from "../interfaces/core/ITroveManager.sol";
-import {IVault} from "../interfaces/core/IVault.sol";
+import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 
 /**
  * @title Trove Manager Contract (Upgradeable)
@@ -42,7 +42,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     ILiquidationManager public liquidationManager;
     IGasPool public gasPool;
     IDebtToken public debtToken;
-    IVault public vault;
+    ICommunityIssuance public communityIssuance;
 
     IPriceFeedAggregator public priceFeedAggregator;
     IERC20 public collateralToken;
@@ -160,6 +160,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         borrowerOperations = _borrowerOperations;
         liquidationManager = _liquidationManager;
         priceFeedAggregator = _priceFeedAggregator;
+        // @todo
+        // communityIssuance = _communityIssuance;
     }
 
     function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external {
@@ -1195,9 +1197,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     function claimReward(address receiver) external returns (uint256) {
         uint256 amount = _claimReward(msg.sender);
 
-        // @todo
         if (amount > 0) {
-            vault.transferAllocatedTokens(msg.sender, receiver, amount);
+            communityIssuance.transferAllocatedTokens(receiver, amount);
         }
         emit RewardClaimed(msg.sender, receiver, amount);
         return amount;

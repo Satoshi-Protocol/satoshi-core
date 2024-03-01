@@ -11,7 +11,7 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
-import {IVault} from "../interfaces/core/IVault.sol";
+import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 /**
  * @title Stability Pool Contract (Upgradeable)
  *        Mutated from:
@@ -29,7 +29,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     IDebtToken public debtToken;
     IFactory public factory;
     ILiquidationManager public liquidationManager;
-    IVault public vault;
+    ICommunityIssuance public communityIssuance;
 
     // OSHI reward
     uint128 public rewardRate;
@@ -121,6 +121,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         factory = _factory;
         liquidationManager = _liquidationManager;
         P = DECIMAL_PRECISION;
+        // @todo
+        // communityIssuance = _communityIssuance;
     }
 
     function enableCollateral(IERC20 _collateral) external {
@@ -705,10 +707,9 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
     function claimReward(address recipient) external returns (uint256 amount) {
         amount = _claimReward(msg.sender);
-        
-        // @todo
+
         if (amount > 0) {
-            vault.transferAllocatedTokens(msg.sender, recipient, amount);
+            communityIssuance.transferAllocatedTokens(recipient, amount);
         }
         emit RewardClaimed(msg.sender, recipient, amount);
         return amount;
