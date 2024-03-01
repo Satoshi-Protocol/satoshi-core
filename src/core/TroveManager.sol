@@ -222,8 +222,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
         uint256 _MCR
+    )
         // uint128 _rewardRate
-    ) public {
+        public
+    {
         require(!sunsetting, "Cannot change after sunset");
         require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
         if (minuteDecayFactor != 0) {
@@ -1158,7 +1160,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     }
 
     // --- Reward Emission ---
-    function _updateIntegrals(address account, uint256 balance, uint256 supply) internal { // account, predebt, supply
+    function _updateIntegrals(address account, uint256 balance, uint256 supply) internal {
+        // account, predebt, supply
         uint256 integral = _updateRewardIntegral(supply);
         _updateIntegralForAccount(account, balance, integral);
     }
@@ -1172,7 +1175,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         }
     }
 
-    //@audit if the supply is less than pre??
     function _updateRewardIntegral(uint256 supply) internal returns (uint256 integral) {
         require(lastUpdate <= block.timestamp, "Invalid last update");
         uint256 duration = block.timestamp - lastUpdate;

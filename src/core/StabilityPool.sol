@@ -11,7 +11,7 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
-
+import {IVault} from "../interfaces/core/IVault.sol";
 /**
  * @title Stability Pool Contract (Upgradeable)
  *        Mutated from:
@@ -19,6 +19,7 @@ import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/StabilityPool.sol
  *
  */
+
 contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -28,6 +29,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     IDebtToken public debtToken;
     IFactory public factory;
     ILiquidationManager public liquidationManager;
+    IVault public vault;
 
     // OSHI reward
     uint128 public rewardRate;
@@ -48,6 +50,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
     // depositor => gains
     mapping(address => uint80[256]) public collateralGainsByDepositor;
+
+    mapping(address => uint256) private storedPendingReward;
 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
      * after a series of liquidations have occurred, each of which cancel some debt with the deposit.
@@ -87,7 +91,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToG;
 
     // Error tracker for the error correction in the OSHI issuance calculation
-    uint public lastOSHIError;
+    uint256 public lastOSHIError;
     // Error trackers for the error correction in the OSHI offset calculation
     uint256[256] public lastCollateralError_Offset;
     uint256 public lastDebtLossError_Offset;
@@ -202,7 +206,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
 
         _triggerOSHIIssuance();
-        
+
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
@@ -236,7 +240,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         require(depositTimestamp < block.timestamp, "!Deposit and withdraw same block");
 
         _triggerOSHIIssuance();
-        
+
         _accrueDepositorCollateralGain(msg.sender);
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
@@ -440,7 +444,75 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         return (hasGains);
     }
 
-    // --- Compounded deposit and compounded front end stake ---
+    /*
+     * Calculate the OSHI gain earned by a deposit since its last snapshots were taken.
+     * Given by the formula:  OSHI = d0 * (G - G(0))/P(0)
+     * where G(0) and P(0) are the depositor's snapshots of the sum G and product P, respectively.
+     * d0 is the last recorded deposit value.
+     */
+    function claimableReward(address _depositor) external view returns (uint256) {
+        uint256 totalDebt = totalDebtTokenDeposits;
+        uint256 initialDeposit = accountDeposits[_depositor].amount;
+
+        if (totalDebt == 0 || initialDeposit == 0) {
+            return storedPendingReward[_depositor];
+        }
+        uint256 oshiNumerator = (_OSHIIssuance() * DECIMAL_PRECISION) + lastOSHIError;
+        uint256 oshiPerUnitStaked = oshiNumerator / totalDebt;
+        uint256 marginalOSHIGain = oshiPerUnitStaked * P;
+
+        Snapshots memory snapshots = depositSnapshots[_depositor];
+        uint128 epochSnapshot = snapshots.epoch;
+        uint128 scaleSnapshot = snapshots.scale;
+        uint256 firstPortion;
+        uint256 secondPortion;
+        if (scaleSnapshot == currentScale) {
+            firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - snapshots.G + marginalOSHIGain;
+            secondPortion = epochToScaleToG[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+        } else {
+            firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - snapshots.G;
+            secondPortion = (epochToScaleToG[epochSnapshot][scaleSnapshot + 1] + marginalOSHIGain) / SCALE_FACTOR;
+        }
+
+        return storedPendingReward[_depositor]
+            + (initialDeposit * (firstPortion + secondPortion)) / snapshots.P / DECIMAL_PRECISION;
+    }
+
+    function _claimableReward(address _depositor) private view returns (uint256) {
+        uint256 initialDeposit = accountDeposits[_depositor].amount;
+        if (initialDeposit == 0) {
+            return 0;
+        }
+
+        Snapshots memory snapshots = depositSnapshots[_depositor];
+
+        return _getOSHIGainFromSnapshots(initialDeposit, snapshots);
+    }
+
+    function _getOSHIGainFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
+        /*
+         * Grab the sum 'G' from the epoch at which the stake was made. The OSHI gain may span up to one scale change.
+         * If it does, the second portion of the OSHI gain is scaled by 1e9.
+         * If the gain spans no scale change, the second portion will be 0.
+         */
+        uint128 epochSnapshot = snapshots.epoch;
+        uint128 scaleSnapshot = snapshots.scale;
+        uint256 G_Snapshot = snapshots.G;
+        uint256 P_Snapshot = snapshots.P;
+
+        uint256 firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - G_Snapshot;
+        uint256 secondPortion = epochToScaleToG[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+
+        uint256 OSHIGain = (initialStake * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION;
+
+        return OSHIGain;
+    }
+
+    // --- Compounded deposit ---
 
     /*
      * Return the user's compounded deposit. Given by the formula:  d = d0 * P/P(0)
@@ -575,24 +647,24 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         lastUpdate = uint32(block.timestamp);
     }
 
-    function _OSHIIssuance() internal returns (uint256) {
+    function _OSHIIssuance() internal view returns (uint256) {
         uint256 duration = block.timestamp - lastUpdate;
         return duration * rewardRate;
     }
 
-    function _updateG(uint256 _OSHIIssuance) internal {
+    function _updateG(uint256 OSHIIssuance) internal {
         uint256 totalDebt = totalDebtTokenDeposits; // cached to save an SLOAD
         /*
          * When total deposits is 0, G is not updated. In this case, the OSHI issued can not be obtained by later
          * depositors - it is missed out on, and remains in the balanceof the Treasury contract.
          *
          */
-        if (totalDebt == 0 || _OSHIIssuance == 0) {
+        if (totalDebt == 0 || OSHIIssuance == 0) {
             return;
         }
 
         uint256 oshiPerUnitStaked;
-        oshiPerUnitStaked = _computeOSHIPerUnitStaked(_OSHIIssuance, totalDebt);
+        oshiPerUnitStaked = _computeOSHIPerUnitStaked(OSHIIssuance, totalDebt);
         uint128 currentEpochCached = currentEpoch;
         uint128 currentScaleCached = currentScale;
         uint256 marginalOSHIGain = oshiPerUnitStaked * P;
@@ -602,7 +674,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         emit G_Updated(newG, currentEpochCached, currentScaleCached);
     }
 
-    function _computeOSHIPerUnitStaked(uint256 _OSHIIssuance, uint256 _totalDebtTokenDeposits)
+    function _computeOSHIPerUnitStaked(uint256 OSHIIssuance, uint256 _totalDebtTokenDeposits)
         internal
         returns (uint256)
     {
@@ -617,11 +689,56 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         * 4) Store this error for use in the next correction when this function is called.
         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
         */
-        uint256 OSHINumerator = (_OSHIIssuance * DECIMAL_PRECISION) + lastOSHIError;
+        uint256 OSHINumerator = (OSHIIssuance * DECIMAL_PRECISION) + lastOSHIError;
 
         uint256 OSHIPerUnitStaked = OSHINumerator / _totalDebtTokenDeposits;
         lastOSHIError = OSHINumerator - (OSHIPerUnitStaked * _totalDebtTokenDeposits);
 
         return OSHIPerUnitStaked;
+    }
+
+    // --- Reward ---
+    function _accrueRewards(address _depositor) internal {
+        uint256 amount = _claimableReward(_depositor);
+        storedPendingReward[_depositor] = storedPendingReward[_depositor] + amount;
+    }
+
+    function claimReward(address recipient) external returns (uint256 amount) {
+        amount = _claimReward(msg.sender);
+        
+        // @todo
+        if (amount > 0) {
+            vault.transferAllocatedTokens(msg.sender, recipient, amount);
+        }
+        emit RewardClaimed(msg.sender, recipient, amount);
+        return amount;
+    }
+
+    function _claimReward(address account) internal returns (uint256 amount) {
+        uint256 initialDeposit = accountDeposits[account].amount;
+
+        if (initialDeposit > 0) {
+            uint128 depositTimestamp = accountDeposits[account].timestamp;
+            _triggerOSHIIssuance();
+            bool hasGains = _accrueDepositorCollateralGain(account);
+
+            uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(account);
+            uint256 debtLoss = initialDeposit - compoundedDebtDeposit;
+
+            amount = _claimableReward(account);
+            // we update only if the snapshot has changed
+            if (debtLoss > 0 || hasGains || amount > 0) {
+                // Update deposit
+                accountDeposits[account] =
+                    AccountDeposit({amount: uint128(compoundedDebtDeposit), timestamp: depositTimestamp});
+                _updateSnapshots(account, compoundedDebtDeposit);
+            }
+        }
+        uint256 pending = storedPendingReward[account];
+        if (pending > 0) {
+            amount += pending;
+            storedPendingReward[account] = 0;
+        }
+        return amount;
     }
 }
