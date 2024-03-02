@@ -20,6 +20,8 @@ contract ReferralManager is IReferralManager, Ownable {
 
     error InvalidTimestamp(uint256 timestamp);
     error InvalidZeroAddress();
+    error InvalidSelfReferral();
+    error InvalidZeroPoints();
     error Unauthorized(address _caller);
 
     modifier onlySatoshiBORouter() {
@@ -37,6 +39,9 @@ contract ReferralManager is IReferralManager, Ownable {
 
     function executeReferral(address _borrower, address _referrer, uint256 _points) external onlySatoshiBORouter {
         if (_isReferralActive()) {
+            if(_borrower == _referrer) revert InvalidSelfReferral();
+            if(_points == 0) revert InvalidZeroPoints();
+
             _addPoint(_referrer, _points);
             _addTotalPoints(_points);
 
