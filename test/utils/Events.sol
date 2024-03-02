@@ -18,4 +18,7 @@ abstract contract Events {
         address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
     event TotalStakesUpdated(uint256 _newTotalStakes);
+
+    // ReferralManager
+    event ExecuteReferral(address indexed borrower, address indexed referrer, uint256 points);
 }

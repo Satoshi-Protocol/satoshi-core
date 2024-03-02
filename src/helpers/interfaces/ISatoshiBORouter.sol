@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {IDebtToken} from "../../interfaces/core/IDebtToken.sol";
 import {IBorrowerOperations} from "../../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../../interfaces/core/ITroveManager.sol";
+import {IReferralManager} from "./IReferralManager.sol";
 import {IWETH} from "./IWETH.sol";
 
 interface ISatoshiBORouter {
@@ -17,6 +18,8 @@ interface ISatoshiBORouter {
 
     function borrowerOperationsProxy() external view returns (IBorrowerOperations);
 
+    function referralManager() external view returns (IReferralManager);
+
     function weth() external view returns (IWETH);
 
     function openTrove(
@@ -26,7 +29,8 @@ interface ISatoshiBORouter {
         uint256 _collAmount,
         uint256 _debtAmount,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        address _referrer
     ) external payable;
 
     function addColl(
@@ -51,7 +55,8 @@ interface ISatoshiBORouter {
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        address _referrer
     ) external;
 
     function repayDebt(
@@ -71,7 +76,8 @@ interface ISatoshiBORouter {
         uint256 _debtChange,
         bool _isDebtIncrease,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        address _referrer
     ) external payable;
 
     function closeTrove(ITroveManager troveManager, address account) external;
