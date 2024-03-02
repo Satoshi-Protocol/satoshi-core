@@ -107,8 +107,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
         address _upperHint,
-        address _lowerHint,
-        address _referrer
+        address _lowerHint
     ) external {
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
         borrowerOperationsProxy.withdrawDebt(
@@ -117,6 +116,8 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
+
+        address _referrer = referralManager.getReferrer(account);
         _afterWithdrawDebt(account, _referrer, userDebtAmount);
     }
 
@@ -141,8 +142,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 _debtChange,
         bool _isDebtIncrease,
         address _upperHint,
-        address _lowerHint,
-        address _referrer
+        address _lowerHint
     ) external payable {
         if (_collDeposit != 0 && _collWithdrawal != 0) revert CannotWithdrawAndAddColl();
 
@@ -178,6 +178,8 @@ contract SatoshiBORouter is ISatoshiBORouter {
         if (_isDebtIncrease) {
             uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
             require(userDebtAmount == _debtChange, "SatoshiBORouter: Debt amount mismatch");
+
+            address _referrer = referralManager.getReferrer(account);
             _afterWithdrawDebt(account, _referrer, userDebtAmount);
         }
     }

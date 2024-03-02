@@ -110,18 +110,15 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
-        TroveBase.openTrove(
-            borrowerOperationsProxy,
-            sortedTrovesBeaconProxy,
+        satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            hintHelpers,
-            GAS_COMPENSATION,
             user,
-            user,
-            weth,
+            0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
-            vars.maxFeePercentage
+            vars.upperHint,
+            vars.lowerHint,
+            referrer
         );
 
         vars.withdrawDebtAmt = 10000e18;
@@ -149,13 +146,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
         // tx execution
         satoshiBORouter.withdrawDebt(
-            troveManagerBeaconProxy,
-            user,
-            vars.maxFeePercentage,
-            vars.withdrawDebtAmt,
-            vars.upperHint,
-            vars.lowerHint,
-            referrer
+            troveManagerBeaconProxy, user, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint
         );
 
         // state after
@@ -175,18 +166,15 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
-        TroveBase.openTrove(
-            borrowerOperationsProxy,
-            sortedTrovesBeaconProxy,
+        satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            hintHelpers,
-            GAS_COMPENSATION,
             user,
-            user,
-            weth,
+            0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
-            vars.maxFeePercentage
+            vars.upperHint,
+            vars.lowerHint,
+            referrer
         );
 
         vars.addCollAmt = 0.5e18;
@@ -226,8 +214,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            referrer
+            vars.lowerHint
         );
 
         // state after
@@ -247,18 +234,15 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
-        TroveBase.openTrove(
-            borrowerOperationsProxy,
-            sortedTrovesBeaconProxy,
+        satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            hintHelpers,
-            GAS_COMPENSATION,
             user,
-            user,
-            weth,
+            0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
-            vars.maxFeePercentage
+            vars.upperHint,
+            vars.lowerHint,
+            referrer
         );
 
         vars.withdrawCollAmt = 0.5e18;
@@ -297,8 +281,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            referrer
+            vars.lowerHint
         );
 
         // state after
