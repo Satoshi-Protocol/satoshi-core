@@ -17,3 +17,7 @@ uint32 constant SP_CLAIM_START_TIME = 1709992800;
 // OSHI token initial allocation
 uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
 uint256 constant SP_ALLOCATION = 10 * _1_MILLION; // 10,000,000 OSHI (10% of total supply)
+
+//TODO: Replace with the actual timestamp
+uint256 constant REFERRAL_START_TIMESTAMP = 1709251200; // 2024-03-01 00:00:00 UTC
+uint256 constant REFERRAL_END_TIMESTAMP = 1711929600; // 2024-04-01 00:00:00 UTC

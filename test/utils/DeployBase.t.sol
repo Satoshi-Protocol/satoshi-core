@@ -28,6 +28,7 @@ import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
+import {ReferralManager} from "../../src/helpers/ReferralManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -43,6 +44,8 @@ import {IFactory} from "../../src/interfaces/core/IFactory.sol";
 import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
+import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.sol";
+import {IReferralManager} from "../../src/helpers/interfaces/IReferralManager.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -530,12 +533,17 @@ abstract contract DeployBase is Test {
         return wethAddr;
     }
 
-    function _deploySatoshiBORouter(address deployer, IWETH _weth) internal returns (address) {
+    function _deploySatoshiBORouter(address deployer, IReferralManager referralManager)
+        internal
+        returns (address)
+    {
         vm.startPrank(deployer);
         assert(debtToken != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
-        assert(_weth != IWETH(address(0))); // check if WETH contract is deployed
-        address satoshiBORouterAddr = address(new SatoshiBORouter(debtToken, borrowerOperationsProxy, weth));
+        assert(referralManager != IReferralManager(address(0))); // check if referral manager contract is not zero address
+        assert(weth != IWETH(address(0))); // check if WETH contract is deployed
+        address satoshiBORouterAddr =
+            address(new SatoshiBORouter(debtToken, borrowerOperationsProxy, referralManager, weth));
         vm.stopPrank();
 
         return satoshiBORouterAddr;
@@ -610,6 +618,22 @@ abstract contract DeployBase is Test {
     }
 
     /* ============ Deploy TokenTester Contracts ============ */
+    function _deployReferralManager(address deployer, ISatoshiBORouter satoshiBORouter) internal returns (address) {
+        vm.startPrank(deployer);
+        assert(satoshiBORouter != ISatoshiBORouter(address(0))); // check if satoshiBORouter contract is not zero address
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + 30 days;
+        address referralManagerAddr = address(new ReferralManager(satoshiBORouter, startTimestamp, endTimestamp));
+        assert(IReferralManager(referralManagerAddr).satoshiBORouter() == satoshiBORouter);
+        assert(IReferralManager(referralManagerAddr).startTimestamp() == startTimestamp);
+        assert(IReferralManager(referralManagerAddr).endTimestamp() == endTimestamp);
+        assert(IReferralManager(referralManagerAddr).getTotalPoints() == 0);
+        vm.stopPrank();
+
+        return referralManagerAddr;
+    }
+
+    /* ============ Deploy DebtTokenTester Contracts ============ */
     function _deployDebtTokenTester() internal {
         vm.prank(DEPLOYER);
         debtTokenTester = new DebtTokenTester(
