@@ -20,6 +20,8 @@ interface IReferralManager {
 
     function getPoints(address _account) external view returns (uint256);
 
+    function getReferrer(address _account) external view returns (address);
+
     function setStartTimestamp(uint256 _startTimestamp) external;
 
     function setEndTimestamp(uint256 _endTimestamp) external;

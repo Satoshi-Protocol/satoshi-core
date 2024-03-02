@@ -55,8 +55,7 @@ interface ISatoshiBORouter {
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
         address _upperHint,
-        address _lowerHint,
-        address _referrer
+        address _lowerHint
     ) external;
 
     function repayDebt(
@@ -76,8 +75,7 @@ interface ISatoshiBORouter {
         uint256 _debtChange,
         bool _isDebtIncrease,
         address _upperHint,
-        address _lowerHint,
-        address _referrer
+        address _lowerHint
     ) external payable;
 
     function closeTrove(ITroveManager troveManager, address account) external;

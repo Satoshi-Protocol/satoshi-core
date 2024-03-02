@@ -12,6 +12,9 @@ contract ReferralManager is IReferralManager, Ownable {
     uint256 public endTimestamp;
 
     uint256 internal totalPoints;
+    // borrower => referrer
+    mapping(address => address) internal referrers;
+    // referrer => points
     mapping(address => uint256) internal points;
 
     event SetStartTimestamp(uint256 _startTimestamp);
@@ -21,7 +24,6 @@ contract ReferralManager is IReferralManager, Ownable {
     error InvalidTimestamp(uint256 timestamp);
     error InvalidZeroAddress();
     error InvalidSelfReferral();
-    error InvalidZeroPoints();
     error Unauthorized(address _caller);
 
     modifier onlySatoshiBORouter() {
@@ -39,13 +41,23 @@ contract ReferralManager is IReferralManager, Ownable {
 
     function executeReferral(address _borrower, address _referrer, uint256 _points) external onlySatoshiBORouter {
         if (_isReferralActive()) {
-            if(_borrower == _referrer) revert InvalidSelfReferral();
-            if(_points == 0) revert InvalidZeroPoints();
+            if (_borrower == _referrer) revert InvalidSelfReferral();
+            
+            // have referrer
+            if (_referrer != address(0)) {
+                address currentReferrer = referrers[_borrower];
+                if (currentReferrer == address(0)) {
+                    _setReferrer(_borrower, _referrer);
+                } else {
+                    // use existing referrer
+                    _referrer = currentReferrer;
+                }
 
-            _addPoint(_referrer, _points);
-            _addTotalPoints(_points);
+                _addPoint(_referrer, _points);
+                _addTotalPoints(_points);
 
-            emit ExecuteReferral(_borrower, _referrer, _points);
+                emit ExecuteReferral(_borrower, _referrer, _points);
+            }
         } else {
             // do nothing
         }
@@ -61,6 +73,10 @@ contract ReferralManager is IReferralManager, Ownable {
 
     function _addTotalPoints(uint256 _points) internal {
         totalPoints += _points;
+    }
+
+    function _setReferrer(address _account, address _referrer) internal {
+        referrers[_account] = _referrer;
     }
 
     function _isReferralActive() internal view returns (bool) {
@@ -82,6 +98,10 @@ contract ReferralManager is IReferralManager, Ownable {
 
     function getPoints(address _account) external view returns (uint256) {
         return points[_account];
+    }
+
+    function getReferrer(address _account) external view returns (address) {
+        return referrers[_account];
     }
 
     function setStartTimestamp(uint256 _startTimestamp) external onlyOwner {

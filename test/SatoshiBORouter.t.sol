@@ -349,13 +349,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
         // tx execution
         satoshiBORouter.withdrawDebt(
-            troveManagerBeaconProxy,
-            user,
-            vars.maxFeePercentage,
-            vars.withdrawDebtAmt,
-            vars.upperHint,
-            vars.lowerHint,
-            referrer
+            troveManagerBeaconProxy, user, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint
         );
 
         // state after
@@ -525,8 +519,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.repayDebtAmt,
             false, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            referrer
+            vars.lowerHint
         );
 
         // state after
@@ -620,8 +613,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            referrer
+            vars.lowerHint
         );
 
         // state after
@@ -718,8 +710,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.repayDebtAmt,
             false, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            referrer
+            vars.lowerHint
         );
 
         // state after
@@ -812,8 +803,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            referrer
+            vars.lowerHint
         );
 
         // state after
