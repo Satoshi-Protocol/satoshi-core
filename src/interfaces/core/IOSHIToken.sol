@@ -12,4 +12,8 @@ interface IOSHIToken is IERC20 {
     function nonces(address owner) external view returns (uint256);
 
     function permitTypeHash() external view returns (bytes32);
+
+    function communityIssuanceAddress() external view returns (address);
+
+    function vaultAddress() external view returns (address);
 }

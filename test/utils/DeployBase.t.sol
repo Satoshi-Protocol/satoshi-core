@@ -20,6 +20,7 @@ import {GasPool} from "../../src/core/GasPool.sol";
 import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
 import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
+import {OSHITokenTester} from "../../test/OSHITokenTester.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
 import {CommunityIssuance} from "../../src/OSHI/CommunityIssuance.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
@@ -115,6 +116,7 @@ abstract contract DeployBase is Test {
     IBeacon troveManagerBeacon;
     /* DebetTokenTester contract */
     DebtTokenTester debtTokenTester;
+    OSHITokenTester oshiTokenTester;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -499,7 +501,7 @@ abstract contract DeployBase is Test {
         return satoshiBORouterAddr;
     }
 
-    /* ============ Deploy DebtTokenTester Contracts ============ */
+    /* ============ Deploy TokenTester Contracts ============ */
     function _deployDebtTokenTester() internal {
         vm.startPrank(DEPLOYER);
         debtTokenTester = new DebtTokenTester(
@@ -512,6 +514,12 @@ abstract contract DeployBase is Test {
             gasPool,
             GAS_COMPENSATION
         );
+        vm.stopPrank();
+    }
+
+    function _deployOSHITokenTester(address vault) internal {
+        vm.startPrank(DEPLOYER);
+        oshiTokenTester = new OSHITokenTester(address(communityIssuance), vault);
         vm.stopPrank();
     }
 }

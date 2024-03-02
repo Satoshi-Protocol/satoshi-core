@@ -269,6 +269,7 @@ contract DeploySetupScript is Script {
         console.log("satoshiCore:", address(satoshiCore));
         console.log("debtToken:", address(debtToken));
         console.log("factory:", address(factory));
+        console.log("communityIssuance:", address(communityIssuance));
         console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
         console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
         console.log("liquidationManagerProxy:", address(liquidationManagerProxy));
