@@ -40,27 +40,24 @@ contract ReferralManager is IReferralManager, Ownable {
     }
 
     function executeReferral(address _borrower, address _referrer, uint256 _points) external onlySatoshiBORouter {
-        if (_isReferralActive()) {
-            if (_borrower == _referrer) revert InvalidSelfReferral();
-            
-            // have referrer
-            if (_referrer != address(0)) {
-                address currentReferrer = referrers[_borrower];
-                if (currentReferrer == address(0)) {
-                    _setReferrer(_borrower, _referrer);
-                } else {
-                    // use existing referrer
-                    _referrer = currentReferrer;
-                }
+        // only execute referral if it's active
+        if (!_isReferralActive()) return;
+        // no referrer
+        if (_referrer == address(0)) return;
+        if (_borrower == _referrer) revert InvalidSelfReferral();
 
-                _addPoint(_referrer, _points);
-                _addTotalPoints(_points);
-
-                emit ExecuteReferral(_borrower, _referrer, _points);
-            }
+        address currentReferrer = referrers[_borrower];
+        if (currentReferrer == address(0)) {
+            _setReferrer(_borrower, _referrer);
         } else {
-            // do nothing
+            // use existing referrer
+            _referrer = currentReferrer;
         }
+
+        _addPoint(_referrer, _points);
+        _addTotalPoints(_points);
+
+        emit ExecuteReferral(_borrower, _referrer, _points);
     }
 
     function isReferralActive() external view returns (bool) {
