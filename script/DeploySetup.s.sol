@@ -12,6 +12,7 @@ import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.so
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
+import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
@@ -30,6 +31,7 @@ import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
+import {CommunityIssuance} from "../src/OSHI/CommunityIssuance.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
@@ -55,6 +57,7 @@ contract DeploySetupScript is Script {
     ISatoshiCore satoshiCore;
     IDebtToken debtToken;
     IFactory factory;
+    ICommunityIssuance communityIssuance;
     /* implementation contracts addresses */
     ISortedTroves sortedTrovesImpl;
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -88,6 +91,7 @@ contract DeploySetupScript is Script {
     address cpSatoshiCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
+    address cpCommunityIssuanceAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -121,6 +125,7 @@ contract DeploySetupScript is Script {
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -172,10 +177,15 @@ contract DeploySetupScript is Script {
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
+            ICommunityIssuance(cpCommunityIssuanceAddr),
             GAS_COMPENSATION
         );
         assert(cpFactoryAddr == address(factory));
 
+        // Community Issuance
+        communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
+        assert(cpCommunityIssuanceAddr == address(communityIssuance));
+        
         // Deploy proxy contracts
         bytes memory data;
         address proxy;
@@ -223,7 +233,8 @@ contract DeploySetupScript is Script {
                 ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
-                ILiquidationManager(cpLiquidationManagerProxyAddr)
+                ILiquidationManager(cpLiquidationManagerProxyAddr),
+                ICommunityIssuance(cpCommunityIssuanceAddr)
             )
         );
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));

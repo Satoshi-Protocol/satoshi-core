@@ -11,6 +11,7 @@ import {ILiquidationManager} from "../core/ILiquidationManager.sol";
 import {ISatoshiBase} from "../dependencies/ISatoshiBase.sol";
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IGasPool} from "../core/IGasPool.sol";
+import {ICommunityIssuance} from "../core/ICommunityIssuance.sol";
 
 enum Status {
     nonExistent,
@@ -91,6 +92,7 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
         IPriceFeedAggregator _priceFeedAggregator,
+        ICommunityIssuance _communityIssuance,
         uint256 _gasCompensation
     ) external;
 
@@ -154,7 +156,8 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         uint256 _maxBorrowingFee,
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
-        uint256 _MCR
+        uint256 _MCR,
+        uint128 _rewardRate
     ) external;
 
     function setPaused(bool _paused) external;
@@ -307,4 +310,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function totalStakes() external view returns (uint256);
 
     function totalStakesSnapshot() external view returns (uint256);
+
+    function communityIssuance() external view returns (ICommunityIssuance);
 }

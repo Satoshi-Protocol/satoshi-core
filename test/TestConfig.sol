@@ -26,6 +26,7 @@ uint256 constant MAX_BORROWING_FEE = 1e18 / 100 * 5; //  (5%)
 uint256 constant INTEREST_RATE_IN_BPS = 500; //  (5%)
 uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
 uint256 constant MCR = 11 * 1e17;
+uint128 constant REWARD_RATE = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
 
 /* Constants */
 uint256 constant LIQUIDATION_FEE = 200; //  (0.5%)
@@ -42,6 +43,7 @@ abstract contract TestConfig {
         maxBorrowingFee: MAX_BORROWING_FEE,
         interestRateInBps: INTEREST_RATE_IN_BPS,
         maxDebt: MAX_DEBT,
-        MCR: MCR
+        MCR: MCR,
+        rewardRate: REWARD_RATE
     });
 }

@@ -60,5 +60,7 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
 
         (IERC20 collateralToken,) = borrowerOperationsProxy.troveManagersData(troveManagerBeaconProxy);
         assert(collateralToken == collateralMock);
+
+        assert(troveManagerBeaconProxy.communityIssuance() == communityIssuance);
     }
 }

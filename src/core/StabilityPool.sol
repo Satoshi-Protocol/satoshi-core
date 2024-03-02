@@ -113,7 +113,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IFactory _factory,
-        ILiquidationManager _liquidationManager
+        ILiquidationManager _liquidationManager,
+        ICommunityIssuance _communityIssuance
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
@@ -121,8 +122,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         factory = _factory;
         liquidationManager = _liquidationManager;
         P = DECIMAL_PRECISION;
-        // @todo
-        // communityIssuance = _communityIssuance;
+        communityIssuance = _communityIssuance;
+        rewardRate = 63419583967529168; // oshi emission per sec
     }
 
     function enableCollateral(IERC20 _collateral) external {

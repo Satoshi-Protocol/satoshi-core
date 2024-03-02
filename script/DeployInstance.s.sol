@@ -22,7 +22,8 @@ import {
     MAX_BORROWING_FEE,
     INTEREST_RATE_IN_BPS,
     MAX_DEBT,
-    MCR
+    MCR,
+    REWARD_RATE
 } from "./DeployInstanceConfig.sol";
 
 contract DeployInstanceScript is Script {
@@ -47,7 +48,8 @@ contract DeployInstanceScript is Script {
             maxBorrowingFee: MAX_BORROWING_FEE,
             interestRateInBps: INTEREST_RATE_IN_BPS,
             maxDebt: MAX_DEBT,
-            MCR: MCR
+            MCR: MCR,
+            rewardRate: REWARD_RATE
         });
     }
 

@@ -151,6 +151,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
         IPriceFeedAggregator _priceFeedAggregator,
+        ICommunityIssuance _communityIssuance,
         uint256 _gasCompensation
     ) external initializer {
         __SatoshiOwnable_init(_satoshiCore);
@@ -160,8 +161,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         borrowerOperations = _borrowerOperations;
         liquidationManager = _liquidationManager;
         priceFeedAggregator = _priceFeedAggregator;
-        // @todo
-        // communityIssuance = _communityIssuance;
+        communityIssuance = _communityIssuance;
     }
 
     function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external {
@@ -223,10 +223,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _maxBorrowingFee,
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
-        uint256 _MCR
-    )
-        // uint128 _rewardRate
-        public
+        uint256 _MCR,
+        uint128 _rewardRate
+    ) public
     {
         require(!sunsetting, "Cannot change after sunset");
         require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
@@ -248,8 +247,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         borrowingFeeFloor = _borrowingFeeFloor;
         maxBorrowingFee = _maxBorrowingFee;
         maxSystemDebt = _maxSystemDebt;
-        // @todo
-        // rewardRate = _rewardRate;
+        rewardRate = _rewardRate;
 
         require(_interestRateInBPS <= MAX_INTEREST_RATE_IN_BPS, "Interest > Maximum");
 

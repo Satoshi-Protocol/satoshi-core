@@ -7,6 +7,7 @@ import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IDebtToken} from "./IDebtToken.sol";
 import {IFactory} from "./IFactory.sol";
 import {ILiquidationManager} from "./ILiquidationManager.sol";
+import {ICommunityIssuance} from "./ICommunityIssuance.sol";
 
 struct AccountDeposit {
     uint128 amount;
@@ -47,7 +48,8 @@ interface IStabilityPool is ISatoshiOwnable {
         ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IFactory _factory,
-        ILiquidationManager _liquidationManager
+        ILiquidationManager _liquidationManager,
+        ICommunityIssuance _communityIssuance
     ) external;
 
     function claimCollateralGains(address recipient, uint256[] calldata collateralIndexes) external;
@@ -101,4 +103,6 @@ interface IStabilityPool is ISatoshiOwnable {
     function indexByCollateral(IERC20 collateral) external view returns (uint256 index);
 
     function liquidationManager() external view returns (ILiquidationManager);
+
+    function communityIssuance() external view returns (ICommunityIssuance);
 }

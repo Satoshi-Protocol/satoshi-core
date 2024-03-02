@@ -21,6 +21,7 @@ import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
 import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
+import {CommunityIssuance} from "../../src/OSHI/CommunityIssuance.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
@@ -35,6 +36,7 @@ import {IGasPool} from "../../src/interfaces/core/IGasPool.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
 import {IFactory} from "../../src/interfaces/core/IFactory.sol";
+import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {
     DEPLOYER,
@@ -102,6 +104,7 @@ abstract contract DeployBase is Test {
     ISatoshiCore satoshiCore;
     IDebtToken debtToken;
     IFactory factory;
+    ICommunityIssuance communityIssuance;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
@@ -126,6 +129,7 @@ abstract contract DeployBase is Test {
     address cpSatoshiCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
+    address cpCommunityIssuanceAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -190,6 +194,7 @@ abstract contract DeployBase is Test {
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -226,6 +231,7 @@ abstract contract DeployBase is Test {
         _deploySatoshiCore(deployer);
         _deployDebtToken(deployer);
         _deployFactory(deployer);
+        _deployCommunityIssuance(deployer);
     }
 
     function _deployUUPSUpgradeableContracts(address deployer) internal {
@@ -299,8 +305,16 @@ abstract contract DeployBase is Test {
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
+            ICommunityIssuance(cpCommunityIssuanceAddr),
             GAS_COMPENSATION
         );
+        vm.stopPrank();
+    }
+
+    function _deployCommunityIssuance(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(communityIssuance == ICommunityIssuance(address(0))); // check if factory contract is not deployed
+        communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
         vm.stopPrank();
     }
 
@@ -362,7 +376,8 @@ abstract contract DeployBase is Test {
                 ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
-                ILiquidationManager(cpLiquidationManagerProxyAddr)
+                ILiquidationManager(cpLiquidationManagerProxyAddr),
+                ICommunityIssuance(cpCommunityIssuanceAddr)
             )
         );
         stabilityPoolProxy = IStabilityPool(address(new ERC1967Proxy(address(stabilityPoolImpl), data)));

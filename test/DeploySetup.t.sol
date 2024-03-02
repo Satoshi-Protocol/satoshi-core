@@ -11,6 +11,7 @@ import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
+import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
@@ -77,7 +78,13 @@ contract DeploySetupTest is Test, DeployBase {
         assert(factory.liquidationManagerProxy() == ILiquidationManager(cpLiquidationManagerProxyAddr));
         assert(factory.sortedTrovesBeacon() == IBeacon(cpSortedTrovesBeaconAddr));
         assert(factory.troveManagerBeacon() == IBeacon(cpTroveManagerBeaconAddr));
+        assert(factory.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceAddr));
 
+        // Community Issuance
+        _deployCommunityIssuance(DEPLOYER);
+        assert(cpCommunityIssuanceAddr == address(communityIssuance));
+        assert(communityIssuance.owner() == OWNER);
+        
         /* Deploy UUPS proxy contracts */
 
         // PriceFeedAggregator
@@ -138,6 +145,7 @@ contract DeploySetupTest is Test, DeployBase {
         assert(stabilityPoolProxy.debtToken() == IDebtToken(cpDebtTokenAddr));
         assert(stabilityPoolProxy.factory() == IFactory(cpFactoryAddr));
         assert(stabilityPoolProxy.liquidationManager() == ILiquidationManager(cpLiquidationManagerProxyAddr));
+        assert(stabilityPoolProxy.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceAddr));
 
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
@@ -145,7 +153,8 @@ contract DeploySetupTest is Test, DeployBase {
             ISatoshiCore(cpSatoshiCoreAddr),
             IDebtToken(cpDebtTokenAddr),
             IFactory(cpFactoryAddr),
-            ILiquidationManager(cpLiquidationManagerProxyAddr)
+            ILiquidationManager(cpLiquidationManagerProxyAddr),
+            ICommunityIssuance(cpCommunityIssuanceAddr)
         );
 
         /* Deploy Beacon contracts */
