@@ -13,3 +13,7 @@ string constant DEBT_TOKEN_NAME = "Statoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
 address constant WETH_ADDRESS = 0x51abb19F1ebc7B64040aFd0ef3C789d75C8707e0;
+
+//TODO: Replace with the actual timestamp
+uint256 constant REFERRAL_START_TIMESTAMP = 1709251200; // 2024-03-01 00:00:00 UTC
+uint256 constant REFERRAL_END_TIMESTAMP = 1711929600; // 2024-04-01 00:00:00 UTC

@@ -19,6 +19,7 @@ import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
+import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
@@ -33,6 +34,7 @@ import {Factory} from "../src/core/Factory.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
+import {ReferralManager} from "../src/helpers/ReferralManager.sol";
 import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
@@ -42,7 +44,9 @@ import {
     DEBT_TOKEN_SYMBOL,
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION,
-    WETH_ADDRESS
+    WETH_ADDRESS,
+    REFERRAL_START_TIMESTAMP,
+    REFERRAL_END_TIMESTAMP
 } from "./DeploySetupConfig.sol";
 
 contract DeploySetupScript is Script {
@@ -74,6 +78,7 @@ contract DeploySetupScript is Script {
     IMultiCollateralHintHelpers hintHelpers;
     IMultiTroveGetter multiTroveGetter;
     ISatoshiBORouter satoshiBORouter;
+    IReferralManager referralManager;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -245,7 +250,18 @@ contract DeploySetupScript is Script {
         multiTroveGetter = new MultiTroveGetter();
 
         // SatoshiBORouter
-        satoshiBORouter = new SatoshiBORouter(debtToken, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
+        address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, ++nonce);
+        address cpReferralManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
+        satoshiBORouter = new SatoshiBORouter(
+            debtToken, borrowerOperationsProxy, IReferralManager(cpReferralManagerAddr), IWETH(WETH_ADDRESS)
+        );
+        assert(cpSatoshiBORouterAddr == address(satoshiBORouter));
+
+        // ReferralManager
+        referralManager = new ReferralManager(
+            ISatoshiBORouter(cpSatoshiBORouterAddr), REFERRAL_START_TIMESTAMP, REFERRAL_END_TIMESTAMP
+        );
+        assert(cpReferralManagerAddr == address(referralManager));
 
         console.log("Deployed contracts:");
         console.log("priceFeedAggregatorImpl:", address(priceFeedAggregatorImpl));
@@ -267,6 +283,7 @@ contract DeploySetupScript is Script {
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiBORouter:", address(satoshiBORouter));
+        console.log("referralManager:", address(referralManager));
 
         vm.stopBroadcast();
     }

@@ -9,6 +9,7 @@ import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITrov
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
+import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
@@ -24,13 +25,16 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
     IWETH weth;
     IMultiCollateralHintHelpers hintHelpers;
     ISatoshiBORouter satoshiBORouter;
+    IReferralManager referralManager;
     address user;
+    address referrer;
 
     function setUp() public override {
         super.setUp();
 
         // testing user
         user = vm.addr(1);
+        referrer = vm.addr(2);
 
         // use WETH as collateral
         weth = IWETH(_deployWETH(DEPLOYER));
@@ -43,7 +47,13 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
         // deploy helper contracts
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
-        satoshiBORouter = ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER, weth));
+
+        uint64 nonce = vm.getNonce(DEPLOYER);
+        address cpSatoshiBORouterAddr = vm.computeCreateAddress(DEPLOYER, nonce);
+        address cpReferralManagerAddr = vm.computeCreateAddress(DEPLOYER, ++nonce);
+        satoshiBORouter =
+            ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER, IReferralManager(cpReferralManagerAddr), weth));
+        referralManager = IReferralManager(_deployReferralManager(DEPLOYER, ISatoshiBORouter(cpSatoshiBORouterAddr)));
 
         // user set delegate approval for satoshiBORouter
         vm.startPrank(user);
@@ -102,7 +112,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.collAmt,
             vars.debtAmt,
             vars.upperHint,
-            vars.lowerHint
+            vars.lowerHint,
+            referrer
         );
 
         // state after

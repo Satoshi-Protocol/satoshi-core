@@ -7,6 +7,7 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
+import {IReferralManager} from "./interfaces/IReferralManager.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 
 /**
@@ -16,15 +17,23 @@ import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 contract SatoshiBORouter is ISatoshiBORouter {
     IDebtToken public immutable debtToken;
     IBorrowerOperations public immutable borrowerOperationsProxy;
+    IReferralManager public immutable referralManager;
     IWETH public immutable weth;
 
-    constructor(IDebtToken _debtToken, IBorrowerOperations _borrowerOperationsProxy, IWETH _weth) {
+    constructor(
+        IDebtToken _debtToken,
+        IBorrowerOperations _borrowerOperationsProxy,
+        IReferralManager _referralManager,
+        IWETH _weth
+    ) {
         if (address(_debtToken) == address(0)) revert InvalidZeroAddress();
         if (address(_borrowerOperationsProxy) == address(0)) revert InvalidZeroAddress();
+        if (address(_referralManager) == address(0)) revert InvalidZeroAddress();
         if (address(_weth) == address(0)) revert InvalidZeroAddress();
 
         debtToken = _debtToken;
         borrowerOperationsProxy = _borrowerOperationsProxy;
+        referralManager = _referralManager;
         weth = _weth;
     }
 
@@ -37,7 +46,8 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 _collAmount,
         uint256 _debtAmount,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        address _referrer
     ) external payable {
         IERC20 collateralToken = troveManager.collateralToken();
 
@@ -52,7 +62,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
-        _afterWithdrawDebt(userDebtAmount);
+        _afterWithdrawDebt(account, _referrer, userDebtAmount);
     }
 
     function addColl(
@@ -102,7 +112,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
-        _afterWithdrawDebt(userDebtAmount);
+
+        address _referrer = referralManager.getReferrer(account);
+        _afterWithdrawDebt(account, _referrer, userDebtAmount);
     }
 
     function repayDebt(
@@ -162,7 +174,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
         if (_isDebtIncrease) {
             uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
             require(userDebtAmount == _debtChange, "SatoshiBORouter: Debt amount mismatch");
-            _afterWithdrawDebt(userDebtAmount);
+
+            address _referrer = referralManager.getReferrer(account);
+            _afterWithdrawDebt(account, _referrer, userDebtAmount);
         }
     }
 
@@ -215,10 +229,13 @@ contract SatoshiBORouter is ISatoshiBORouter {
         debtToken.transferFrom(msg.sender, address(this), debtAmount);
     }
 
-    function _afterWithdrawDebt(uint256 debtAmount) private {
+    function _afterWithdrawDebt(address _borrower, address _referrer, uint256 debtAmount) private {
         if (debtAmount == 0) return;
 
         debtToken.transfer(msg.sender, debtAmount);
+
+        // execute referral
+        referralManager.executeReferral(_borrower, _referrer, debtAmount);
     }
 
     receive() external payable {
