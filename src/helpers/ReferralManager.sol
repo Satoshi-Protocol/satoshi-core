@@ -97,6 +97,14 @@ contract ReferralManager is IReferralManager, Ownable {
         return points[_account];
     }
 
+    function getBatchReferrers(address[] calldata _accounts) external view returns (address[] memory) {
+        address[] memory _referrers = new address[](_accounts.length);
+        for (uint256 i = 0; i < _accounts.length; i++) {
+            _referrers[i] = referrers[_accounts[i]];
+        }
+        return _referrers;
+    }
+
     function getReferrer(address _account) external view returns (address) {
         return referrers[_account];
     }
