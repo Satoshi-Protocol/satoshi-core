@@ -16,7 +16,7 @@ import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 import {INTEREST_RATE_IN_BPS} from "./TestConfig.sol";
 
-contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
+contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
@@ -27,6 +27,7 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user3;
     address user4;
     uint256 maxFeePercentage = 0.05e18; // 5%
+    address rewardManagerAddr;
 
     function setUp() public override {
         super.setUp();
@@ -44,6 +45,13 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
+
+        // deploy reward manager
+        rewardManagerAddr = _deployRewardManager();
+
+        // set the reward manager in statoishi core
+        vm.prank(satoshiCore.owner());
+        satoshiCore.setRewardManager(rewardManagerAddr);
     }
 
     // utils
@@ -135,15 +143,14 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         );
         _openTrove(user2, 1e18, 50e18);
         uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(REWARD_MANAGER), expectedDebt);
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(rewardManagerAddr), expectedDebt);
         assert(delta < 1000);
     }
 
-    function test_OneTimeBorrowFee1() public {
+    function test_OneTimeBorrowFeeToRewardManager() public {
         _openTrove(user1, 1e18, 1000e18);
         // 365 days later
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(REWARD_MANAGER), 5e18);
-        require(delta == 0, "delta != 0");
-        // assert(delta == 0);
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(rewardManagerAddr), 5e18);
+        assert(delta == 0);
     }
 }

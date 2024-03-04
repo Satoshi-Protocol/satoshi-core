@@ -19,6 +19,8 @@ interface ISatoshiCore {
 
     function setFeeReceiver(address _feeReceiver) external;
 
+    function setRewardManager(address _rewardManager) external;
+
     function setGuardian(address _guardian) external;
 
     function setPaused(bool _paused) external;

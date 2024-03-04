@@ -16,7 +16,7 @@ import {IWETH} from "../helpers/interfaces/IWETH.sol";
  * @title Reward Manager Contract
  *
  *        Receive and manage protocol fees.
- *        Stake OSHI to receive "lock weight" and gain protocol fees. (3, 6, 9, 12 months)
+ *        Stake OSHI to receive sOSHI (lock weight) and gain protocol fees.
  *        stake 3 months: 1x, 6 months: 2x, 9 months: 3x, 12 months: 4x
  *        The lock weight will not decay.
  */
@@ -25,10 +25,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
 
-    IDebtToken public debtToken;
-    IWETH public weth;
-    IOSHIToken public oshiToken;
+    IERC20 public debtToken;
+    IERC20 public oshiToken;
     IERC20[] public collToken;
+    address public weth;
 
     address public borrowerOperationsAddress;
     address[] public registeredTroveManagers;
@@ -45,7 +45,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     // User snapshots of F_SAT and F_COLL, taken at the point at which their latest deposit was made
     mapping(address => Snapshot) public snapshots;
-    mapping(address => Stake[]) public userStakes;
+    mapping(address => mapping(uint256 => Stake[])) public userStakes;
     mapping(address => StakeData) public stakeData;
     mapping(address => uint256) public userLockWeights;
 
@@ -56,7 +56,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     // --- External Functions ---
     function stake(uint256 _amount, LockDuration _duration) external {
         require(_amount > 0, "RewardManager: Amount must be greater than 0");
-        require(oshiToken.transferFrom(msg.sender, address(this), _amount), "RewardManager: Transfer failed");
+        oshiToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         StakeData storage data = stakeData[msg.sender];
 
@@ -68,7 +68,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             endTime: uint32(block.timestamp + (3 + uint(_duration) * 3) * 30 days)
         });
 
-        userStakes[msg.sender].push(newStake);
+        userStakes[msg.sender][uint(_duration)].push(newStake);
 
         uint256 currentWeight = data.lockWeights;
 
@@ -93,33 +93,36 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
         // transfer gains to user
         if (currentWeight != 0) {
-            _afterWithdrawDebt(SATGain);
+            _sendDebtToken(SATGain);
             for (uint i; i < collToken.length; ++i) {
-                _afterWithdrawColl(collToken[i], CollGain[i]);
+                _sendCollToken(collToken[i], CollGain[i]);
             }
         }
     }
 
     function unstake(uint256 _amount) external {
         StakeData storage data = stakeData[msg.sender];
-        uint32 nextUnlockIndex = data.nextUnlockIndex;
+        uint32[4] memory nextUnlockIndex = data.nextUnlockIndex;
         uint256 currentWeight = data.lockWeights;
         uint256 OSHIToWithdraw;
         uint256 weightDecreased;
-        for (uint256 i = nextUnlockIndex; i < userStakes[msg.sender].length; ++i) {
-            Stake memory userStake = userStakes[msg.sender][i];
-            if (userStake.endTime > block.timestamp || OSHIToWithdraw == _amount) break;
-            if (OSHIToWithdraw < _amount && userStake.amount > 0 && userStake.endTime <= block.timestamp) {
-                uint256 withdrawAmount = SatoshiMath._min(_amount - OSHIToWithdraw, userStake.amount);
-                OSHIToWithdraw += withdrawAmount;
-                weightDecreased += _calculateLockWeight(withdrawAmount, userStake.lockDuration);
-                userStakes[msg.sender][i].amount -= withdrawAmount;
+        for (uint256 i; i < 4; ++i) {
+            Stake[] memory userStake = userStakes[msg.sender][i];
+            for (uint256 j = nextUnlockIndex[i]; j < userStake.length; ++j) {
+                if (userStake[j].endTime > block.timestamp || OSHIToWithdraw == _amount) break;
+                if (OSHIToWithdraw < _amount && userStake[j].amount > 0 && userStake[j].endTime <= block.timestamp) {
+                    uint256 withdrawAmount = SatoshiMath._min(_amount - OSHIToWithdraw, userStake[j].amount);
+                    OSHIToWithdraw += withdrawAmount;
+                    weightDecreased += _calculateLockWeight(withdrawAmount, userStake[j].lockDuration);
+                    // remove stake amount
+                    userStakes[msg.sender][i][j].amount -= withdrawAmount;
+                }
+                // set next unlock index
+                nextUnlockIndex[i]++;
             }
-            // set next unlock index
-            nextUnlockIndex++;
+            // update next unlock index
+            data.nextUnlockIndex[i] = nextUnlockIndex[i];
         }
-        // update next unlock index
-        data.nextUnlockIndex = nextUnlockIndex;
 
         uint256[] memory CollGain = _getPendingCollGain(msg.sender);
         uint256 SATGain = _getPendingSATGain(msg.sender);
@@ -135,7 +138,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             emit TotalOSHIStakedUpdated(totalOSHIWeightedStaked);
 
             // Transfer unstaked OSHI to user
-            oshiToken.transfer(msg.sender, OSHIToWithdraw);
+            oshiToken.safeTransfer(msg.sender, OSHIToWithdraw);
 
             emit StakeChanged(msg.sender, newWeight);
         }
@@ -143,9 +146,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         emit StakingGainsWithdrawn(msg.sender, CollGain, SATGain);
 
         // send gains to user
-        _afterWithdrawDebt(SATGain);
+        _sendDebtToken(SATGain);
         for (uint i; i < collToken.length; ++i) {
-            _afterWithdrawColl(collToken[i], CollGain[i]);
+            _sendCollToken(collToken[i], CollGain[i]);
         }
     }
 
@@ -158,9 +161,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         emit StakingGainsWithdrawn(msg.sender, CollGain, SATGain);
 
         // send gains to user
-        _afterWithdrawDebt(SATGain);
+        _sendDebtToken(SATGain);
         for (uint i; i < collToken.length; ++i) {
-            _afterWithdrawColl(collToken[i], CollGain[i]);
+            _sendCollToken(collToken[i], CollGain[i]);
         }
     }
 
@@ -185,7 +188,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function increaseSATPerUintStaked(uint256 _amount) external {
-        _isCallerBorrowerOperations();
+        _isCallerBorrowerOperationsOrDebtToken();
         uint256 SATFeePerOSHIStaked;
 
         if (totalOSHIWeightedStaked > 0) {
@@ -246,7 +249,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         }
     }
 
-    function setAddresses(address _borrowerOperationsAddress, IWETH _weth, IDebtToken _debtToken) external onlyOwner {
+    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken) external onlyOwner {
         borrowerOperationsAddress = _borrowerOperationsAddress;
         weth = _weth;
         debtToken = _debtToken;
@@ -274,27 +277,27 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         return _amount * (uint(_duration) + 1);
     }
 
-    function _afterWithdrawColl(IERC20 collateralToken, uint256 collAmount) private {
+    function _sendCollToken(IERC20 collateralToken, uint256 collAmount) private {
         if (collAmount == 0) return;
 
-        if (address(collateralToken) == address(weth)) {
-            weth.withdraw(collAmount);
+        if (address(collateralToken) == weth) {
+            IWETH(weth).withdraw(collAmount);
             (bool success,) = payable(msg.sender).call{value: collAmount}("");
             if (!success) revert NativeTokenTransferFailed();
         } else {
-            collateralToken.transfer(msg.sender, collAmount);
+            collateralToken.safeTransfer(msg.sender, collAmount);
         }
     }
 
-    function _afterWithdrawDebt(uint256 debtAmount) private {
+    function _sendDebtToken(uint256 debtAmount) private {
         if (debtAmount == 0) return;
 
-        debtToken.transfer(msg.sender, debtAmount);
+        debtToken.safeTransfer(msg.sender, debtAmount);
     }
 
     // --- Require ---
-    function _isCallerBorrowerOperations() internal view {
-        require(msg.sender == borrowerOperationsAddress, "RewardManager: Caller is not BorrowerOperations");
+    function _isCallerBorrowerOperationsOrDebtToken() internal view {
+        require(msg.sender == borrowerOperationsAddress || msg.sender == address(debtToken), "RewardManager: Caller is not BorrowerOperations or DebtToken");
     }
 
     function _isCallerTroveManager() internal view {

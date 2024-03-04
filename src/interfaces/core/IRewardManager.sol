@@ -41,7 +41,7 @@ interface IRewardManager is ISatoshiOwnable {
 
     struct StakeData {
         uint256 lockWeights;
-        uint32 nextUnlockIndex;
+        uint32[4] nextUnlockIndex;
     }
 
     function stake(uint256 _amount, LockDuration _duration) external;
@@ -53,7 +53,7 @@ interface IRewardManager is ISatoshiOwnable {
     function getPendingSATGain(address _user) external view returns (uint256);
     function registerTroveManager(address _troveManager) external;
     function removeTroveManager(address _troveManager) external;
-    function setAddresses(address _borrowerOperationsAddress, IWETH _weth, IDebtToken _debtToken) external;
+    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken) external;
     function transferToken(IERC20 token, address receiver, uint256 amount) external;
     function setTokenApproval(IERC20 token, address spender, uint256 amount) external;
 }

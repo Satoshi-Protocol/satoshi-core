@@ -25,6 +25,7 @@ import {
     RewardSnapshot
 } from "../interfaces/core/ITroveManager.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
+import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 
 /**
  * @title Trove Manager Contract (Upgradeable)
@@ -606,8 +607,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         _requireUserAcceptsFee(totals.collateralFee, totals.totalCollateralDrawn, _maxFeePercentage);
 
-        // @todo send to reward manager
-        _sendCollateral(SATOSHI_CORE.feeReceiver(), totals.collateralFee);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        _sendCollateral(rewardManager, totals.collateralFee);
+        IRewardManager(rewardManager).increaseCollPerUintStaked(totals.collateralFee);
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;
 

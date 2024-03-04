@@ -26,6 +26,7 @@ import {CommunityIssuance} from "../../src/OSHI/CommunityIssuance.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
+import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -117,6 +118,8 @@ abstract contract DeployBase is Test {
     /* DebetTokenTester contract */
     DebtTokenTester debtTokenTester;
     OSHITokenTester oshiTokenTester;
+    /* Reward Manager contract */
+    RewardManager rewardManager;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -521,5 +524,13 @@ abstract contract DeployBase is Test {
         vm.startPrank(DEPLOYER);
         oshiTokenTester = new OSHITokenTester(address(communityIssuance), vault);
         vm.stopPrank();
+    }
+
+    function _deployRewardManager() internal returns (address) {
+        vm.prank(DEPLOYER);
+        rewardManager = new RewardManager(ISatoshiCore(cpSatoshiCoreAddr));
+        vm.prank(satoshiCore.owner());
+        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtToken);
+        return address(rewardManager);
     }
 }
