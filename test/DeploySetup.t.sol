@@ -26,6 +26,7 @@ import {
     OWNER,
     GUARDIAN,
     FEE_RECEIVER,
+    REWARD_MANAGER,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
@@ -56,6 +57,7 @@ contract DeploySetupTest is Test, DeployBase {
         assert(satoshiCore.owner() == OWNER);
         assert(satoshiCore.guardian() == GUARDIAN);
         assert(satoshiCore.feeReceiver() == FEE_RECEIVER);
+        assert(satoshiCore.rewardManager() == REWARD_MANAGER);
         assert(satoshiCore.startTime() == (block.timestamp / 1 weeks) * 1 weeks);
 
         // DebtToken

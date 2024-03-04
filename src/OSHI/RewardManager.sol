@@ -11,7 +11,7 @@ import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "../helpers/interfaces/IWETH.sol";
-
+import "forge-std/console.sol";
 /**
  * @title Reward Manager Contract
  *
@@ -34,20 +34,18 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     address[] public registeredTroveManagers;
     mapping(address => uint256) public collTokenIndex;
 
-    mapping(address => uint256) public stakes;
     uint256 public totalOSHIWeightedStaked;
 
     uint256[] public F_COLL; // running sum of Coll fees per-OSHI-point-staked
     uint256 public F_SAT; // running sum of SAT fees per-OSHI-point-staked
 
-    uint256 collForFeeReceiver;
-    uint256 satForFeeReceiver;
+    uint256 public collForFeeReceiver;
+    uint256 public satForFeeReceiver;
 
     // User snapshots of F_SAT and F_COLL, taken at the point at which their latest deposit was made
     mapping(address => Snapshot) public snapshots;
     mapping(address => mapping(uint256 => Stake[])) public userStakes;
     mapping(address => StakeData) public stakeData;
-    mapping(address => uint256) public userLockWeights;
 
     constructor(ISatoshiCore _satoshiCore) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -64,7 +62,6 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             staker: msg.sender,
             amount: _amount,
             lockDuration: _duration,
-            startTime: uint32(block.timestamp),
             endTime: uint32(block.timestamp + (3 + uint(_duration) * 3) * 30 days)
         });
 
@@ -215,7 +212,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         uint256[] memory CollGain;
         for (uint i; i < collToken.length; ++i) {
             uint256 F_COLL_Snapshot = snapshots[_user].F_COLL_Snapshot[i];
-            CollGain[i] = stakes[_user] * (F_COLL[i] - F_COLL_Snapshot) / DECIMAL_PRECISION;
+            CollGain[i] = stakeData[_user].lockWeights * (F_COLL[i] - F_COLL_Snapshot) / DECIMAL_PRECISION;
         }
         return CollGain;
     }
@@ -226,7 +223,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     function _getPendingSATGain(address _user) internal view returns (uint256) {
         uint256 F_SAT_Snapshot = snapshots[_user].F_SAT_Snapshot;
-        uint256 SATGain = stakes[_user] * (F_SAT - F_SAT_Snapshot) / DECIMAL_PRECISION;
+        uint256 SATGain = stakeData[_user].lockWeights * (F_SAT - F_SAT_Snapshot) / DECIMAL_PRECISION;
         return SATGain;
     }
 
@@ -234,8 +231,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     function registerTroveManager(address _troveManager) external onlyOwner {
         registeredTroveManagers.push(_troveManager);
         IERC20 collateralToken = ITroveManager(_troveManager).collateralToken();
+        require(address(collateralToken) != address(0), "RewardManager: Invalid collateral token");
         collToken.push(collateralToken);
         collTokenIndex[address(collateralToken)] = collToken.length - 1;
+        F_COLL.push(0);
         emit TroveManagerRegistered(_troveManager);
     }
 
@@ -254,6 +253,8 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         weth = _weth;
         debtToken = _debtToken;
         emit BorrowerOperationsAddressSet(_borrowerOperationsAddress);
+        emit DebtTokenSet(address(_debtToken));
+        emit WETHSet(_weth);
     }
 
     function transferToken(IERC20 token, address receiver, uint256 amount) external onlyOwner {

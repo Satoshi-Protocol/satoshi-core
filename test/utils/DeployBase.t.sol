@@ -40,6 +40,7 @@ import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
 import {IFactory} from "../../src/interfaces/core/IFactory.sol";
 import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
+import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -72,7 +73,7 @@ struct LocalVars {
     uint256 repayDebtAmt;
     uint256 withdrawDebtAmt;
     //before state vars
-    uint256 feeReceiverDebtAmtBefore;
+    uint256 rewardManagerDebtAmtBefore;
     uint256 gasPoolDebtAmtBefore;
     uint256 userBalanceBefore;
     uint256 userCollAmtBefore;
@@ -80,7 +81,7 @@ struct LocalVars {
     uint256 troveManagerCollateralAmtBefore;
     uint256 debtTokenTotalSupplyBefore;
     // after state vars
-    uint256 feeReceiverDebtAmtAfter;
+    uint256 rewardManagerDebtAmtAfter;
     uint256 gasPoolDebtAmtAfter;
     uint256 userBalanceAfter;
     uint256 userCollAmtAfter;
@@ -119,7 +120,7 @@ abstract contract DeployBase is Test {
     DebtTokenTester debtTokenTester;
     OSHITokenTester oshiTokenTester;
     /* Reward Manager contract */
-    RewardManager rewardManager;
+    IRewardManager rewardManager;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -179,6 +180,8 @@ abstract contract DeployBase is Test {
         (ISortedTroves sortedTrovesBeaconProxy, ITroveManager troveManagerBeaconProxy) =
             _deployNewInstance(owner, collateral, IPriceFeed(priceFeedAddr), deploymentParams);
 
+        _deployRewardManager(troveManagerBeaconProxy);
+        
         return (sortedTrovesBeaconProxy, troveManagerBeaconProxy);
     }
 
@@ -506,7 +509,7 @@ abstract contract DeployBase is Test {
 
     /* ============ Deploy TokenTester Contracts ============ */
     function _deployDebtTokenTester() internal {
-        vm.startPrank(DEPLOYER);
+        vm.prank(DEPLOYER);
         debtTokenTester = new DebtTokenTester(
             DEBT_TOKEN_NAME,
             DEBT_TOKEN_SYMBOL,
@@ -517,6 +520,9 @@ abstract contract DeployBase is Test {
             gasPool,
             GAS_COMPENSATION
         );
+        // for testing purpose, set the debt token to the tester contract
+        vm.prank(satoshiCore.owner());
+        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtTokenTester);
         vm.stopPrank();
     }
 
@@ -526,11 +532,14 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _deployRewardManager() internal returns (address) {
+    function _deployRewardManager(ITroveManager troveManagerBeaconProxy) internal returns (address) {
         vm.prank(DEPLOYER);
         rewardManager = new RewardManager(ISatoshiCore(cpSatoshiCoreAddr));
-        vm.prank(satoshiCore.owner());
+        vm.startPrank(satoshiCore.owner());
         rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtToken);
+        rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
+        satoshiCore.setRewardManager(address(rewardManager));
+        vm.stopPrank();
         return address(rewardManager);
     }
 }

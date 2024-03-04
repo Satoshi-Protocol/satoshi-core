@@ -217,7 +217,7 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         debtTokenTester.unprotectedMint(address(flashloanTester), 9e18);
         flashloanTester.flashBorrow(address(debtTokenTester), amount);
         assertEq(debtTokenTester.allowance(address(this), address(flashloanTester)), 0);
-        assertEq(debtTokenTester.balanceOf(satoshiCore.feeReceiver()), 9e18);
+        assertEq(debtTokenTester.balanceOf(satoshiCore.rewardManager()), 9e18);
         assertEq(debtTokenTester.totalSupply() - 9e18, totalSupplyBefore);
     }
 }

@@ -1048,7 +1048,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 collGasCompToLiquidator = _collGasComp / 2;
         uint256 collGasCompToFeeReceiver = _collGasComp - collGasCompToLiquidator;
         _sendCollateral(_liquidator, collGasCompToLiquidator);
-        _sendCollateral(SATOSHI_CORE.feeReceiver(), collGasCompToFeeReceiver);
+        _sendCollateral(SATOSHI_CORE.rewardManager(), collGasCompToFeeReceiver);
     }
 
     function _redistributeDebtAndColl(uint256 _debt, uint256 _coll) internal {

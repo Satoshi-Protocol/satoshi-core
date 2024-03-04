@@ -61,7 +61,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         deal(user, 1e18);
 
         // state before
-        vars.feeReceiverDebtAmtBefore = debtToken.balanceOf(satoshiCore.feeReceiver());
+        vars.rewardManagerDebtAmtBefore = debtToken.balanceOf(satoshiCore.rewardManager());
         vars.gasPoolDebtAmtBefore = debtToken.balanceOf(address(gasPool));
         vars.userDebtAmtBefore = debtToken.balanceOf(user);
         vars.userBalanceBefore = user.balance;
@@ -106,14 +106,14 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // state after
-        vars.feeReceiverDebtAmtAfter = debtToken.balanceOf(satoshiCore.feeReceiver());
+        vars.rewardManagerDebtAmtAfter = debtToken.balanceOf(satoshiCore.rewardManager());
         vars.gasPoolDebtAmtAfter = debtToken.balanceOf(address(gasPool));
         vars.userDebtAmtAfter = debtToken.balanceOf(user);
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
 
         // check state
-        assertEq(vars.feeReceiverDebtAmtAfter, vars.feeReceiverDebtAmtBefore + vars.borrowingFee);
+        assertEq(vars.rewardManagerDebtAmtAfter, vars.rewardManagerDebtAmtBefore + vars.borrowingFee);
         assertEq(vars.gasPoolDebtAmtAfter, vars.gasPoolDebtAmtBefore + GAS_COMPENSATION);
         assertEq(vars.userDebtAmtAfter, vars.userDebtAmtBefore + vars.debtAmt);
         assertEq(vars.userBalanceAfter, vars.userBalanceBefore - vars.collAmt);

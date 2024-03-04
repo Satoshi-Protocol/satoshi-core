@@ -134,15 +134,16 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
             })
         );
         _openTrove(user2, 1e18, 50e18);
+        uint256 expectedMintingFee = 5e18 + 0.25e18;
         uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(REWARD_MANAGER), expectedDebt);
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(address(rewardManager)), expectedMintingFee + expectedDebt);
         assert(delta < 1000);
     }
 
     function test_OneTimeBorrowFee1() public {
         _openTrove(user1, 1e18, 1000e18);
         // 365 days later
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(REWARD_MANAGER), 5e18);
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(address(rewardManager)), 5e18);
         require(delta == 0, "delta != 0");
         // assert(delta == 0);
     }

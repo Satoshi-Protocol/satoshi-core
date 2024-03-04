@@ -12,7 +12,7 @@ import {IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
-
+import "forge-std/console.sol";
 /**
  * @title Debt Token Contract (Non-upgradeable)
  *        Mutated from:

@@ -10,6 +10,8 @@ interface IRewardManager is ISatoshiOwnable {
     event TroveManagerRegistered(address);
     event TroveManagerRemoved(address);
     event BorrowerOperationsAddressSet(address);
+    event DebtTokenSet(address);
+    event WETHSet(address);
     event TotalOSHIStakedUpdated(uint256);
     event StakeChanged(address, uint256);
     event StakingGainsWithdrawn(address, uint256[], uint256);
@@ -35,7 +37,6 @@ interface IRewardManager is ISatoshiOwnable {
         address staker;
         uint256 amount;
         LockDuration lockDuration;
-        uint32 startTime;
         uint32 endTime;
     }
 
@@ -56,4 +57,16 @@ interface IRewardManager is ISatoshiOwnable {
     function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken) external;
     function transferToken(IERC20 token, address receiver, uint256 amount) external;
     function setTokenApproval(IERC20 token, address spender, uint256 amount) external;
+    function F_SAT() external view returns (uint256);
+    function F_COLL(uint256) external view returns (uint256);
+    function collForFeeReceiver() external view returns (uint256);
+    function satForFeeReceiver() external view returns (uint256);
+    function debtToken() external view returns (IERC20);
+    function oshiToken() external view returns (IERC20);
+    function collToken(uint256) external view returns (IERC20);
+    function weth() external view returns (address);
+    function borrowerOperationsAddress() external view returns (address);
+    function registeredTroveManagers(uint256) external view returns (address);
+    function collTokenIndex(address _collToken) external view returns (uint256);
+    function totalOSHIWeightedStaked() external view returns (uint256);
 }

@@ -27,7 +27,6 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user3;
     address user4;
     uint256 maxFeePercentage = 0.05e18; // 5%
-    address rewardManagerAddr;
 
     function setUp() public override {
         super.setUp();
@@ -45,13 +44,6 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
-
-        // deploy reward manager
-        rewardManagerAddr = _deployRewardManager();
-
-        // set the reward manager in statoishi core
-        vm.prank(satoshiCore.owner());
-        satoshiCore.setRewardManager(rewardManagerAddr);
     }
 
     // utils
@@ -129,28 +121,10 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assert(delta < 1000);
     }
 
-    function test_CollectInterestToRewardManager() public {
+    function test_OneTimeBorrowFeeIncreaseF_SAT() public {
         _openTrove(user1, 1e18, 1000e18);
-        // 365 days later
-        vm.warp(block.timestamp + 365 days);
-        _updateRoundData(
-            RoundData({
-                answer: 40000_00_000_000,
-                startedAt: block.timestamp,
-                updatedAt: block.timestamp,
-                answeredInRound: 1
-            })
-        );
-        _openTrove(user2, 1e18, 50e18);
-        uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(rewardManagerAddr), expectedDebt);
-        assert(delta < 1000);
-    }
-
-    function test_OneTimeBorrowFeeToRewardManager() public {
-        _openTrove(user1, 1e18, 1000e18);
-        // 365 days later
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(rewardManagerAddr), 5e18);
-        assert(delta == 0);
+        assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
+        assertEq(rewardManager.getPendingSATGain(user1), 0);
+        assert(rewardManager.satForFeeReceiver() > 0);
     }
 }
