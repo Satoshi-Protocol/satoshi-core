@@ -11,7 +11,6 @@ import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "../helpers/interfaces/IWETH.sol";
-import "forge-std/console.sol";
 /**
  * @title Reward Manager Contract
  *
@@ -39,7 +38,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     uint256[] public F_COLL; // running sum of Coll fees per-OSHI-point-staked
     uint256 public F_SAT; // running sum of SAT fees per-OSHI-point-staked
 
-    uint256 public collForFeeReceiver;
+    uint256[] public collForFeeReceiver;
     uint256 public satForFeeReceiver;
 
     // User snapshots of F_SAT and F_COLL, taken at the point at which their latest deposit was made
@@ -174,10 +173,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             uint256 _amountToStaker = _amount * 975 / 1000;
             uint256 _amountToFeeReceiver = _amount - _amountToStaker;
             collFeePerOSHIStaked = _amountToStaker * DECIMAL_PRECISION / totalOSHIWeightedStaked;
-            collForFeeReceiver += _amountToFeeReceiver;
+            collForFeeReceiver[index] += _amountToFeeReceiver;
         } else {
             // when no OSHI is staked
-            collForFeeReceiver += _amount;
+            collForFeeReceiver[index] += _amount;
         }
 
         F_COLL[index] += collFeePerOSHIStaked;
@@ -235,6 +234,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         collToken.push(collateralToken);
         collTokenIndex[address(collateralToken)] = collToken.length - 1;
         F_COLL.push(0);
+        collForFeeReceiver.push(0);
         emit TroveManagerRegistered(_troveManager);
     }
 
@@ -263,6 +263,19 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     function setTokenApproval(IERC20 token, address spender, uint256 amount) external onlyOwner {
         token.safeApprove(spender, amount);
+    }
+
+    function claimFee() external onlyOwner {
+        if (satForFeeReceiver != 0) {
+            debtToken.safeTransfer(SATOSHI_CORE.feeReceiver(), satForFeeReceiver);
+            satForFeeReceiver = 0;
+        }
+        for (uint i; i < collToken.length; ++i) {
+            if (collForFeeReceiver[i] != 0) {
+                collToken[i].safeTransfer(SATOSHI_CORE.feeReceiver(), collForFeeReceiver[i]);
+                collForFeeReceiver[i] = 0;
+            }
+        }
     }
 
     // --- Internal Functions ---

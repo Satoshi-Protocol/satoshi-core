@@ -59,7 +59,7 @@ interface IRewardManager is ISatoshiOwnable {
     function setTokenApproval(IERC20 token, address spender, uint256 amount) external;
     function F_SAT() external view returns (uint256);
     function F_COLL(uint256) external view returns (uint256);
-    function collForFeeReceiver() external view returns (uint256);
+    function collForFeeReceiver(uint256) external view returns (uint256);
     function satForFeeReceiver() external view returns (uint256);
     function debtToken() external view returns (IERC20);
     function oshiToken() external view returns (IERC20);
