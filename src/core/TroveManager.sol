@@ -162,6 +162,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         liquidationManager = _liquidationManager;
         priceFeedAggregator = _priceFeedAggregator;
         communityIssuance = _communityIssuance;
+        lastUpdate = uint32(block.timestamp);
     }
 
     function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external {
@@ -225,8 +226,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _maxSystemDebt,
         uint256 _MCR,
         uint128 _rewardRate
-    ) public
-    {
+    ) public {
         require(!sunsetting, "Cannot change after sunset");
         require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
         if (minuteDecayFactor != 0) {
@@ -606,6 +606,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         _requireUserAcceptsFee(totals.collateralFee, totals.totalCollateralDrawn, _maxFeePercentage);
 
+        // @todo send to reward manager
         _sendCollateral(SATOSHI_CORE.feeReceiver(), totals.collateralFee);
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;

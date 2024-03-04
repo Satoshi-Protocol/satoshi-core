@@ -124,6 +124,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         P = DECIMAL_PRECISION;
         communityIssuance = _communityIssuance;
         rewardRate = 63419583967529168; // oshi emission per sec
+        lastUpdate = uint32(block.timestamp);
     }
 
     function enableCollateral(IERC20 _collateral) external {

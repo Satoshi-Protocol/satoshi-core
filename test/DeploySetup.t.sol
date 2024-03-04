@@ -84,7 +84,7 @@ contract DeploySetupTest is Test, DeployBase {
         _deployCommunityIssuance(DEPLOYER);
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
         assert(communityIssuance.owner() == OWNER);
-        
+
         /* Deploy UUPS proxy contracts */
 
         // PriceFeedAggregator

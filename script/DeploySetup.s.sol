@@ -185,7 +185,7 @@ contract DeploySetupScript is Script {
         // Community Issuance
         communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
-        
+
         // Deploy proxy contracts
         bytes memory data;
         address proxy;

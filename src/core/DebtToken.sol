@@ -211,6 +211,7 @@ contract DebtToken is IDebtToken, ERC20 {
         );
         _spendAllowance(address(receiver), address(this), amount + fee);
         _burn(address(receiver), amount);
+        // @todo send fee to feeReceiver
         _transfer(address(receiver), satoshiCore.feeReceiver(), fee);
         return true;
     }

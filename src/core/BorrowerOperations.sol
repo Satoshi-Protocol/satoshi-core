@@ -439,6 +439,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         _requireUserAcceptsFee(debtFee, _debtAmount, _maxFeePercentage);
 
+        // @todo send to rewardManager
         debtToken.mint(SATOSHI_CORE.feeReceiver(), debtFee);
 
         emit BorrowingFeePaid(_caller, collateralToken, debtFee);
