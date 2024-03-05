@@ -14,6 +14,7 @@ import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol"
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {DeploymentParams} from "../src/core/Factory.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {IOSHIToken} from "../src/interfaces/core/IOSHIToken.sol";
 import {
     FACTORY_ADDRESS,
     PRICE_FEED_AGGREGATOR_ADDRESS,
@@ -29,6 +30,7 @@ import {
     MCR,
     REWARD_RATE,
     REWARD_MANAGER_ADDRESS,
+    OSHI_TOKEN_ADDRESS,
     _1_MILLION
 } from "./DeployInstanceConfig.sol";
 
@@ -42,6 +44,7 @@ contract DeployInstanceScript is Script {
     ICommunityIssuance internal communityIssuance;
     ISatoshiCore internal satoshiCore;
     IDebtToken internal debtToken;
+    IOSHIToken internal oshiToken;
     DeploymentParams internal deploymentParams;
 
     function setUp() public {
@@ -53,6 +56,7 @@ contract DeployInstanceScript is Script {
         rewardManager = IRewardManager(REWARD_MANAGER_ADDRESS);
         communityIssuance = factory.communityIssuance();
         debtToken = factory.debtToken();
+        oshiToken = IOSHIToken(OSHI_TOKEN_ADDRESS);
         deploymentParams = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,
@@ -79,7 +83,7 @@ contract DeployInstanceScript is Script {
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
 
         // set reward manager settings
-        rewardManager.setAddresses(address(factory.borrowerOperationsProxy()), COLLATERAL_ADDRESS, debtToken);
+        rewardManager.setAddresses(address(factory.borrowerOperationsProxy()), COLLATERAL_ADDRESS, debtToken, oshiToken);
         rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
         satoshiCore.setRewardManager(REWARD_MANAGER_ADDRESS);
 

@@ -553,7 +553,7 @@ abstract contract DeployBase is Test {
         );
         // for testing purpose, set the debt token to the tester contract
         vm.prank(satoshiCore.owner());
-        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtTokenTester);
+        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtTokenTester, oshiToken);
         vm.stopPrank();
     }
 
@@ -567,7 +567,7 @@ abstract contract DeployBase is Test {
         vm.prank(DEPLOYER);
         rewardManager = new RewardManager(ISatoshiCore(cpSatoshiCoreAddr));
         vm.startPrank(satoshiCore.owner());
-        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtToken);
+        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, address(collateralMock), debtToken, oshiToken);
         rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
         satoshiCore.setRewardManager(address(rewardManager));
         vm.stopPrank();
