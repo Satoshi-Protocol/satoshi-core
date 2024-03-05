@@ -608,7 +608,12 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         _requireUserAcceptsFee(totals.collateralFee, totals.totalCollateralDrawn, _maxFeePercentage);
 
         address rewardManager = SATOSHI_CORE.rewardManager();
-        _sendCollateral(rewardManager, totals.collateralFee);
+        if (totals.collateralFee > 0) {
+            totalActiveCollateral = totalActiveCollateral - totals.collateralFee;
+            emit CollateralSent(rewardManager, totals.collateralFee);
+
+            collateralToken.safeIncreaseAllowance(rewardManager, totals.collateralFee);
+        }
         IRewardManager(rewardManager).increaseCollPerUintStaked(totals.collateralFee);
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;

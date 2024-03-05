@@ -19,6 +19,7 @@ import {TroveManager} from "../../src/core/TroveManager.sol";
 import {GasPool} from "../../src/core/GasPool.sol";
 import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
+import {OSHIToken} from "../../src/OSHI/OSHIToken.sol";
 import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
 import {OSHITokenTester} from "../../test/OSHITokenTester.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
@@ -37,6 +38,7 @@ import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
 import {IGasPool} from "../../src/interfaces/core/IGasPool.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
+import {IOSHIToken} from "../../src/interfaces/core/IOSHIToken.sol";
 import {IFactory} from "../../src/interfaces/core/IFactory.sol";
 import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
@@ -47,10 +49,12 @@ import {
     GUARDIAN,
     FEE_RECEIVER,
     REWARD_MANAGER,
+    VAULT,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
-    BO_MIN_NET_DEBT
+    BO_MIN_NET_DEBT,
+    _1_MILLION
 } from "../TestConfig.sol";
 
 struct LocalVars {
@@ -108,6 +112,7 @@ abstract contract DeployBase is Test {
     IDebtToken debtToken;
     IFactory factory;
     ICommunityIssuance communityIssuance;
+    IOSHIToken oshiToken;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
@@ -136,6 +141,7 @@ abstract contract DeployBase is Test {
     address cpDebtTokenAddr;
     address cpFactoryAddr;
     address cpCommunityIssuanceAddr;
+    address cpOshiTokenAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -181,7 +187,9 @@ abstract contract DeployBase is Test {
             _deployNewInstance(owner, collateral, IPriceFeed(priceFeedAddr), deploymentParams);
 
         _deployRewardManager(troveManagerBeaconProxy);
-        
+
+        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy));
+
         return (sortedTrovesBeaconProxy, troveManagerBeaconProxy);
     }
 
@@ -203,6 +211,7 @@ abstract contract DeployBase is Test {
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -240,6 +249,7 @@ abstract contract DeployBase is Test {
         _deployDebtToken(deployer);
         _deployFactory(deployer);
         _deployCommunityIssuance(deployer);
+        _deployOSHIToken(deployer);
     }
 
     function _deployUUPSUpgradeableContracts(address deployer) internal {
@@ -323,6 +333,15 @@ abstract contract DeployBase is Test {
         vm.startPrank(deployer);
         assert(communityIssuance == ICommunityIssuance(address(0))); // check if factory contract is not deployed
         communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
+        vm.startPrank(satoshiCore.owner());
+        communityIssuance.setAddresses(cpOshiTokenAddr, cpStabilityPoolProxyAddr);
+        vm.stopPrank();
+    }
+
+    function _deployOSHIToken(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(oshiToken == IOSHIToken(address(0))); // check if oshi token contract is not deployed
+        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, VAULT);
         vm.stopPrank();
     }
 
@@ -441,6 +460,18 @@ abstract contract DeployBase is Test {
         vm.startPrank(owner);
         priceFeedAggregatorProxy.setPriceFeed(collateral, priceFeed);
         vm.stopPrank();
+    }
+
+    function _setCommunityIssuanceAllocation(address troveManagerBeaconProxy) internal {
+        // set 20% to the trovemanager and 10% to the stability pool
+        address[] memory _recipients = new address[](2);
+        _recipients[0] = troveManagerBeaconProxy;
+        _recipients[1] = cpStabilityPoolProxyAddr;
+        uint256[] memory _amount = new uint256[](2);
+        _amount[0] = 20 * _1_MILLION;
+        _amount[1] = 10 * _1_MILLION;
+        vm.prank(satoshiCore.owner());
+        communityIssuance.setAllocated(_recipients, _amount);
     }
 
     /* ============ Deploy New Instance ============ */

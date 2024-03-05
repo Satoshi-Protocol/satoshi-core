@@ -35,6 +35,7 @@ contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable {
 
     function transferAllocatedTokens(address receiver, uint256 amount) external {
         if (amount > 0) {
+            require(allocated[msg.sender] >= amount, "Community Issuance: Insufficient balance");
             allocated[msg.sender] -= amount;
             OSHIToken.transfer(receiver, amount);
         }

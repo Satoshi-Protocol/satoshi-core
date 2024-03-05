@@ -9,7 +9,11 @@ import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
+import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
+import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
+import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {DeploymentParams} from "../src/core/Factory.sol";
+import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 import {
     FACTORY_ADDRESS,
     PRICE_FEED_AGGREGATOR_ADDRESS,
@@ -23,7 +27,9 @@ import {
     INTEREST_RATE_IN_BPS,
     MAX_DEBT,
     MCR,
-    REWARD_RATE
+    REWARD_RATE,
+    REWARD_MANAGER_ADDRESS,
+    _1_MILLION
 } from "./DeployInstanceConfig.sol";
 
 contract DeployInstanceScript is Script {
@@ -32,6 +38,10 @@ contract DeployInstanceScript is Script {
     IERC20 internal collateral;
     IPriceFeedAggregator internal priceFeedAggregator;
     IPriceFeed internal priceFeed;
+    IRewardManager internal rewardManager;
+    ICommunityIssuance internal communityIssuance;
+    ISatoshiCore internal satoshiCore;
+    IDebtToken internal debtToken;
     DeploymentParams internal deploymentParams;
 
     function setUp() public {
@@ -40,6 +50,9 @@ contract DeployInstanceScript is Script {
         collateral = IERC20(COLLATERAL_ADDRESS);
         priceFeedAggregator = IPriceFeedAggregator(PRICE_FEED_AGGREGATOR_ADDRESS);
         priceFeed = IPriceFeed(PRICE_FEED_ADDRESS);
+        rewardManager = IRewardManager(REWARD_MANAGER_ADDRESS);
+        communityIssuance = factory.communityIssuance();
+        debtToken = factory.debtToken();
         deploymentParams = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,
@@ -65,9 +78,28 @@ contract DeployInstanceScript is Script {
         ITroveManager troveManagerBeaconProxy = factory.troveManagers(troveManagerCount - 1);
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
 
+        // set reward manager settings
+        rewardManager.setAddresses(address(factory.borrowerOperationsProxy()), COLLATERAL_ADDRESS, debtToken);
+        rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
+        satoshiCore.setRewardManager(REWARD_MANAGER_ADDRESS);
+
+        // set community issuance allocation & addresses
+        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy));
+
         console.log("SortedTrovesBeaconProxy: address:", address(sortedTrovesBeaconProxy));
         console.log("TroveManagerBeaconProxy: address:", address(troveManagerBeaconProxy));
 
         vm.stopBroadcast();
+    }
+
+    function _setCommunityIssuanceAllocation(address troveManagerBeaconProxy) internal {
+        // set 20% to the trovemanager and 10% to the stability pool
+        address[] memory _recipients = new address[](2);
+        _recipients[0] = troveManagerBeaconProxy;
+        _recipients[1] = address(factory.stabilityPoolProxy());
+        uint256[] memory _amount = new uint256[](2);
+        _amount[0] = 20 * _1_MILLION;
+        _amount[1] = 10 * _1_MILLION;
+        communityIssuance.setAllocated(_recipients, _amount);
     }
 }

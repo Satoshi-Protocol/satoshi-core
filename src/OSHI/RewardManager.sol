@@ -19,6 +19,7 @@ import {IWETH} from "../helpers/interfaces/IWETH.sol";
  *        stake 3 months: 1x, 6 months: 2x, 9 months: 3x, 12 months: 4x
  *        The lock weight will not decay.
  */
+
 contract RewardManager is IRewardManager, SatoshiOwnable {
     using SafeERC20 for IERC20;
 
@@ -61,10 +62,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             staker: msg.sender,
             amount: _amount,
             lockDuration: _duration,
-            endTime: uint32(block.timestamp + (3 + uint(_duration) * 3) * 30 days)
+            endTime: uint32(block.timestamp + (3 + uint256(_duration) * 3) * 30 days)
         });
 
-        userStakes[msg.sender][uint(_duration)].push(newStake);
+        userStakes[msg.sender][uint256(_duration)].push(newStake);
 
         uint256 currentWeight = data.lockWeights;
 
@@ -90,7 +91,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         // transfer gains to user
         if (currentWeight != 0) {
             _sendDebtToken(SATGain);
-            for (uint i; i < collToken.length; ++i) {
+            for (uint256 i; i < collToken.length; ++i) {
                 _sendCollToken(collToken[i], CollGain[i]);
             }
         }
@@ -143,7 +144,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
         // send gains to user
         _sendDebtToken(SATGain);
-        for (uint i; i < collToken.length; ++i) {
+        for (uint256 i; i < collToken.length; ++i) {
             _sendCollToken(collToken[i], CollGain[i]);
         }
     }
@@ -158,16 +159,18 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
         // send gains to user
         _sendDebtToken(SATGain);
-        for (uint i; i < collToken.length; ++i) {
+        for (uint256 i; i < collToken.length; ++i) {
             _sendCollToken(collToken[i], CollGain[i]);
         }
     }
 
     function increaseCollPerUintStaked(uint256 _amount) external {
-        _isCallerTroveManager();
+        _isCallerTroveManagerOrOwner();
         address collateralToken = address(ITroveManager(msg.sender).collateralToken());
         uint256 index = collTokenIndex[collateralToken];
         uint256 collFeePerOSHIStaked;
+
+        IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), _amount);
 
         if (totalOSHIWeightedStaked > 0) {
             uint256 _amountToStaker = _amount * 975 / 1000;
@@ -184,7 +187,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function increaseSATPerUintStaked(uint256 _amount) external {
-        _isCallerBorrowerOperationsOrDebtToken();
+        _isCallerBorrowerOperationsOrDebtTokenOrOwner();
+
+        debtToken.safeTransferFrom(msg.sender, address(this), _amount);
+
         uint256 SATFeePerOSHIStaked;
 
         if (totalOSHIWeightedStaked > 0) {
@@ -209,7 +215,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     function _getPendingCollGain(address _user) internal view returns (uint256[] memory) {
         uint256[] memory CollGain;
-        for (uint i; i < collToken.length; ++i) {
+        for (uint256 i; i < collToken.length; ++i) {
             uint256 F_COLL_Snapshot = snapshots[_user].F_COLL_Snapshot[i];
             CollGain[i] = stakeData[_user].lockWeights * (F_COLL[i] - F_COLL_Snapshot) / DECIMAL_PRECISION;
         }
@@ -248,7 +254,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         }
     }
 
-    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken) external onlyOwner {
+    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken)
+        external
+        onlyOwner
+    {
         borrowerOperationsAddress = _borrowerOperationsAddress;
         weth = _weth;
         debtToken = _debtToken;
@@ -270,7 +279,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             debtToken.safeTransfer(SATOSHI_CORE.feeReceiver(), satForFeeReceiver);
             satForFeeReceiver = 0;
         }
-        for (uint i; i < collToken.length; ++i) {
+        for (uint256 i; i < collToken.length; ++i) {
             if (collForFeeReceiver[i] != 0) {
                 collToken[i].safeTransfer(SATOSHI_CORE.feeReceiver(), collForFeeReceiver[i]);
                 collForFeeReceiver[i] = 0;
@@ -280,7 +289,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     // --- Internal Functions ---
     function _updateUserSnapshots(address _user) internal {
-        for (uint i; i < collToken.length; ++i) {
+        for (uint256 i; i < collToken.length; ++i) {
             snapshots[_user].F_COLL_Snapshot[i] = F_COLL[i];
         }
         snapshots[_user].F_SAT_Snapshot = F_SAT;
@@ -288,7 +297,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function _calculateLockWeight(uint256 _amount, LockDuration _duration) internal pure returns (uint256) {
-        return _amount * (uint(_duration) + 1);
+        return _amount * (uint256(_duration) + 1);
     }
 
     function _sendCollToken(IERC20 collateralToken, uint256 collAmount) private {
@@ -310,18 +319,25 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     // --- Require ---
-    function _isCallerBorrowerOperationsOrDebtToken() internal view {
-        require(msg.sender == borrowerOperationsAddress || msg.sender == address(debtToken), "RewardManager: Caller is not BorrowerOperations or DebtToken");
+    function _isCallerBorrowerOperationsOrDebtTokenOrOwner() internal view {
+        require(
+            msg.sender == borrowerOperationsAddress || msg.sender == address(debtToken)
+                || msg.sender == SATOSHI_CORE.owner(),
+            "RewardManager: Caller is not BorrowerOperations, DebtToken or Owner"
+        );
     }
 
-    function _isCallerTroveManager() internal view {
+    function _isCallerTroveManagerOrOwner() internal view {
         bool isRegistered;
-        for (uint256 i; i < registeredTroveManagers.length; ++i) {
-            if (msg.sender == registeredTroveManagers[i]) {
-                isRegistered = true;
-                break;
+        if (msg.sender == SATOSHI_CORE.owner()) isRegistered = true;
+        if (!isRegistered) {
+            for (uint256 i; i < registeredTroveManagers.length; ++i) {
+                if (msg.sender == registeredTroveManagers[i]) {
+                    isRegistered = true;
+                    break;
+                }
             }
         }
-        require(isRegistered, "RewardManager: Caller is not TroveManager");
+        require(isRegistered, "RewardManager: Caller is not TroveManager or Owner");
     }
 }

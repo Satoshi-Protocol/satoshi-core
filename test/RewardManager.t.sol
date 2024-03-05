@@ -10,7 +10,9 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
-import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEIVER} from "./TestConfig.sol";
+import {
+    DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEIVER, _1_MILLION
+} from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
@@ -83,6 +85,12 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
+    function _troveClaimReward(address caller) internal {
+        vm.startPrank(caller);
+        troveManagerBeaconProxy.claimReward(caller);
+        vm.stopPrank();
+    }
+
     function test_AccrueInterstCorrect() public {
         // open a trove
         _openTrove(user1, 1e18, 1000e18);
@@ -123,6 +131,11 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     function test_OneTimeBorrowFeeIncreaseF_SAT() public {
         _openTrove(user1, 1e18, 1000e18);
+
+        vm.warp(block.timestamp + 365 days * 5);
+        _troveClaimReward(user1);
+        uint256 expectedOSHIAmount = 20 * _1_MILLION;
+        assertApproxEqAbs(oshiToken.balanceOf(user1), expectedOSHIAmount, 1e10);
         assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
         assertEq(rewardManager.getPendingSATGain(user1), 0);
         assert(rewardManager.satForFeeReceiver() > 0);

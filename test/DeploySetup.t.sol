@@ -27,6 +27,7 @@ import {
     GUARDIAN,
     FEE_RECEIVER,
     REWARD_MANAGER,
+    VAULT,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
@@ -86,6 +87,11 @@ contract DeploySetupTest is Test, DeployBase {
         _deployCommunityIssuance(DEPLOYER);
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
         assert(communityIssuance.owner() == OWNER);
+
+        _deployOSHIToken(DEPLOYER);
+        assert(cpOshiTokenAddr == address(oshiToken));
+        assert(oshiToken.communityIssuanceAddress() == cpCommunityIssuanceAddr);
+        assert(oshiToken.vaultAddress() == VAULT);
 
         /* Deploy UUPS proxy contracts */
 

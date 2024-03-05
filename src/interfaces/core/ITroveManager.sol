@@ -312,4 +312,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function totalStakesSnapshot() external view returns (uint256);
 
     function communityIssuance() external view returns (ICommunityIssuance);
+
+    function claimReward(address _recipient) external returns (uint256);
 }

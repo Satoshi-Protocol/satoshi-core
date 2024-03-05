@@ -11,7 +11,7 @@ import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol"
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
-import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
+import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, VAULT} from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
@@ -101,6 +101,8 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(oshiTokenTester.balanceOf(user2), 100);
         assertEq(oshiTokenTester.balanceOf(user3), 50);
         assertEq(oshiTokenTester.balanceOf(vault), _1_MILLION * 55);
+        assertEq(oshiToken.balanceOf(VAULT), _1_MILLION * 55);
+        assertEq(oshiToken.totalSupply(), _1_MILLION * 100);
         address communityIssuanceAddress = oshiTokenTester.communityIssuanceAddress();
         assertEq(oshiTokenTester.balanceOf(communityIssuanceAddress), _1_MILLION * 45);
     }

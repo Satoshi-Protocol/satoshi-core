@@ -8,11 +8,13 @@ import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {IOSHIToken} from "../src/interfaces/core/IOshiToken.sol";
 import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
+import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
@@ -27,11 +29,13 @@ import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
 import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
 import {DebtToken} from "../src/core/DebtToken.sol";
+import {OSHIToken} from "../src/OSHI/OSHIToken.sol";
 import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {CommunityIssuance} from "../src/OSHI/CommunityIssuance.sol";
+import {RewardManager} from "../src/OSHI/RewardManager.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
@@ -58,6 +62,8 @@ contract DeploySetupScript is Script {
     IDebtToken debtToken;
     IFactory factory;
     ICommunityIssuance communityIssuance;
+    IOSHIToken oshiToken;
+    IRewardManager rewardManager;
     /* implementation contracts addresses */
     ISortedTroves sortedTrovesImpl;
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -92,6 +98,8 @@ contract DeploySetupScript is Script {
     address cpDebtTokenAddr;
     address cpFactoryAddr;
     address cpCommunityIssuanceAddr;
+    address cpOshiTokenAddr;
+    address cpRewardManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -126,6 +134,8 @@ contract DeploySetupScript is Script {
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -185,6 +195,14 @@ contract DeploySetupScript is Script {
         // Community Issuance
         communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
+
+        // OSHI Token
+        oshiToken = IOSHIToken(address(new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER))); // @todo set vault address
+        assert(cpOshiTokenAddr == address(oshiToken));
+
+        // RewardManager
+        rewardManager = new RewardManager(satoshiCore);
+        assert(cpRewardManagerAddr == address(rewardManager));
 
         // Deploy proxy contracts
         bytes memory data;
@@ -270,6 +288,8 @@ contract DeploySetupScript is Script {
         console.log("debtToken:", address(debtToken));
         console.log("factory:", address(factory));
         console.log("communityIssuance:", address(communityIssuance));
+        console.log("oshiToken:", address(oshiToken));
+        console.log("rewardManager:", address(rewardManager));
         console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
         console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
         console.log("liquidationManagerProxy:", address(liquidationManagerProxy));

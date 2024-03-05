@@ -29,6 +29,7 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  */
 contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, DelegatedOps, IBorrowerOperations {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IDebtToken;
 
     IDebtToken public debtToken;
     IFactory public factory;
@@ -441,7 +442,8 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         _requireUserAcceptsFee(debtFee, _debtAmount, _maxFeePercentage);
 
         address rewardManager = SATOSHI_CORE.rewardManager();
-        debtToken.mint(rewardManager, debtFee);
+        debtToken.mint(address(this), debtFee);
+        debtToken.safeIncreaseAllowance(rewardManager, debtFee);
         IRewardManager(rewardManager).increaseSATPerUintStaked(debtFee);
 
         emit BorrowingFeePaid(_caller, collateralToken, debtFee);

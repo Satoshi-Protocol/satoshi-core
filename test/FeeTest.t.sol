@@ -136,7 +136,9 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user2, 1e18, 50e18);
         uint256 expectedMintingFee = 5e18 + 0.25e18;
         uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(address(rewardManager)), expectedMintingFee + expectedDebt);
+        uint256 delta = SatoshiMath._getAbsoluteDifference(
+            debtToken.balanceOf(address(rewardManager)), expectedMintingFee + expectedDebt
+        );
         assert(delta < 1000);
     }
 

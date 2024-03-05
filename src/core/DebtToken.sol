@@ -19,6 +19,7 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/LUSDToken.sol
  *
  */
+
 contract DebtToken is IDebtToken, ERC20 {
     string public constant version = "1";
 
@@ -213,7 +214,8 @@ contract DebtToken is IDebtToken, ERC20 {
         _burn(address(receiver), amount);
 
         address rewardManager = satoshiCore.rewardManager();
-        _transfer(address(receiver), rewardManager, fee);
+        _transfer(address(receiver), address(this), fee);
+        _approve(address(this), rewardManager, fee);
         IRewardManager(rewardManager).increaseSATPerUintStaked(fee);
         return true;
     }
