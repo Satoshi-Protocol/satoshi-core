@@ -98,6 +98,12 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
+    function _unstakeOSHIFromRewardManager(address caller, uint256 amount) internal {
+        vm.startPrank(caller);
+        rewardManager.unstake(amount);
+        vm.stopPrank();
+    }
+
 
     function test_AccrueInterst2TroveCorrect() public {
         // open a trove
@@ -137,5 +143,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.warp(block.timestamp + 10 days);
         uint256 amount = _troveClaimReward(user1);
         _stakeOSHIToRewardManager(user1, amount, IRewardManager.LockDuration.THREE);
+        vm.warp(block.timestamp + 100 days);
+        _unstakeOSHIFromRewardManager(user1, amount);
     }
 }

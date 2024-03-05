@@ -214,7 +214,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function _getPendingCollGain(address _user) internal view returns (uint256[] memory) {
-        uint256[] memory CollGain;
+        uint256[] memory CollGain = new uint256[](collToken.length);
         for (uint256 i; i < collToken.length; ++i) {
             uint256 F_COLL_Snapshot = snapshots[_user].F_COLL_Snapshot[i];
             CollGain[i] = stakeData[_user].lockWeights * (F_COLL[i] - F_COLL_Snapshot) / DECIMAL_PRECISION;
