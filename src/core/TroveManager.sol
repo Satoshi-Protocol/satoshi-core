@@ -36,6 +36,7 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  */
 contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IDebtToken;
 
     // --- Connected contract declarations ---
 
@@ -265,7 +266,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     function collectInterests() public {
         uint256 interestPayableCached = interestPayable;
         require(interestPayableCached > 0, "Nothing to collect");
-        debtToken.mint(SATOSHI_CORE.rewardManager(), interestPayableCached);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        debtToken.mint(address(this), interestPayableCached);
+        debtToken.safeIncreaseAllowance(rewardManager, interestPayableCached);
+        IRewardManager(rewardManager).increaseSATPerUintStaked(interestPayableCached);
         interestPayable = 0;
     }
 
@@ -610,8 +614,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         address rewardManager = SATOSHI_CORE.rewardManager();
         if (totals.collateralFee > 0) {
             totalActiveCollateral = totalActiveCollateral - totals.collateralFee;
-            emit CollateralSent(rewardManager, totals.collateralFee);
-
             collateralToken.safeIncreaseAllowance(rewardManager, totals.collateralFee);
         }
         IRewardManager(rewardManager).increaseCollPerUintStaked(totals.collateralFee);
@@ -1053,7 +1055,12 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 collGasCompToLiquidator = _collGasComp / 2;
         uint256 collGasCompToFeeReceiver = _collGasComp - collGasCompToLiquidator;
         _sendCollateral(_liquidator, collGasCompToLiquidator);
-        _sendCollateral(SATOSHI_CORE.rewardManager(), collGasCompToFeeReceiver);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        if (collGasCompToFeeReceiver > 0) {
+            totalActiveCollateral = totalActiveCollateral - collGasCompToFeeReceiver;
+            collateralToken.safeIncreaseAllowance(rewardManager, collGasCompToFeeReceiver);
+        }
+        IRewardManager(rewardManager).increaseCollPerUintStaked(collGasCompToFeeReceiver);
     }
 
     function _redistributeDebtAndColl(uint256 _debt, uint256 _coll) internal {

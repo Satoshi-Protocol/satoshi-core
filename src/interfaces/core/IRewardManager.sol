@@ -54,7 +54,8 @@ interface IRewardManager is ISatoshiOwnable {
     function getPendingSATGain(address _user) external view returns (uint256);
     function registerTroveManager(address _troveManager) external;
     function removeTroveManager(address _troveManager) external;
-    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IERC20 _oshiToken) external;
+    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IERC20 _oshiToken)
+        external;
     function transferToken(IERC20 token, address receiver, uint256 amount) external;
     function setTokenApproval(IERC20 token, address spender, uint256 amount) external;
     function F_SAT() external view returns (uint256);

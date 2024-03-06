@@ -32,6 +32,8 @@ uint128 constant REWARD_RATE = 126839167935058336; //  (20_000_000e18 / (5 * 315
 /* Constants */
 uint256 constant LIQUIDATION_FEE = 200; //  (0.5%)
 uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
+uint256 constant REWARD_MANAGER_GAIN = 975; //  (97.5%)
+uint256 constant REWARD_MANAGER_PRECISION = 1000;
 
 abstract contract TestConfig {
     uint8 internal constant ORACLE_MOCK_DECIMALS = 8;

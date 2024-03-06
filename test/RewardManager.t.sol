@@ -16,7 +16,7 @@ import {
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
-import {INTEREST_RATE_IN_BPS} from "./TestConfig.sol";
+import {INTEREST_RATE_IN_BPS, REWARD_MANAGER_GAIN, REWARD_MANAGER_PRECISION} from "./TestConfig.sol";
 import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
 
 contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
@@ -29,7 +29,17 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user2;
     address user3;
     address user4;
+    address user5;
     uint256 maxFeePercentage = 0.05e18; // 5%
+
+    struct RewardManagerVars {
+        // user state
+        uint256[5] userCollBefore;
+        uint256[5] userCollAfter;
+        uint256[5] userDebtBefore;
+        uint256[5] userDebtAfter;
+        uint256[5] userMintingFee;
+    }
 
     function setUp() public override {
         super.setUp();
@@ -39,6 +49,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user2 = vm.addr(2);
         user3 = vm.addr(3);
         user4 = vm.addr(4);
+        user5 = vm.addr(5);
 
         // setup contracts and deploy one instance
         (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
@@ -104,6 +115,34 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
+    function _claimsOSHIReward(address caller) internal {
+        vm.startPrank(caller);
+        rewardManager.claimReward();
+        vm.stopPrank();
+    }
+
+    function _recordUserStateBeforeToVar(RewardManagerVars memory vars) internal view {
+        (vars.userCollBefore[0], vars.userDebtBefore[0]) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        (vars.userCollBefore[1], vars.userDebtBefore[1]) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (vars.userCollBefore[2], vars.userDebtBefore[2]) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        (vars.userCollBefore[3], vars.userDebtBefore[3]) = troveManagerBeaconProxy.getTroveCollAndDebt(user4);
+        (vars.userCollBefore[4], vars.userDebtBefore[4]) = troveManagerBeaconProxy.getTroveCollAndDebt(user5);
+        for (uint256 i; i < 5; ++i) {
+            if (vars.userDebtBefore[i] < GAS_COMPENSATION) {
+                continue;
+            } else {
+                vars.userMintingFee[i] = (vars.userDebtBefore[i] - GAS_COMPENSATION) * 5 / 1000;
+            }
+        }
+    }
+
+    function _recordUserStateAfterToVar(RewardManagerVars memory vars) internal view {
+        (vars.userCollAfter[0], vars.userDebtAfter[0]) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        (vars.userCollAfter[1], vars.userDebtAfter[1]) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
+        (vars.userCollAfter[2], vars.userDebtAfter[2]) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
+        (vars.userCollAfter[3], vars.userDebtAfter[3]) = troveManagerBeaconProxy.getTroveCollAndDebt(user4);
+        (vars.userCollAfter[4], vars.userDebtAfter[4]) = troveManagerBeaconProxy.getTroveCollAndDebt(user5);
+    }
 
     function test_AccrueInterst2TroveCorrect() public {
         // open a trove
@@ -139,11 +178,42 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function test_StakeOSHIToRM() public {
+        RewardManagerVars memory vars;
+        // user1 open a trove
         _openTrove(user1, 1e18, 1000e18);
         vm.warp(block.timestamp + 10 days);
-        uint256 amount = _troveClaimReward(user1);
-        _stakeOSHIToRewardManager(user1, amount, IRewardManager.LockDuration.THREE);
-        vm.warp(block.timestamp + 100 days);
-        _unstakeOSHIFromRewardManager(user1, amount);
+        // user1 claim OSHI reward
+        uint256 OSHIAmount = _troveClaimReward(user1);
+        console.log("OSHI amount: %d", OSHIAmount);
+        // user1 stake OSHI to reward manager
+        _stakeOSHIToRewardManager(user1, OSHIAmount, IRewardManager.LockDuration.THREE);
+        console.log("totalOSHIWeightedStaked", rewardManager.totalOSHIWeightedStaked());
+        vm.warp(block.timestamp + 355 days);
+        _updateRoundData(
+            RoundData({
+                answer: 60000_00_000_000, // 60000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+        _openTrove(user2, 1e18, 1000e18);
+        _recordUserStateBeforeToVar(vars);
+
+        // user1 claim sOSHI reward (protocol revenue)
+        uint256 interest = vars.userDebtBefore[0] * INTEREST_RATE_IN_BPS / 10000;
+        uint256 expectedReward = (interest + vars.userMintingFee[0]) * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION;
+        assertEq(expectedReward, rewardManager.getPendingSATGain(user1));
+        console.log(rewardManager.getPendingSATGain(user1));
+        console.log(rewardManager.getPendingCollGain(user1)[0]);
+        _claimsOSHIReward(user1);
+        // check pending reward is 0
+        assertEq(rewardManager.getPendingSATGain(user1), 0);
+        assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
+        // check the state
+        // user2 minting fee + user1 intererst
+
+        assertEq(debtToken.balanceOf(user1), expectedReward + vars.userDebtBefore[0]);
+        _unstakeOSHIFromRewardManager(user1, OSHIAmount);
     }
 }

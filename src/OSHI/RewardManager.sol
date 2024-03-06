@@ -165,7 +165,8 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function increaseCollPerUintStaked(uint256 _amount) external {
-        _isCallerTroveManagerOrOwner();
+        _isVaildCaller();
+
         address collateralToken = address(ITroveManager(msg.sender).collateralToken());
         uint256 index = collTokenIndex[collateralToken];
         uint256 collFeePerOSHIStaked;
@@ -187,7 +188,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function increaseSATPerUintStaked(uint256 _amount) external {
-        _isCallerBorrowerOperationsOrDebtTokenOrOwner();
+        _isVaildCaller();
 
         debtToken.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -298,7 +299,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function _calculateLockWeight(uint256 _amount, LockDuration _duration) internal pure returns (uint256) {
-        return _amount * (uint256(_duration) + 1);
+        return _amount * 3 * (uint256(_duration) + 1);
     }
 
     function _sendCollToken(IERC20 collateralToken, uint256 collAmount) private {
@@ -320,17 +321,13 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     // --- Require ---
-    function _isCallerBorrowerOperationsOrDebtTokenOrOwner() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress || msg.sender == address(debtToken)
-                || msg.sender == SATOSHI_CORE.owner(),
-            "RewardManager: Caller is not BorrowerOperations, DebtToken or Owner"
-        );
-    }
 
-    function _isCallerTroveManagerOrOwner() internal view {
+    function _isVaildCaller() internal view {
         bool isRegistered;
-        if (msg.sender == SATOSHI_CORE.owner()) isRegistered = true;
+        if (
+            msg.sender == SATOSHI_CORE.owner() || msg.sender == borrowerOperationsAddress
+                || msg.sender == address(debtToken)
+        ) isRegistered = true;
         if (!isRegistered) {
             for (uint256 i; i < registeredTroveManagers.length; ++i) {
                 if (msg.sender == registeredTroveManagers[i]) {
@@ -339,6 +336,6 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
                 }
             }
         }
-        require(isRegistered, "RewardManager: Caller is not TroveManager or Owner");
+        require(isRegistered, "RewardManager: Caller is not Valid");
     }
 }
