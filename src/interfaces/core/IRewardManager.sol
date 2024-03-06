@@ -70,4 +70,5 @@ interface IRewardManager is ISatoshiOwnable {
     function registeredTroveManagers(uint256) external view returns (address);
     function collTokenIndex(address _collToken) external view returns (uint256);
     function totalOSHIWeightedStaked() external view returns (uint256);
+    function getAvailableUnstakeAmount(address _user) external view returns (uint256);
 }

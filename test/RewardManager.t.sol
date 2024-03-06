@@ -265,7 +265,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user2, 1e18, 1000e18);
 
         // user1 claim sOSHI reward (protocol revenue)
-        uint256 interest = (vars.userDebtBefore[0]) * INTEREST_RATE_IN_BPS / 10000;
+        // uint256 interest = (vars.userDebtBefore[0]) * INTEREST_RATE_IN_BPS / 10000;
         uint256 expectedReward = (50567282792268718326 + 5e18) * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION;
         assertApproxEqAbs(expectedReward, rewardManager.getPendingSATGain(user1), 1e10);
         _claimsOSHIReward(user1);
