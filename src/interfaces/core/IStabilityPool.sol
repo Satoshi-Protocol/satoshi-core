@@ -42,6 +42,7 @@ interface IStabilityPool is ISatoshiOwnable {
     event ScaleUpdated(uint128 _currentScale);
     event StabilityPoolDebtBalanceUpdated(uint256 _newBalance);
     event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
+    event CollateralSunset(address collateral);
 
     function initialize(
         ISatoshiCore _satoshiCore,

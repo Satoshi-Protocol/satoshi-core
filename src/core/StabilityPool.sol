@@ -175,6 +175,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         _sunsetIndexes[queue.nextSunsetIndexKey++] =
             SunsetIndex(uint128(indexByCollateral[collateral] - 1), uint128(block.timestamp + SUNSET_DURATION));
         delete indexByCollateral[collateral]; //This will prevent calls to the SP in case of liquidations
+        emit CollateralSunset(address(collateral));
     }
 
     function getTotalDebtTokenDeposits() external view returns (uint256) {
