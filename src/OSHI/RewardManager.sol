@@ -299,7 +299,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function _calculateLockWeight(uint256 _amount, LockDuration _duration) internal pure returns (uint256) {
-        return _amount * 3 * (uint256(_duration) + 1);
+        return _amount * (uint256(_duration) + 1);
     }
 
     function _sendCollToken(IERC20 collateralToken, uint256 collAmount) private {
