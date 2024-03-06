@@ -11,6 +11,7 @@ import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "../helpers/interfaces/IWETH.sol";
+import "forge-std/console.sol";
 /**
  * @title Reward Manager Contract
  *
@@ -24,6 +25,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     using SafeERC20 for IERC20;
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
+    uint256 public constant FEE_TO_STAKER_RATIO = 975;
 
     IERC20 public debtToken;
     IERC20 public oshiToken;
@@ -126,7 +128,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
         _updateUserSnapshots(msg.sender);
 
-        if (OSHIToWithdraw > 0) {
+        require(OSHIToWithdraw != 0, "RewardManager: No OSHI to withdraw");
+
+        if (OSHIToWithdraw != 0) {
             uint256 newWeight = currentWeight - weightDecreased;
 
             // Decrease user's lock weight and total OSHI staked (weighted)
@@ -195,7 +199,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         uint256 SATFeePerOSHIStaked;
 
         if (totalOSHIWeightedStaked > 0) {
-            uint256 _amountToStaker = _amount * 975 / 1000;
+            uint256 _amountToStaker = _amount * FEE_TO_STAKER_RATIO / 1000;
             uint256 _amountToFeeReceiver = _amount - _amountToStaker;
             SATFeePerOSHIStaked = _amountToStaker * DECIMAL_PRECISION / totalOSHIWeightedStaked;
             satForFeeReceiver += _amountToFeeReceiver;

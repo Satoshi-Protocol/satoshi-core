@@ -105,4 +105,8 @@ interface IStabilityPool is ISatoshiOwnable {
     function liquidationManager() external view returns (ILiquidationManager);
 
     function communityIssuance() external view returns (ICommunityIssuance);
+
+    function claimableReward(address _depositor) external view returns (uint256);
+
+    function claimReward(address recipient) external returns (uint256 amount);
 }
