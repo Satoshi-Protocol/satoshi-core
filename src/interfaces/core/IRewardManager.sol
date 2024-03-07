@@ -7,6 +7,15 @@ import {IWETH} from "../../helpers/interfaces/IWETH.sol";
 import {IDebtToken} from "./IDebtToken.sol";
 import {IOSHIToken} from "./IOSHIToken.sol";
 
+enum LockDuration {
+    THREE, // 3 months
+    SIX, // 6 months
+    NINE, // 9 months
+    TWELVE // 12 months
+}
+
+uint256 constant NUMBER_OF_LOCK_DURATIONS = 4;
+
 interface IRewardManager is ISatoshiOwnable {
     event TroveManagerRegistered(address);
     event TroveManagerRemoved(address);
@@ -22,13 +31,6 @@ interface IRewardManager is ISatoshiOwnable {
 
     error NativeTokenTransferFailed();
 
-    enum LockDuration {
-        THREE,
-        SIX,
-        NINE,
-        TWELVE
-    }
-
     struct Snapshot {
         uint256[1000] F_COLL_Snapshot;
         uint256 F_SAT_Snapshot;
@@ -43,7 +45,7 @@ interface IRewardManager is ISatoshiOwnable {
 
     struct StakeData {
         uint256 lockWeights;
-        uint32[4] nextUnlockIndex;
+        uint32[NUMBER_OF_LOCK_DURATIONS] nextUnlockIndex;
     }
 
     function stake(uint256 _amount, LockDuration _duration) external;

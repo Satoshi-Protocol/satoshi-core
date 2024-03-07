@@ -17,7 +17,7 @@ import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 import {INTEREST_RATE_IN_BPS, REWARD_MANAGER_GAIN, REWARD_MANAGER_PRECISION} from "./TestConfig.sol";
-import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
+import {IRewardManager, LockDuration} from "../src/interfaces/core/IRewardManager.sol";
 
 contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
@@ -109,7 +109,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         amount = stabilityPoolProxy.claimReward(caller);
     }
 
-    function _stakeOSHIToRewardManager(address caller, uint256 amount, IRewardManager.LockDuration lock) internal {
+    function _stakeOSHIToRewardManager(address caller, uint256 amount, LockDuration lock) internal {
         vm.startPrank(caller);
         oshiToken.approve(address(rewardManager), amount);
         rewardManager.stake(amount, lock);
@@ -191,7 +191,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, IRewardManager.LockDuration.THREE);
+        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
         vm.warp(block.timestamp + 10 days);
         // no oshi to unstake
         vm.startPrank(user1);
@@ -206,7 +206,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, IRewardManager.LockDuration.THREE);
+        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
 
         // 3 months later, user1 can unstake OSHI
         vm.warp(block.timestamp + 90 days);
@@ -224,8 +224,8 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, IRewardManager.LockDuration.THREE);
-        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, IRewardManager.LockDuration.TWELVE);
+        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
+        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.TWELVE);
 
         // 3 months later, user1 can unstake OSHIAmount/2 OSHI
         vm.warp(block.timestamp + 90 days);
@@ -250,7 +250,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, IRewardManager.LockDuration.THREE);
+        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
         assertEq(OSHIAmount, rewardManager.totalOSHIWeightedStaked());
         vm.warp(block.timestamp + 355 days);
         _updateRoundData(

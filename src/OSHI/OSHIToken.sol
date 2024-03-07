@@ -31,7 +31,13 @@ contract OSHIToken is IOSHIToken, ERC20 {
 
     mapping(address => uint256) private _nonces;
 
-    uint256 internal _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
+    uint256 internal constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
+
+    // initial OSHI allocations (100,000,000 OSHI)
+    // 45% to community issuance (45,000,000 OSHI)
+    // 55% to vault (55,000,000 OSHI)
+    uint256 internal constant COMMUNITY_ALLOCATION = 45 * _1_MILLION;
+    uint256 internal constant VAULT_ALLOCATION = 55 * _1_MILLION;
 
     // --- Functions ---
 
@@ -48,11 +54,11 @@ contract OSHIToken is IOSHIToken, ERC20 {
         vaultAddress = _vaultAddress;
 
         // --- Initial OSHI allocations ---
-        // mint 45% to community issuance (45,000,000 OSHI)
-        _mint(_communityIssuanceAddress, 45 * _1_MILLION);
+        // mint to community issuance
+        _mint(_communityIssuanceAddress, COMMUNITY_ALLOCATION);
 
-        // mint 55% to vault (55,000,000 OSHI)
-        _mint(_vaultAddress, 55 * _1_MILLION);
+        // mint to vault
+        _mint(_vaultAddress, VAULT_ALLOCATION);
     }
 
     // --- EIP 2612 functionality ---

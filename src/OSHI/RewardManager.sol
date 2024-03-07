@@ -5,7 +5,7 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
-import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
+import {IRewardManager, LockDuration, NUMBER_OF_LOCK_DURATIONS} from "../interfaces/core/IRewardManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
@@ -26,6 +26,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint256 public constant FEE_TO_STAKER_RATIO = 975;
+    uint256 public constant FEE_RATIO_BASE = 1000;
+
+    uint256 internal constant DURATION_MULTIPLIER = 3; // 3 months = 1x, 6 months = 2x, 9 months = 3x, 12 months = 4x
+    uint256 internal constant ONE_MONTH = 30 days;
 
     IERC20 public debtToken;
     IOSHIToken public oshiToken;
@@ -64,7 +68,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             staker: msg.sender,
             amount: _amount,
             lockDuration: _duration,
-            endTime: uint32(block.timestamp + (3 + uint256(_duration) * 3) * 30 days)
+            endTime: uint32(block.timestamp + _calculateDurationTimeStamp(_duration))
         });
 
         userStakes[msg.sender][uint256(_duration)].push(newStake);
@@ -101,11 +105,11 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     function unstake(uint256 _amount) external {
         StakeData storage data = stakeData[msg.sender];
-        uint32[4] memory nextUnlockIndex = data.nextUnlockIndex;
+        uint32[NUMBER_OF_LOCK_DURATIONS] storage nextUnlockIndex = data.nextUnlockIndex;
         uint256 currentWeight = data.lockWeights;
         uint256 OSHIToWithdraw;
         uint256 weightDecreased;
-        for (uint256 i; i < 4; ++i) {
+        for (uint256 i; i < NUMBER_OF_LOCK_DURATIONS; ++i) {
             Stake[] memory userStake = userStakes[msg.sender][i];
             for (uint256 j = nextUnlockIndex[i]; j < userStake.length; ++j) {
                 if (userStake[j].endTime > block.timestamp || OSHIToWithdraw == _amount) break;
@@ -178,7 +182,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), _amount);
 
         if (totalOSHIWeightedStaked > 0) {
-            uint256 _amountToStaker = _amount * 975 / 1000;
+            uint256 _amountToStaker = _amount * FEE_TO_STAKER_RATIO / FEE_RATIO_BASE;
             uint256 _amountToFeeReceiver = _amount - _amountToStaker;
             collFeePerOSHIStaked = _amountToStaker * DECIMAL_PRECISION / totalOSHIWeightedStaked;
             collForFeeReceiver[index] += _amountToFeeReceiver;
@@ -199,7 +203,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         uint256 SATFeePerOSHIStaked;
 
         if (totalOSHIWeightedStaked > 0) {
-            uint256 _amountToStaker = _amount * FEE_TO_STAKER_RATIO / 1000;
+            uint256 _amountToStaker = _amount * FEE_TO_STAKER_RATIO / FEE_RATIO_BASE;
             uint256 _amountToFeeReceiver = _amount - _amountToStaker;
             SATFeePerOSHIStaked = _amountToStaker * DECIMAL_PRECISION / totalOSHIWeightedStaked;
             satForFeeReceiver += _amountToFeeReceiver;
@@ -238,9 +242,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function getAvailableUnstakeAmount(address _user) external view returns (uint256) {
-        uint32[4] storage nextUnlockIndex = stakeData[_user].nextUnlockIndex;
+        uint32[NUMBER_OF_LOCK_DURATIONS] memory nextUnlockIndex = stakeData[_user].nextUnlockIndex;
         uint256 availableUnstakeAmount;
-        for (uint256 i; i < 4; ++i) {
+        for (uint256 i; i < NUMBER_OF_LOCK_DURATIONS; ++i) {
             Stake[] memory userStake = userStakes[_user][i];
             for (uint256 j = nextUnlockIndex[i]; j < userStake.length; ++j) {
                 if (userStake[j].endTime > block.timestamp) break;
@@ -319,6 +323,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     function _calculateLockWeight(uint256 _amount, LockDuration _duration) internal pure returns (uint256) {
         return _amount * (uint256(_duration) + 1);
+    }
+
+    function _calculateDurationTimeStamp(LockDuration _duration) internal pure returns (uint256) {
+        return (DURATION_MULTIPLIER + uint256(_duration) * DURATION_MULTIPLIER) * ONE_MONTH;
     }
 
     function _sendCollToken(IERC20 collateralToken, uint256 collAmount) private {
