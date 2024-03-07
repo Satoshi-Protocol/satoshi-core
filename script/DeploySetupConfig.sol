@@ -13,3 +13,5 @@ string constant DEBT_TOKEN_NAME = "Statoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
 address constant WETH_ADDRESS = 0x51abb19F1ebc7B64040aFd0ef3C789d75C8707e0;
+
+uint32 constant CLAIM_START_TIME = 0; // 2024-04-20 0:0:0 1713542400

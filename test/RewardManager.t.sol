@@ -40,7 +40,6 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256[5] userDebtBefore;
         uint256[5] userDebtAfter;
         uint256[5] userMintingFee;
-
         uint256 ClaimableOSHIinSP;
     }
 
@@ -208,7 +207,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 OSHIAmount = _troveClaimReward(user1);
         // user1 stake OSHI to reward manager
         _stakeOSHIToRewardManager(user1, OSHIAmount, IRewardManager.LockDuration.THREE);
-        
+
         // 3 months later, user1 can unstake OSHI
         vm.warp(block.timestamp + 90 days);
         _unstakeOSHIFromRewardManager(user1, OSHIAmount);
@@ -225,14 +224,14 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount/2, IRewardManager.LockDuration.THREE);
-        _stakeOSHIToRewardManager(user1, OSHIAmount/2, IRewardManager.LockDuration.TWELVE);
-        
+        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, IRewardManager.LockDuration.THREE);
+        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, IRewardManager.LockDuration.TWELVE);
+
         // 3 months later, user1 can unstake OSHIAmount/2 OSHI
         vm.warp(block.timestamp + 90 days);
         _unstakeOSHIFromRewardManager(user1, OSHIAmount);
-        assertEq(oshiToken.balanceOf(user1), OSHIAmount/2);
-        
+        assertEq(oshiToken.balanceOf(user1), OSHIAmount / 2);
+
         // 12 months later, user1 can unstake another OSHIAmount/2 OSHI
         vm.warp(block.timestamp + 360 days);
         _unstakeOSHIFromRewardManager(user1, OSHIAmount);

@@ -48,13 +48,15 @@ import {
     DEBT_TOKEN_SYMBOL,
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION,
-    WETH_ADDRESS
+    WETH_ADDRESS,
+    CLAIM_START_TIME
 } from "./DeploySetupConfig.sol";
 
 contract DeploySetupScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
     address public deployer;
     uint64 public nonce;
+    uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
 
     /* non-upgradeable contracts */
     IGasPool gasPool;
@@ -158,9 +160,8 @@ contract DeploySetupScript is Script {
         assert(cpGasPoolAddr == address(gasPool));
 
         // SatoshiCore
-        satoshiCore = new SatoshiCore(
-            SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerAddr
-        );
+        satoshiCore =
+            new SatoshiCore(SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerAddr);
         assert(cpSatoshiCoreAddr == address(satoshiCore));
 
         // DebtToken
@@ -195,6 +196,12 @@ contract DeploySetupScript is Script {
         // Community Issuance
         communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
+        // set 10% allocation for the stability pool
+        address[] memory _recipients = new address[](1);
+        _recipients[0] = cpStabilityPoolProxyAddr;
+        uint256[] memory _amount = new uint256[](1);
+        _amount[0] = 10 * _1_MILLION;
+        communityIssuance.setAllocated(_recipients, _amount);
 
         // OSHI Token
         oshiToken = new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER); // @todo set vault address
@@ -259,6 +266,7 @@ contract DeploySetupScript is Script {
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
         stabilityPoolProxy = IStabilityPool(proxy);
         assert(proxy == cpStabilityPoolProxyAddr);
+        stabilityPoolProxy.setClaimStartTime(CLAIM_START_TIME);
 
         // SortedTrovesBeacon
         sortedTrovesBeacon = new UpgradeableBeacon(address(sortedTrovesImpl));

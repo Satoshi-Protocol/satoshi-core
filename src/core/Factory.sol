@@ -99,7 +99,8 @@ contract Factory is IFactory, SatoshiOwnable {
             params.interestRateInBps,
             params.maxDebt,
             params.MCR,
-            params.rewardRate
+            params.rewardRate,
+            params.claimStartTime
         );
 
         emit NewDeployment(collateralToken, priceFeed, troveManagerBeaconProxy, sortedTrovesBeaconProxy);

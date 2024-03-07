@@ -30,7 +30,9 @@ import {
     MCR,
     REWARD_RATE,
     OSHI_TOKEN_ADDRESS,
-    _1_MILLION
+    _1_MILLION,
+    OSHI_ALLOCATION,
+    CLAIM_START_TIME
 } from "./DeployInstanceConfig.sol";
 
 contract DeployInstanceScript is Script {
@@ -64,7 +66,9 @@ contract DeployInstanceScript is Script {
             interestRateInBps: INTEREST_RATE_IN_BPS,
             maxDebt: MAX_DEBT,
             MCR: MCR,
-            rewardRate: REWARD_RATE
+            rewardRate: REWARD_RATE,
+            OSHIAllocation: OSHI_ALLOCATION,
+            claimStartTime: CLAIM_START_TIME
         });
     }
 
@@ -84,7 +88,7 @@ contract DeployInstanceScript is Script {
         rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
 
         // set community issuance allocation & addresses
-        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy));
+        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy), params.OSHIAllocation);
 
         console.log("SortedTrovesBeaconProxy: address:", address(sortedTrovesBeaconProxy));
         console.log("TroveManagerBeaconProxy: address:", address(troveManagerBeaconProxy));
@@ -92,14 +96,12 @@ contract DeployInstanceScript is Script {
         vm.stopBroadcast();
     }
 
-    function _setCommunityIssuanceAllocation(address troveManagerBeaconProxy) internal {
-        // set 20% to the trovemanager and 10% to the stability pool
-        address[] memory _recipients = new address[](2);
+    function _setCommunityIssuanceAllocation(address troveManagerBeaconProxy, uint256 OSHIAllocation) internal {
+        // set 20% to the trovemanager
+        address[] memory _recipients = new address[](1);
         _recipients[0] = troveManagerBeaconProxy;
-        _recipients[1] = address(factory.stabilityPoolProxy());
-        uint256[] memory _amount = new uint256[](2);
-        _amount[0] = 20 * _1_MILLION;
-        _amount[1] = 10 * _1_MILLION;
+        uint256[] memory _amount = new uint256[](1);
+        _amount[0] = OSHIAllocation;
         communityIssuance.setAllocated(_recipients, _amount);
     }
 }

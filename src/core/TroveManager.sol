@@ -128,6 +128,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 public rewardIntegral;
     uint128 public rewardRate; // fixed
     uint256 public lastUpdate;
+    uint32 public claimStartTime;
 
     mapping(address => uint256) public rewardIntegralFor;
     mapping(address => uint256) private storedPendingReward;
@@ -227,7 +228,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
         uint256 _MCR,
-        uint128 _rewardRate
+        uint128 _rewardRate,
+        uint32 _claimStartTime
     ) public {
         require(!sunsetting, "Cannot change after sunset");
         require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
@@ -250,6 +252,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         maxBorrowingFee = _maxBorrowingFee;
         maxSystemDebt = _maxSystemDebt;
         rewardRate = _rewardRate;
+        claimStartTime = _claimStartTime;
 
         require(_interestRateInBPS <= MAX_INTEREST_RATE_IN_BPS, "Interest > Maximum");
 
@@ -1208,6 +1211,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     // --- Reward Claim functions ---
 
     function claimReward(address receiver) external returns (uint256) {
+        require(isClaimStart(), "TroveManager: Claim not started");
         uint256 amount = _claimReward(msg.sender);
 
         if (amount > 0) {
@@ -1245,6 +1249,17 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         }
 
         return amount;
+    }
+
+    // set the time when the OSHI claim starts
+    function setClaimStartTime(uint32 _claimStartTime) external onlyOwner {
+        claimStartTime = _claimStartTime;
+        emit ClaimStartTimeSet(_claimStartTime);
+    }
+
+    // check the start time
+    function isClaimStart() public view returns (bool) {
+        return claimStartTime <= uint32(block.timestamp);
     }
 
     // --- Requires ---

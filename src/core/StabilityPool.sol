@@ -34,6 +34,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     // OSHI reward
     uint128 public rewardRate;
     uint32 public lastUpdate;
+    uint32 public claimStartTime;
 
     // collateral => index
     mapping(IERC20 => uint256) public indexByCollateral;
@@ -708,6 +709,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     }
 
     function claimReward(address recipient) external returns (uint256 amount) {
+        require(isClaimStart(), "StabilityPool: Claim not started");
         amount = _claimReward(msg.sender);
 
         if (amount > 0) {
@@ -743,5 +745,16 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
             storedPendingReward[account] = 0;
         }
         return amount;
+    }
+
+    // set the time when the OSHI claim starts
+    function setClaimStartTime(uint32 _claimStartTime) external onlyOwner {
+        claimStartTime = _claimStartTime;
+        emit ClaimStartTimeSet(_claimStartTime);
+    }
+
+    // check the start time
+    function isClaimStart() public view returns (bool) {
+        return claimStartTime <= uint32(block.timestamp);
     }
 }

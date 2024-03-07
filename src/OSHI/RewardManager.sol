@@ -272,10 +272,12 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         }
     }
 
-    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IOSHIToken _oshiToken)
-        external
-        onlyOwner
-    {
+    function setAddresses(
+        address _borrowerOperationsAddress,
+        address _weth,
+        IDebtToken _debtToken,
+        IOSHIToken _oshiToken
+    ) external onlyOwner {
         borrowerOperationsAddress = _borrowerOperationsAddress;
         weth = _weth;
         debtToken = _debtToken;

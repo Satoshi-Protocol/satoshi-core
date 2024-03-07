@@ -43,6 +43,7 @@ interface IStabilityPool is ISatoshiOwnable {
     event ScaleUpdated(uint128 _currentScale);
     event StabilityPoolDebtBalanceUpdated(uint256 _newBalance);
     event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
+    event ClaimStartTimeSet(uint256 _startTime);
 
     function initialize(
         ISatoshiCore _satoshiCore,
@@ -109,4 +110,8 @@ interface IStabilityPool is ISatoshiOwnable {
     function claimableReward(address _depositor) external view returns (uint256);
 
     function claimReward(address recipient) external returns (uint256 amount);
+
+    function setClaimStartTime(uint32 _startTime) external;
+
+    function isClaimStart() external view returns (bool);
 }
