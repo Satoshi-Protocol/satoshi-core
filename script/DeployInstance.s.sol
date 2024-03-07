@@ -29,7 +29,6 @@ import {
     MAX_DEBT,
     MCR,
     REWARD_RATE,
-    REWARD_MANAGER_ADDRESS,
     OSHI_TOKEN_ADDRESS,
     _1_MILLION
 } from "./DeployInstanceConfig.sol";
@@ -53,7 +52,6 @@ contract DeployInstanceScript is Script {
         collateral = IERC20(COLLATERAL_ADDRESS);
         priceFeedAggregator = IPriceFeedAggregator(PRICE_FEED_AGGREGATOR_ADDRESS);
         priceFeed = IPriceFeed(PRICE_FEED_ADDRESS);
-        rewardManager = IRewardManager(REWARD_MANAGER_ADDRESS);
         communityIssuance = factory.communityIssuance();
         debtToken = factory.debtToken();
         oshiToken = IOSHIToken(OSHI_TOKEN_ADDRESS);
@@ -83,9 +81,7 @@ contract DeployInstanceScript is Script {
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
 
         // set reward manager settings
-        rewardManager.setAddresses(address(factory.borrowerOperationsProxy()), COLLATERAL_ADDRESS, debtToken, oshiToken);
         rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
-        satoshiCore.setRewardManager(REWARD_MANAGER_ADDRESS);
 
         // set community issuance allocation & addresses
         _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy));

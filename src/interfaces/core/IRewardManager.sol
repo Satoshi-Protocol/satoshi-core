@@ -5,6 +5,7 @@ import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "../../helpers/interfaces/IWETH.sol";
 import {IDebtToken} from "./IDebtToken.sol";
+import {IOSHIToken} from "./IOSHIToken.sol";
 
 interface IRewardManager is ISatoshiOwnable {
     event TroveManagerRegistered(address);
@@ -54,7 +55,7 @@ interface IRewardManager is ISatoshiOwnable {
     function getPendingSATGain(address _user) external view returns (uint256);
     function registerTroveManager(address _troveManager) external;
     function removeTroveManager(address _troveManager) external;
-    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IERC20 _oshiToken)
+    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IOSHIToken _oshiToken)
         external;
     function transferToken(IERC20 token, address receiver, uint256 amount) external;
     function setTokenApproval(IERC20 token, address spender, uint256 amount) external;
@@ -63,7 +64,7 @@ interface IRewardManager is ISatoshiOwnable {
     function collForFeeReceiver(uint256) external view returns (uint256);
     function satForFeeReceiver() external view returns (uint256);
     function debtToken() external view returns (IERC20);
-    function oshiToken() external view returns (IERC20);
+    function oshiToken() external view returns (IOSHIToken);
     function collToken(uint256) external view returns (IERC20);
     function weth() external view returns (address);
     function borrowerOperationsAddress() external view returns (address);

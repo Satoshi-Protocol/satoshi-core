@@ -22,13 +22,13 @@ import "forge-std/console.sol";
  */
 
 contract RewardManager is IRewardManager, SatoshiOwnable {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for *;
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint256 public constant FEE_TO_STAKER_RATIO = 975;
 
     IERC20 public debtToken;
-    IERC20 public oshiToken;
+    IOSHIToken public oshiToken;
     IERC20[] public collToken;
     address public weth;
 
@@ -272,7 +272,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         }
     }
 
-    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IERC20 _oshiToken)
+    function setAddresses(address _borrowerOperationsAddress, address _weth, IDebtToken _debtToken, IOSHIToken _oshiToken)
         external
         onlyOwner
     {

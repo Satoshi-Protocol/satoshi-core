@@ -8,7 +8,7 @@ import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
-import {IOSHIToken} from "../src/interfaces/core/IOshiToken.sol";
+import {IOSHIToken} from "../src/interfaces/core/IOSHIToken.sol";
 import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -159,7 +159,7 @@ contract DeploySetupScript is Script {
 
         // SatoshiCore
         satoshiCore = new SatoshiCore(
-            SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, SATOSHI_CORE_REWARD_MANAGER
+            SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerAddr
         );
         assert(cpSatoshiCoreAddr == address(satoshiCore));
 
@@ -197,12 +197,13 @@ contract DeploySetupScript is Script {
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
 
         // OSHI Token
-        oshiToken = IOSHIToken(address(new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER))); // @todo set vault address
+        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER); // @todo set vault address
         assert(cpOshiTokenAddr == address(oshiToken));
 
         // RewardManager
         rewardManager = new RewardManager(satoshiCore);
         assert(cpRewardManagerAddr == address(rewardManager));
+        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, WETH_ADDRESS, debtToken, oshiToken);
 
         // Deploy proxy contracts
         bytes memory data;
