@@ -74,5 +74,5 @@ interface ISatoshiBORouter {
         address _lowerHint
     ) external payable;
 
-    function closeTrove(ITroveManager troveManager, address account) external;
+    function closeTrove(ITroveManager troveManager) external;
 }
