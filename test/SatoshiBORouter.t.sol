@@ -855,7 +855,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         emit TroveUpdated(user, 0, 0, 0, TroveManagerOperation.close);
 
         // tx execution
-        satoshiBORouter.closeTrove(troveManagerBeaconProxy, user);
+        satoshiBORouter.closeTrove(troveManagerBeaconProxy);
 
         // state after
         vars.userDebtAmtAfter = debtToken.balanceOf(user);
