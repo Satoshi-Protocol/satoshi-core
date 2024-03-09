@@ -30,7 +30,7 @@ import {
     MCR,
     REWARD_RATE,
     OSHI_TOKEN_ADDRESS,
-    OSHI_ALLOCATION,
+    TM_ALLOCATION,
     TM_CLAIM_START_TIME
 } from "./DeployInstanceConfig.sol";
 
@@ -53,9 +53,13 @@ contract DeployInstanceScript is Script {
         collateral = IERC20(COLLATERAL_ADDRESS);
         priceFeedAggregator = IPriceFeedAggregator(PRICE_FEED_AGGREGATOR_ADDRESS);
         priceFeed = IPriceFeed(PRICE_FEED_ADDRESS);
-        communityIssuance = factory.communityIssuance();
-        debtToken = factory.debtToken();
         oshiToken = IOSHIToken(OSHI_TOKEN_ADDRESS);
+        communityIssuance = factory.communityIssuance();
+        assert(address(communityIssuance) != address(0));
+        debtToken = factory.debtToken();
+        assert(address(debtToken) != address(0));
+        rewardManager = factory.rewardManager();
+        assert(address(rewardManager) != address(0));
         deploymentParams = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,
@@ -66,7 +70,7 @@ contract DeployInstanceScript is Script {
             maxDebt: MAX_DEBT,
             MCR: MCR,
             rewardRate: REWARD_RATE,
-            OSHIAllocation: OSHI_ALLOCATION,
+            OSHIAllocation: TM_ALLOCATION,
             claimStartTime: TM_CLAIM_START_TIME
         });
     }
@@ -84,7 +88,7 @@ contract DeployInstanceScript is Script {
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
 
         // set reward manager settings
-        rewardManager.registerTroveManager(address(troveManagerBeaconProxy));
+        rewardManager.registerTroveManager(troveManagerBeaconProxy);
 
         // set community issuance allocation & addresses
         _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy), params.OSHIAllocation);
@@ -95,12 +99,11 @@ contract DeployInstanceScript is Script {
         vm.stopBroadcast();
     }
 
-    function _setCommunityIssuanceAllocation(address troveManagerBeaconProxy, uint256 OSHIAllocation) internal {
-        // set 20% to the trovemanager
+    function _setCommunityIssuanceAllocation(address troveManagerBeaconProxy, uint256 allocation) internal {
         address[] memory _recipients = new address[](1);
         _recipients[0] = troveManagerBeaconProxy;
         uint256[] memory _amount = new uint256[](1);
-        _amount[0] = OSHIAllocation;
+        _amount[0] = allocation;
         communityIssuance.setAllocated(_recipients, _amount);
     }
 }

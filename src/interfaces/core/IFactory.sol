@@ -15,6 +15,7 @@ import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {IGasPool} from "./IGasPool.sol";
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {ICommunityIssuance} from "./ICommunityIssuance.sol";
+import {IRewardManager} from "./IRewardManager.sol";
 
 // commented values are suggested default parameters
 struct DeploymentParams {
@@ -63,4 +64,6 @@ interface IFactory is ISatoshiOwnable {
     function troveManagers(uint256) external view returns (ITroveManager);
 
     function communityIssuance() external view returns (ICommunityIssuance);
+
+    function rewardManager() external view returns (IRewardManager);
 }

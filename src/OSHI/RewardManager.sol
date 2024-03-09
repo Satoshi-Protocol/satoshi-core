@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IRewardManager, LockDuration, NUMBER_OF_LOCK_DURATIONS} from "../interfaces/core/IRewardManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "../helpers/interfaces/IWETH.sol";
-import "forge-std/console.sol";
+import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
+
 /**
  * @title Reward Manager Contract
  *
@@ -34,10 +35,10 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     IERC20 public debtToken;
     IOSHIToken public oshiToken;
     IERC20[] public collToken;
-    address public weth;
+    IWETH public weth;
 
-    address public borrowerOperationsAddress;
-    address[] public registeredTroveManagers;
+    IBorrowerOperations public borrowerOperations;
+    ITroveManager[] public registeredTroveManagers;
     mapping(address => uint256) public collTokenIndex;
 
     uint256 public totalOSHIWeightedStaked;
@@ -255,9 +256,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     // --- Admin Functions ---
-    function registerTroveManager(address _troveManager) external onlyOwner {
+    function registerTroveManager(ITroveManager _troveManager) external onlyOwner {
         registeredTroveManagers.push(_troveManager);
-        IERC20 collateralToken = ITroveManager(_troveManager).collateralToken();
+        IERC20 collateralToken = _troveManager.collateralToken();
         require(address(collateralToken) != address(0), "RewardManager: Invalid collateral token");
         collToken.push(collateralToken);
         collTokenIndex[address(collateralToken)] = collToken.length - 1;
@@ -266,7 +267,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         emit TroveManagerRegistered(_troveManager);
     }
 
-    function removeTroveManager(address _troveManager) external onlyOwner {
+    function removeTroveManager(ITroveManager _troveManager) external onlyOwner {
         for (uint256 i; i < registeredTroveManagers.length; ++i) {
             if (registeredTroveManagers[i] == _troveManager) {
                 delete registeredTroveManagers[i];
@@ -277,17 +278,17 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function setAddresses(
-        address _borrowerOperationsAddress,
-        address _weth,
+        IBorrowerOperations _borrowerOperations,
+        IWETH _weth,
         IDebtToken _debtToken,
         IOSHIToken _oshiToken
     ) external onlyOwner {
-        borrowerOperationsAddress = _borrowerOperationsAddress;
+        borrowerOperations = _borrowerOperations;
         weth = _weth;
         debtToken = _debtToken;
         oshiToken = _oshiToken;
-        emit BorrowerOperationsAddressSet(_borrowerOperationsAddress);
-        emit DebtTokenSet(address(_debtToken));
+        emit BorrowerOperationsSet(_borrowerOperations);
+        emit DebtTokenSet(_debtToken);
         emit WETHSet(_weth);
     }
 
@@ -332,7 +333,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     function _sendCollToken(IERC20 collateralToken, uint256 collAmount) private {
         if (collAmount == 0) return;
 
-        if (address(collateralToken) == weth) {
+        if (address(collateralToken) == address(weth)) {
             IWETH(weth).withdraw(collAmount);
             (bool success,) = payable(msg.sender).call{value: collAmount}("");
             if (!success) revert NativeTokenTransferFailed();
@@ -352,12 +353,12 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     function _isVaildCaller() internal view {
         bool isRegistered;
         if (
-            msg.sender == SATOSHI_CORE.owner() || msg.sender == borrowerOperationsAddress
+            msg.sender == SATOSHI_CORE.owner() || msg.sender == address(borrowerOperations)
                 || msg.sender == address(debtToken)
         ) isRegistered = true;
         if (!isRegistered) {
             for (uint256 i; i < registeredTroveManagers.length; ++i) {
-                if (msg.sender == registeredTroveManagers[i]) {
+                if (msg.sender == address(registeredTroveManagers[i])) {
                     isRegistered = true;
                     break;
                 }

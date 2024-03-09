@@ -21,7 +21,6 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
-    IWETH weth;
     IMultiCollateralHintHelpers hintHelpers;
     ISatoshiBORouter satoshiBORouter;
     address user;

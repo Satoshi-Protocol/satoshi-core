@@ -29,7 +29,9 @@ uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
 uint256 constant MCR = 11 * 1e17;
 uint128 constant REWARD_RATE = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
 uint256 constant OSHI_ALLOCATION = 20 * _1_MILLION;
-uint32 constant CLAIM_START_TIME = 0; // 2024-04-20 0:0:0 1713542400
+uint32 constant SP_CLAIM_START_TIME = 0;
+uint32 constant TM_CLAIM_START_TIME = 0;
+
 /* Constants */
 uint256 constant LIQUIDATION_FEE = 200; //  (0.5%)
 uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
@@ -51,6 +53,6 @@ abstract contract TestConfig {
         MCR: MCR,
         rewardRate: REWARD_RATE,
         OSHIAllocation: OSHI_ALLOCATION,
-        claimStartTime: CLAIM_START_TIME
+        claimStartTime: TM_CLAIM_START_TIME
     });
 }

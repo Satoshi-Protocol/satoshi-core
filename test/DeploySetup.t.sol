@@ -31,7 +31,8 @@ import {
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
-    BO_MIN_NET_DEBT
+    BO_MIN_NET_DEBT,
+    SP_CLAIM_START_TIME
 } from "./TestConfig.sol";
 
 contract DeploySetupTest is Test, DeployBase {
@@ -92,6 +93,10 @@ contract DeploySetupTest is Test, DeployBase {
         assert(cpOshiTokenAddr == address(oshiToken));
         assert(oshiToken.communityIssuanceAddress() == cpCommunityIssuanceAddr);
         assert(oshiToken.vaultAddress() == VAULT);
+
+        _deployRewardManager(DEPLOYER);
+        assert(cpRewardManagerAddr == address(rewardManager));
+        assert(rewardManager.owner() == OWNER);
 
         /* Deploy UUPS proxy contracts */
 
