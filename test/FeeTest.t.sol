@@ -180,11 +180,13 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         (uint256 user1CollAfter, uint256 user1DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
         assertEq(user1CollAfter, user1CollBefore);
+        uint256 expectedSimpleDebt = user1DebtBefore * (10000 + 2 * INTEREST_RATE_IN_BPS) / 10000;
+        assert(user1DebtAfter > user1DebtBefore);
+        assert(user1DebtAfter > expectedSimpleDebt);
 
         // console.log("user1DebtBefore", user1DebtBefore);
         // console.log("user1DebtAfter ", user1DebtAfter);
         // check the debt
-        // uint256 expectedDebt = user1DebtBefore * (10000 + INTEREST_RATE_IN_BPS) / 10000;
         // uint256 delta = SatoshiMath._getAbsoluteDifference(expectedDebt, user1DebtAfter);
         // assert(delta < 1000);
     }
