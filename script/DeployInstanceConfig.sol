@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {_1_MILLION} from "./DeploySetupConfig.sol";
+
 address constant FACTORY_ADDRESS = 0xeD542cBE7E19ebC80D4592e2dAb4A2ddA757cCd3;
 address constant PRICE_FEED_AGGREGATOR_ADDRESS = 0xa5bbcC8D0cFC12E91b042ca5cF8C92c16Fa24927;
 
@@ -18,7 +20,8 @@ uint256 constant MAX_BORROWING_FEE = 1e18 / 100 * 5; //  (5%)
 uint256 constant INTEREST_RATE_IN_BPS = 450; //  (4.5%)
 uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
 uint256 constant MCR = 11 * 1e17; //  (110%)
+
+// OSHI token configuration
+uint256 constant OSHI_ALLOCATION = 20 * _1_MILLION; //  20,000,000 OSHI (20% of total supply)
 uint128 constant REWARD_RATE = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
-uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
-uint256 constant OSHI_ALLOCATION = 20 * _1_MILLION;
-uint32 constant CLAIM_START_TIME = 0; // 2024-04-20 0:0:0 1713542400
+uint32 constant TM_CLAIM_START_TIME = 1709992800; // 2024-04-20 0:0:0 1713542400

@@ -30,9 +30,8 @@ import {
     MCR,
     REWARD_RATE,
     OSHI_TOKEN_ADDRESS,
-    _1_MILLION,
     OSHI_ALLOCATION,
-    CLAIM_START_TIME
+    TM_CLAIM_START_TIME
 } from "./DeployInstanceConfig.sol";
 
 contract DeployInstanceScript is Script {
@@ -68,7 +67,7 @@ contract DeployInstanceScript is Script {
             MCR: MCR,
             rewardRate: REWARD_RATE,
             OSHIAllocation: OSHI_ALLOCATION,
-            claimStartTime: CLAIM_START_TIME
+            claimStartTime: TM_CLAIM_START_TIME
         });
     }
 

@@ -48,7 +48,7 @@ abstract contract TroveBase is Test {
     }
 
     function closeTrove(
-        IBorrowerOperations borrowerOperationsProxy, 
+        IBorrowerOperations borrowerOperationsProxy,
         ITroveManager troveManagerBeaconProxy,
         address caller
     ) internal {

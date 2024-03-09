@@ -43,20 +43,21 @@ import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
     SATOSHI_CORE_FEE_RECEIVER,
-    SATOSHI_CORE_REWARD_MANAGER,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION,
     WETH_ADDRESS,
-    CLAIM_START_TIME
+    SP_CLAIM_START_TIME,
+    SP_ALLOCATION
 } from "./DeploySetupConfig.sol";
 
 contract DeploySetupScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
+    uint256 internal SATOSHI_CORE_OWNER_PRIVATE_KEY;
     address public deployer;
+    address public satoshiCoreOwner;
     uint64 public nonce;
-    uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
 
     /* non-upgradeable contracts */
     IGasPool gasPool;
@@ -114,6 +115,8 @@ contract DeploySetupScript is Script {
     function setUp() public {
         DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
         deployer = vm.addr(DEPLOYMENT_PRIVATE_KEY);
+        SATOSHI_CORE_OWNER_PRIVATE_KEY = uint256(vm.envBytes32("SATOSHI_CORE_OWNER_PRIVATE_KEY"));
+        satoshiCoreOwner = vm.addr(SATOSHI_CORE_OWNER_PRIVATE_KEY);
     }
 
     function run() public {
@@ -196,12 +199,6 @@ contract DeploySetupScript is Script {
         // Community Issuance
         communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
-        // set 10% allocation for the stability pool
-        address[] memory _recipients = new address[](1);
-        _recipients[0] = cpStabilityPoolProxyAddr;
-        uint256[] memory _amount = new uint256[](1);
-        _amount[0] = 10 * _1_MILLION;
-        communityIssuance.setAllocated(_recipients, _amount);
 
         // OSHI Token
         oshiToken = new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER); // @todo set vault address
@@ -210,7 +207,6 @@ contract DeploySetupScript is Script {
         // RewardManager
         rewardManager = new RewardManager(satoshiCore);
         assert(cpRewardManagerAddr == address(rewardManager));
-        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, WETH_ADDRESS, debtToken, oshiToken);
 
         // Deploy proxy contracts
         bytes memory data;
@@ -266,7 +262,6 @@ contract DeploySetupScript is Script {
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
         stabilityPoolProxy = IStabilityPool(proxy);
         assert(proxy == cpStabilityPoolProxyAddr);
-        stabilityPoolProxy.setClaimStartTime(CLAIM_START_TIME);
 
         // SortedTrovesBeacon
         sortedTrovesBeacon = new UpgradeableBeacon(address(sortedTrovesImpl));
@@ -284,6 +279,10 @@ contract DeploySetupScript is Script {
 
         // SatoshiBORouter
         satoshiBORouter = new SatoshiBORouter(debtToken, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
+
+        vm.stopBroadcast();
+
+        _setConfigByOwner(SATOSHI_CORE_OWNER_PRIVATE_KEY);
 
         console.log("Deployed contracts:");
         console.log("priceFeedAggregatorImpl:", address(priceFeedAggregatorImpl));
@@ -308,6 +307,50 @@ contract DeploySetupScript is Script {
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiBORouter:", address(satoshiBORouter));
+    }
+
+    function _setConfigByOwner(uint256 owner_private_key) internal {
+        // set allocation for the stability pool
+        address[] memory _recipients = new address[](1);
+        _recipients[0] = address(stabilityPoolProxy);
+        uint256[] memory _amount = new uint256[](1);
+        _amount[0] = SP_ALLOCATION;
+        _setAllocation(owner_private_key, _recipients, _amount);
+
+        _setAddress(owner_private_key, address(borrowerOperationsProxy), WETH_ADDRESS, debtToken, oshiToken);
+
+        _setClaimStartTime(owner_private_key, SP_CLAIM_START_TIME);
+    }
+
+    function _setAllocation(uint256 owner_private_key, address[] memory _recipients, uint256[] memory _amounts)
+        internal
+    {
+        vm.startBroadcast(owner_private_key);
+
+        assert(_recipients.length == _amounts.length);
+        communityIssuance.setAllocated(_recipients, _amounts);
+
+        vm.stopBroadcast();
+    }
+
+    function _setAddress(
+        uint256 owner_private_key,
+        address borrowerOperationsProxyAddr,
+        address _wethAddr,
+        IDebtToken _debtToken,
+        IOSHIToken _oshiToken
+    ) internal {
+        vm.startBroadcast(owner_private_key);
+
+        rewardManager.setAddresses(borrowerOperationsProxyAddr, _wethAddr, _debtToken, _oshiToken);
+
+        vm.stopBroadcast();
+    }
+
+    function _setClaimStartTime(uint256 owner_private_key, uint32 _claimStartTime) internal {
+        vm.startBroadcast(owner_private_key);
+
+        stabilityPoolProxy.setClaimStartTime(_claimStartTime);
 
         vm.stopBroadcast();
     }
