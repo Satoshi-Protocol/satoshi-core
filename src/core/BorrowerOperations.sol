@@ -18,6 +18,7 @@ import {
     TroveManagerData,
     Balances
 } from "../interfaces/core/IBorrowerOperations.sol";
+import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 
 /**
  * @title Borrower Operations Contract (Upgradable)
@@ -28,6 +29,7 @@ import {
  */
 contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, DelegatedOps, IBorrowerOperations {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IDebtToken;
 
     IDebtToken public debtToken;
     IFactory public factory;
@@ -439,7 +441,10 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         _requireUserAcceptsFee(debtFee, _debtAmount, _maxFeePercentage);
 
-        debtToken.mint(SATOSHI_CORE.feeReceiver(), debtFee);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        debtToken.mint(address(this), debtFee);
+        debtToken.safeIncreaseAllowance(rewardManager, debtFee);
+        IRewardManager(rewardManager).increaseSATPerUintStaked(debtFee);
 
         emit BorrowingFeePaid(_caller, collateralToken, debtFee);
 

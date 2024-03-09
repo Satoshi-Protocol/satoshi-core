@@ -8,10 +8,13 @@ import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {IOSHIToken} from "../src/interfaces/core/IOSHIToken.sol";
 import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
+import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
+import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
@@ -26,10 +29,13 @@ import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
 import {BorrowerOperations} from "../src/core/BorrowerOperations.sol";
 import {DebtToken} from "../src/core/DebtToken.sol";
+import {OSHIToken} from "../src/OSHI/OSHIToken.sol";
 import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
+import {CommunityIssuance} from "../src/OSHI/CommunityIssuance.sol";
+import {RewardManager} from "../src/OSHI/RewardManager.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
@@ -42,19 +48,24 @@ import {
     DEBT_TOKEN_SYMBOL,
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION,
-    WETH_ADDRESS
+    WETH_ADDRESS,
+    CLAIM_START_TIME
 } from "./DeploySetupConfig.sol";
 
 contract DeploySetupScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
     address public deployer;
     uint64 public nonce;
+    uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
 
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
     IDebtToken debtToken;
     IFactory factory;
+    ICommunityIssuance communityIssuance;
+    IOSHIToken oshiToken;
+    IRewardManager rewardManager;
     /* implementation contracts addresses */
     ISortedTroves sortedTrovesImpl;
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -88,6 +99,9 @@ contract DeploySetupScript is Script {
     address cpSatoshiCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
+    address cpCommunityIssuanceAddr;
+    address cpOshiTokenAddr;
+    address cpRewardManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -121,6 +135,9 @@ contract DeploySetupScript is Script {
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -143,9 +160,8 @@ contract DeploySetupScript is Script {
         assert(cpGasPoolAddr == address(gasPool));
 
         // SatoshiCore
-        satoshiCore = new SatoshiCore(
-            SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, SATOSHI_CORE_REWARD_MANAGER
-        );
+        satoshiCore =
+            new SatoshiCore(SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerAddr);
         assert(cpSatoshiCoreAddr == address(satoshiCore));
 
         // DebtToken
@@ -172,9 +188,29 @@ contract DeploySetupScript is Script {
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
+            ICommunityIssuance(cpCommunityIssuanceAddr),
             GAS_COMPENSATION
         );
         assert(cpFactoryAddr == address(factory));
+
+        // Community Issuance
+        communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
+        assert(cpCommunityIssuanceAddr == address(communityIssuance));
+        // set 10% allocation for the stability pool
+        address[] memory _recipients = new address[](1);
+        _recipients[0] = cpStabilityPoolProxyAddr;
+        uint256[] memory _amount = new uint256[](1);
+        _amount[0] = 10 * _1_MILLION;
+        communityIssuance.setAllocated(_recipients, _amount);
+
+        // OSHI Token
+        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER); // @todo set vault address
+        assert(cpOshiTokenAddr == address(oshiToken));
+
+        // RewardManager
+        rewardManager = new RewardManager(satoshiCore);
+        assert(cpRewardManagerAddr == address(rewardManager));
+        rewardManager.setAddresses(cpBorrowerOperationsProxyAddr, WETH_ADDRESS, debtToken, oshiToken);
 
         // Deploy proxy contracts
         bytes memory data;
@@ -223,12 +259,14 @@ contract DeploySetupScript is Script {
                 ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
-                ILiquidationManager(cpLiquidationManagerProxyAddr)
+                ILiquidationManager(cpLiquidationManagerProxyAddr),
+                ICommunityIssuance(cpCommunityIssuanceAddr)
             )
         );
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
         stabilityPoolProxy = IStabilityPool(proxy);
         assert(proxy == cpStabilityPoolProxyAddr);
+        stabilityPoolProxy.setClaimStartTime(CLAIM_START_TIME);
 
         // SortedTrovesBeacon
         sortedTrovesBeacon = new UpgradeableBeacon(address(sortedTrovesImpl));
@@ -258,6 +296,9 @@ contract DeploySetupScript is Script {
         console.log("satoshiCore:", address(satoshiCore));
         console.log("debtToken:", address(debtToken));
         console.log("factory:", address(factory));
+        console.log("communityIssuance:", address(communityIssuance));
+        console.log("oshiToken:", address(oshiToken));
+        console.log("rewardManager:", address(rewardManager));
         console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
         console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
         console.log("liquidationManagerProxy:", address(liquidationManagerProxy));

@@ -11,7 +11,7 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
-
+import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 /**
  * @title Debt Token Contract (Non-upgradeable)
  *        Mutated from:
@@ -19,6 +19,7 @@ import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/LUSDToken.sol
  *
  */
+
 contract DebtToken is IDebtToken, ERC20 {
     string public constant version = "1";
 
@@ -211,7 +212,11 @@ contract DebtToken is IDebtToken, ERC20 {
         );
         _spendAllowance(address(receiver), address(this), amount + fee);
         _burn(address(receiver), amount);
-        _transfer(address(receiver), satoshiCore.feeReceiver(), fee);
+
+        address rewardManager = satoshiCore.rewardManager();
+        _transfer(address(receiver), address(this), fee);
+        _approve(address(this), rewardManager, fee);
+        IRewardManager(rewardManager).increaseSATPerUintStaked(fee);
         return true;
     }
 
