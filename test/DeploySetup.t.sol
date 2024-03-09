@@ -11,6 +11,7 @@ import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
+import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
@@ -25,10 +26,13 @@ import {
     OWNER,
     GUARDIAN,
     FEE_RECEIVER,
+    REWARD_MANAGER,
+    VAULT,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
-    BO_MIN_NET_DEBT
+    BO_MIN_NET_DEBT,
+    SP_CLAIM_START_TIME
 } from "./TestConfig.sol";
 
 contract DeploySetupTest is Test, DeployBase {
@@ -55,6 +59,7 @@ contract DeploySetupTest is Test, DeployBase {
         assert(satoshiCore.owner() == OWNER);
         assert(satoshiCore.guardian() == GUARDIAN);
         assert(satoshiCore.feeReceiver() == FEE_RECEIVER);
+        assert(satoshiCore.rewardManager() == REWARD_MANAGER);
         assert(satoshiCore.startTime() == (block.timestamp / 1 weeks) * 1 weeks);
 
         // DebtToken
@@ -77,6 +82,21 @@ contract DeploySetupTest is Test, DeployBase {
         assert(factory.liquidationManagerProxy() == ILiquidationManager(cpLiquidationManagerProxyAddr));
         assert(factory.sortedTrovesBeacon() == IBeacon(cpSortedTrovesBeaconAddr));
         assert(factory.troveManagerBeacon() == IBeacon(cpTroveManagerBeaconAddr));
+        assert(factory.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceAddr));
+
+        // Community Issuance
+        _deployCommunityIssuance(DEPLOYER);
+        assert(cpCommunityIssuanceAddr == address(communityIssuance));
+        assert(communityIssuance.owner() == OWNER);
+
+        _deployOSHIToken(DEPLOYER);
+        assert(cpOshiTokenAddr == address(oshiToken));
+        assert(oshiToken.communityIssuanceAddress() == cpCommunityIssuanceAddr);
+        assert(oshiToken.vaultAddress() == VAULT);
+
+        _deployRewardManager(DEPLOYER);
+        assert(cpRewardManagerAddr == address(rewardManager));
+        assert(rewardManager.owner() == OWNER);
 
         /* Deploy UUPS proxy contracts */
 
@@ -138,6 +158,7 @@ contract DeploySetupTest is Test, DeployBase {
         assert(stabilityPoolProxy.debtToken() == IDebtToken(cpDebtTokenAddr));
         assert(stabilityPoolProxy.factory() == IFactory(cpFactoryAddr));
         assert(stabilityPoolProxy.liquidationManager() == ILiquidationManager(cpLiquidationManagerProxyAddr));
+        assert(stabilityPoolProxy.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceAddr));
 
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
@@ -145,7 +166,8 @@ contract DeploySetupTest is Test, DeployBase {
             ISatoshiCore(cpSatoshiCoreAddr),
             IDebtToken(cpDebtTokenAddr),
             IFactory(cpFactoryAddr),
-            ILiquidationManager(cpLiquidationManagerProxyAddr)
+            ILiquidationManager(cpLiquidationManagerProxyAddr),
+            ICommunityIssuance(cpCommunityIssuanceAddr)
         );
 
         /* Deploy Beacon contracts */

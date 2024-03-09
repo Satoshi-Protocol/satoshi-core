@@ -14,6 +14,8 @@ import {IPriceFeed} from "../dependencies/IPriceFeed.sol";
 import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {IGasPool} from "./IGasPool.sol";
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
+import {ICommunityIssuance} from "./ICommunityIssuance.sol";
+import {IRewardManager} from "./IRewardManager.sol";
 
 // commented values are suggested default parameters
 struct DeploymentParams {
@@ -25,6 +27,9 @@ struct DeploymentParams {
     uint256 interestRateInBps; // 450 (4.5%)
     uint256 maxDebt; // 1e18 * 1000000000 (1 billion)
     uint256 MCR; // 11 * 1e17  (110%)
+    uint128 rewardRate; // 57077625570776256 (9000000e18 / (5 * 31536000))
+    uint256 OSHIAllocation; // 20 * _1_MILLION
+    uint32 claimStartTime; // 1713542400  (2024-04-20 0:0:0)
 }
 
 interface IFactory is ISatoshiOwnable {
@@ -57,4 +62,8 @@ interface IFactory is ISatoshiOwnable {
     function troveManagerCount() external view returns (uint256);
 
     function troveManagers(uint256) external view returns (ITroveManager);
+
+    function communityIssuance() external view returns (ICommunityIssuance);
+
+    function rewardManager() external view returns (IRewardManager);
 }

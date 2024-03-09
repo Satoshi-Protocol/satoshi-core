@@ -169,15 +169,15 @@ contract SatoshiBORouter is ISatoshiBORouter {
         }
     }
 
-    function closeTrove(ITroveManager troveManager, address account) external {
-        (uint256 collAmount, uint256 debtAmount) = troveManager.getTroveCollAndDebt(account);
+    function closeTrove(ITroveManager troveManager) external {
+        (uint256 collAmount, uint256 debtAmount) = troveManager.getTroveCollAndDebt(msg.sender);
         uint256 netDebtAmount = debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION();
         _beforeRepayDebt(netDebtAmount);
 
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
 
-        borrowerOperationsProxy.closeTrove(troveManager, account);
+        borrowerOperationsProxy.closeTrove(troveManager, msg.sender);
 
         uint256 collTokenBalanceAfter = collateralToken.balanceOf(address(this));
         uint256 userCollAmount = collTokenBalanceAfter - collTokenBalanceBefore;

@@ -11,6 +11,7 @@ import {ILiquidationManager} from "../core/ILiquidationManager.sol";
 import {ISatoshiBase} from "../dependencies/ISatoshiBase.sol";
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IGasPool} from "../core/IGasPool.sol";
+import {ICommunityIssuance} from "../core/ICommunityIssuance.sol";
 
 enum Status {
     nonExistent,
@@ -83,6 +84,8 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         address indexed _borrower, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
     event SetConfig(address _sortedTroves, address _collateralToken, uint256 systemDeploymentTime, bool sunsetting, uint256 activeInterestIndex, uint256 lastActiveIndexUpdate);
+    event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
+    event ClaimStartTimeSet(uint32 _startTime);
 
     function initialize(
         ISatoshiCore _satoshiCore,
@@ -91,6 +94,7 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
         IPriceFeedAggregator _priceFeedAggregator,
+        ICommunityIssuance _communityIssuance,
         uint256 _gasCompensation
     ) external;
 
@@ -154,7 +158,9 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         uint256 _maxBorrowingFee,
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
-        uint256 _MCR
+        uint256 _MCR,
+        uint128 _rewardRate,
+        uint32 _claimStartTime
     ) external;
 
     function setPaused(bool _paused) external;
@@ -307,4 +313,12 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function totalStakes() external view returns (uint256);
 
     function totalStakesSnapshot() external view returns (uint256);
+
+    function communityIssuance() external view returns (ICommunityIssuance);
+
+    function claimReward(address _recipient) external returns (uint256);
+
+    function setClaimStartTime(uint32 _claimStartTime) external;
+
+    function isClaimStart() external view returns (bool);
 }

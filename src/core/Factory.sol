@@ -17,6 +17,8 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {DeploymentParams, IFactory} from "../interfaces/core/IFactory.sol";
 import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
+import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
+import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 
 /**
  * @title Factory Contract (Non-upgradeable)
@@ -35,6 +37,8 @@ contract Factory is IFactory, SatoshiOwnable {
     IBeacon public immutable sortedTrovesBeacon;
     IBeacon public immutable troveManagerBeacon;
     uint256 public immutable gasCompensation;
+    ICommunityIssuance public immutable communityIssuance;
+    IRewardManager public immutable rewardManager;
 
     ITroveManager[] public troveManagers;
 
@@ -48,6 +52,8 @@ contract Factory is IFactory, SatoshiOwnable {
         IStabilityPool _stabilityPoolProxy,
         IBeacon _sortedTrovesBeacon,
         IBeacon _troveManagerBeacon,
+        ICommunityIssuance _communityIssuance,
+        IRewardManager _rewardManager,
         uint256 _gasCompensation
     ) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -61,6 +67,8 @@ contract Factory is IFactory, SatoshiOwnable {
         sortedTrovesBeacon = _sortedTrovesBeacon;
         troveManagerBeacon = _troveManagerBeacon;
         gasCompensation = _gasCompensation;
+        communityIssuance = _communityIssuance;
+        rewardManager = _rewardManager;
     }
 
     function troveManagerCount() external view returns (uint256) {
@@ -94,7 +102,9 @@ contract Factory is IFactory, SatoshiOwnable {
             params.maxBorrowingFee,
             params.interestRateInBps,
             params.maxDebt,
-            params.MCR
+            params.MCR,
+            params.rewardRate,
+            params.claimStartTime
         );
 
         emit NewDeployment(collateralToken, priceFeed, troveManagerBeaconProxy, sortedTrovesBeaconProxy);
@@ -115,6 +125,7 @@ contract Factory is IFactory, SatoshiOwnable {
                 borrowerOperationsProxy,
                 liquidationManagerProxy,
                 priceFeedAggregatorProxy,
+                communityIssuance,
                 gasCompensation
             )
         );

@@ -19,11 +19,15 @@ import {TroveManager} from "../../src/core/TroveManager.sol";
 import {GasPool} from "../../src/core/GasPool.sol";
 import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
+import {OSHIToken} from "../../src/OSHI/OSHIToken.sol";
 import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
+import {OSHITokenTester} from "../../test/OSHITokenTester.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
+import {CommunityIssuance} from "../../src/OSHI/CommunityIssuance.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
+import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -34,18 +38,24 @@ import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
 import {IGasPool} from "../../src/interfaces/core/IGasPool.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
+import {IOSHIToken} from "../../src/interfaces/core/IOSHIToken.sol";
 import {IFactory} from "../../src/interfaces/core/IFactory.sol";
+import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
+import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {
     DEPLOYER,
     OWNER,
     GUARDIAN,
     FEE_RECEIVER,
     REWARD_MANAGER,
+    VAULT,
     DEBT_TOKEN_NAME,
     DEBT_TOKEN_SYMBOL,
     GAS_COMPENSATION,
-    BO_MIN_NET_DEBT
+    BO_MIN_NET_DEBT,
+    _1_MILLION,
+    SP_CLAIM_START_TIME
 } from "../TestConfig.sol";
 
 struct LocalVars {
@@ -68,7 +78,7 @@ struct LocalVars {
     uint256 repayDebtAmt;
     uint256 withdrawDebtAmt;
     //before state vars
-    uint256 feeReceiverDebtAmtBefore;
+    uint256 rewardManagerDebtAmtBefore;
     uint256 gasPoolDebtAmtBefore;
     uint256 userBalanceBefore;
     uint256 userCollAmtBefore;
@@ -76,7 +86,7 @@ struct LocalVars {
     uint256 troveManagerCollateralAmtBefore;
     uint256 debtTokenTotalSupplyBefore;
     // after state vars
-    uint256 feeReceiverDebtAmtAfter;
+    uint256 rewardManagerDebtAmtAfter;
     uint256 gasPoolDebtAmtAfter;
     uint256 userBalanceAfter;
     uint256 userCollAmtAfter;
@@ -87,8 +97,11 @@ struct LocalVars {
 
 abstract contract DeployBase is Test {
     /* mock contracts for testing */
+    IWETH weth;
     IERC20 collateralMock;
     RoundData internal initRoundData;
+    uint256 TM_ALLOCATION;
+    uint256 SP_ALLOCATION;
 
     /* implementation contracts addresses */
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -102,6 +115,8 @@ abstract contract DeployBase is Test {
     ISatoshiCore satoshiCore;
     IDebtToken debtToken;
     IFactory factory;
+    ICommunityIssuance communityIssuance;
+    IOSHIToken oshiToken;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
@@ -112,6 +127,9 @@ abstract contract DeployBase is Test {
     IBeacon troveManagerBeacon;
     /* DebetTokenTester contract */
     DebtTokenTester debtTokenTester;
+    OSHITokenTester oshiTokenTester;
+    /* Reward Manager contract */
+    IRewardManager rewardManager;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -126,6 +144,9 @@ abstract contract DeployBase is Test {
     address cpSatoshiCoreAddr;
     address cpDebtTokenAddr;
     address cpFactoryAddr;
+    address cpCommunityIssuanceAddr;
+    address cpOshiTokenAddr;
+    address cpRewardManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -138,6 +159,8 @@ abstract contract DeployBase is Test {
     address oracleMockAddr;
 
     function setUp() public virtual {
+        // deploy WETH
+        weth = IWETH(_deployWETH(DEPLOYER));
         // deploy ERC20
         collateralMock = new ERC20("Collateral", "COLL");
         initRoundData = RoundData({
@@ -146,6 +169,9 @@ abstract contract DeployBase is Test {
             updatedAt: block.timestamp,
             answeredInRound: 1
         });
+
+        TM_ALLOCATION = 20 * _1_MILLION;
+        SP_ALLOCATION = 10 * _1_MILLION;
     }
 
     function _deploySetupAndInstance(
@@ -170,6 +196,8 @@ abstract contract DeployBase is Test {
         (ISortedTroves sortedTrovesBeaconProxy, ITroveManager troveManagerBeaconProxy) =
             _deployNewInstance(owner, collateral, IPriceFeed(priceFeedAddr), deploymentParams);
 
+        _setConfigByOwner(owner, troveManagerBeaconProxy);
+
         return (sortedTrovesBeaconProxy, troveManagerBeaconProxy);
     }
 
@@ -190,6 +218,9 @@ abstract contract DeployBase is Test {
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -226,6 +257,9 @@ abstract contract DeployBase is Test {
         _deploySatoshiCore(deployer);
         _deployDebtToken(deployer);
         _deployFactory(deployer);
+        _deployCommunityIssuance(deployer);
+        _deployOSHIToken(deployer);
+        _deployRewardManager(deployer);
     }
 
     function _deployUUPSUpgradeableContracts(address deployer) internal {
@@ -299,8 +333,30 @@ abstract contract DeployBase is Test {
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
+            ICommunityIssuance(cpCommunityIssuanceAddr),
+            IRewardManager(cpRewardManagerAddr),
             GAS_COMPENSATION
         );
+        vm.stopPrank();
+    }
+
+    function _deployCommunityIssuance(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(communityIssuance == ICommunityIssuance(address(0))); // check if factory contract is not deployed
+        communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
+        vm.stopPrank();
+    }
+
+    function _deployOSHIToken(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(oshiToken == IOSHIToken(address(0))); // check if oshi token contract is not deployed
+        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, VAULT);
+        vm.stopPrank();
+    }
+
+    function _deployRewardManager(address deployer) internal {
+        vm.prank(deployer);
+        rewardManager = new RewardManager(ISatoshiCore(cpSatoshiCoreAddr));
         vm.stopPrank();
     }
 
@@ -362,7 +418,8 @@ abstract contract DeployBase is Test {
                 ISatoshiCore(cpSatoshiCoreAddr),
                 IDebtToken(cpDebtTokenAddr),
                 IFactory(cpFactoryAddr),
-                ILiquidationManager(cpLiquidationManagerProxyAddr)
+                ILiquidationManager(cpLiquidationManagerProxyAddr),
+                ICommunityIssuance(cpCommunityIssuanceAddr)
             )
         );
         stabilityPoolProxy = IStabilityPool(address(new ERC1967Proxy(address(stabilityPoolImpl), data)));
@@ -473,20 +530,88 @@ abstract contract DeployBase is Test {
         return wethAddr;
     }
 
-    function _deploySatoshiBORouter(address deployer, IWETH weth) internal returns (address) {
+    function _deploySatoshiBORouter(address deployer, IWETH _weth) internal returns (address) {
         vm.startPrank(deployer);
         assert(debtToken != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
-        assert(weth != IWETH(address(0))); // check if WETH contract is deployed
+        assert(_weth != IWETH(address(0))); // check if WETH contract is deployed
         address satoshiBORouterAddr = address(new SatoshiBORouter(debtToken, borrowerOperationsProxy, weth));
         vm.stopPrank();
 
         return satoshiBORouterAddr;
     }
 
-    /* ============ Deploy DebtTokenTester Contracts ============ */
+    /* ============ Set Config by Owner after Deployments ============ */
+
+    function _setConfigByOwner(address owner, ITroveManager troveManagerBeaconProxy) internal {
+        // set allocation for the stability pool
+        address[] memory _recipients = new address[](1);
+        _recipients[0] = address(stabilityPoolProxy);
+        uint256[] memory _amount = new uint256[](1);
+        _amount[0] = SP_ALLOCATION;
+        _setRewardManager(owner, address(rewardManager));
+        _setTMCommunityIssuanceAllocation(owner, troveManagerBeaconProxy);
+        _setSPCommunityIssuanceAllocation(owner);
+        _setAddress(owner, borrowerOperationsProxy, stabilityPoolProxy, weth, debtToken, oshiToken);
+        _registerTroveManager(owner, troveManagerBeaconProxy);
+        _setClaimStartTime(owner, SP_CLAIM_START_TIME);
+    }
+
+    function _registerTroveManager(address owner, ITroveManager _troveManager) internal {
+        vm.startPrank(owner);
+        rewardManager.registerTroveManager(_troveManager);
+        vm.stopPrank();
+    }
+
+    function _setRewardManager(address owner, address _rewardManager) internal {
+        vm.startPrank(owner);
+        satoshiCore.setRewardManager(_rewardManager);
+        vm.stopPrank();
+    }
+
+    function _setTMCommunityIssuanceAllocation(address owner, ITroveManager troveManagerBeaconProxy) internal {
+        address[] memory _recipients = new address[](1);
+        _recipients[0] = address(troveManagerBeaconProxy);
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = TM_ALLOCATION;
+        vm.startPrank(owner);
+        communityIssuance.setAllocated(_recipients, _amounts);
+        vm.stopPrank();
+    }
+
+    function _setSPCommunityIssuanceAllocation(address owner) internal {
+        address[] memory _recipients = new address[](1);
+        _recipients[0] = cpStabilityPoolProxyAddr;
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = SP_ALLOCATION;
+        vm.startPrank(owner);
+        communityIssuance.setAllocated(_recipients, _amounts);
+        vm.stopPrank();
+    }
+
+    function _setAddress(
+        address owner,
+        IBorrowerOperations _borrowerOperations,
+        IStabilityPool _stabilityPoolProxy,
+        IWETH _weth,
+        IDebtToken _debtToken,
+        IOSHIToken _oshiToken
+    ) internal {
+        vm.startPrank(owner);
+        communityIssuance.setAddresses(_oshiToken, _stabilityPoolProxy);
+        rewardManager.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
+        vm.stopPrank();
+    }
+
+    function _setClaimStartTime(address owner, uint32 _claimStartTime) internal {
+        vm.startPrank(owner);
+        stabilityPoolProxy.setClaimStartTime(_claimStartTime);
+        vm.stopPrank();
+    }
+
+    /* ============ Deploy TokenTester Contracts ============ */
     function _deployDebtTokenTester() internal {
-        vm.startPrank(DEPLOYER);
+        vm.prank(DEPLOYER);
         debtTokenTester = new DebtTokenTester(
             DEBT_TOKEN_NAME,
             DEBT_TOKEN_SYMBOL,
@@ -497,6 +622,15 @@ abstract contract DeployBase is Test {
             gasPool,
             GAS_COMPENSATION
         );
+        // for testing purpose, set the debt token to the tester contract
+        vm.prank(satoshiCore.owner());
+        rewardManager.setAddresses(IBorrowerOperations(cpBorrowerOperationsProxyAddr), weth, debtTokenTester, oshiToken);
+        vm.stopPrank();
+    }
+
+    function _deployOSHITokenTester(address vault) internal {
+        vm.startPrank(DEPLOYER);
+        oshiTokenTester = new OSHITokenTester(address(communityIssuance), vault);
         vm.stopPrank();
     }
 }

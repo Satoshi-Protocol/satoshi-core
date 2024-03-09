@@ -24,6 +24,8 @@ import {
     SingleRedemptionValues,
     RewardSnapshot
 } from "../interfaces/core/ITroveManager.sol";
+import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
+import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 
 /**
  * @title Trove Manager Contract (Upgradeable)
@@ -34,6 +36,7 @@ import {
  */
 contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IDebtToken;
 
     // --- Connected contract declarations ---
 
@@ -41,6 +44,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     ILiquidationManager public liquidationManager;
     IGasPool public gasPool;
     IDebtToken public debtToken;
+    ICommunityIssuance public communityIssuance;
 
     IPriceFeedAggregator public priceFeedAggregator;
     IERC20 public collateralToken;
@@ -120,6 +124,15 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 public defaultedCollateral;
     uint256 public defaultedDebt;
 
+    // Reward token emission
+    uint256 public rewardIntegral;
+    uint128 public rewardRate; // fixed
+    uint256 public lastUpdate;
+    uint32 public claimStartTime;
+
+    mapping(address => uint256) public rewardIntegralFor;
+    mapping(address => uint256) private storedPendingReward;
+
     mapping(address => Trove) public troves;
     mapping(address => uint256) public surplusBalances;
 
@@ -141,6 +154,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         IBorrowerOperations _borrowerOperations,
         ILiquidationManager _liquidationManager,
         IPriceFeedAggregator _priceFeedAggregator,
+        ICommunityIssuance _communityIssuance,
         uint256 _gasCompensation
     ) external initializer {
         __SatoshiOwnable_init(_satoshiCore);
@@ -150,6 +164,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         borrowerOperations = _borrowerOperations;
         liquidationManager = _liquidationManager;
         priceFeedAggregator = _priceFeedAggregator;
+        communityIssuance = _communityIssuance;
+        lastUpdate = uint32(block.timestamp);
     }
 
     function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external {
@@ -213,7 +229,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 _maxBorrowingFee,
         uint256 _interestRateInBPS,
         uint256 _maxSystemDebt,
-        uint256 _MCR
+        uint256 _MCR,
+        uint128 _rewardRate,
+        uint32 _claimStartTime
     ) public {
         require(!sunsetting, "Cannot change after sunset");
         require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
@@ -236,6 +254,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         borrowingFeeFloor = _borrowingFeeFloor;
         maxBorrowingFee = _maxBorrowingFee;
         maxSystemDebt = _maxSystemDebt;
+        rewardRate = _rewardRate;
+        claimStartTime = _claimStartTime;
 
         require(_interestRateInBPS <= MAX_INTEREST_RATE_IN_BPS, "Interest > Maximum");
 
@@ -252,7 +272,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     function collectInterests() public {
         uint256 interestPayableCached = interestPayable;
         require(interestPayableCached > 0, "Nothing to collect");
-        debtToken.mint(SATOSHI_CORE.rewardManager(), interestPayableCached);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        debtToken.mint(address(this), interestPayableCached);
+        debtToken.safeIncreaseAllowance(rewardManager, interestPayableCached);
+        IRewardManager(rewardManager).increaseSATPerUintStaked(interestPayableCached);
         interestPayable = 0;
     }
 
@@ -594,7 +617,12 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         _requireUserAcceptsFee(totals.collateralFee, totals.totalCollateralDrawn, _maxFeePercentage);
 
-        _sendCollateral(SATOSHI_CORE.feeReceiver(), totals.collateralFee);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        if (totals.collateralFee > 0) {
+            totalActiveCollateral = totalActiveCollateral - totals.collateralFee;
+            collateralToken.safeIncreaseAllowance(rewardManager, totals.collateralFee);
+        }
+        IRewardManager(rewardManager).increaseCollPerUintStaked(totals.collateralFee);
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;
 
@@ -748,7 +776,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         arrayIndex = TroveOwners.length - 1;
         t.arrayIndex = uint128(arrayIndex);
 
-        // if (!_isRecoveryMode) _updateMintVolume(_borrower, _compositeDebt);
+        _updateIntegrals(_borrower, 0, supply);
 
         totalActiveCollateral = totalActiveCollateral + _collateralAmount;
         uint256 _newTotalDebt = supply + _compositeDebt;
@@ -901,6 +929,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         Trove storage t = troves[_borrower];
         if (t.status == Status.active) {
             uint256 troveInterestIndex = t.activeInterestIndex;
+            uint256 supply = totalActiveDebt;
             uint256 currentInterestIndex = _accrueActiveInterests();
             debt = t.debt;
             uint256 prevDebt = debt;
@@ -927,6 +956,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             if (prevDebt != debt) {
                 t.debt = debt;
             }
+            _updateIntegrals(_borrower, prevDebt, supply);
         }
         return (coll, debt);
     }
@@ -1031,7 +1061,12 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 collGasCompToLiquidator = _collGasComp / 2;
         uint256 collGasCompToFeeReceiver = _collGasComp - collGasCompToLiquidator;
         _sendCollateral(_liquidator, collGasCompToLiquidator);
-        _sendCollateral(SATOSHI_CORE.feeReceiver(), collGasCompToFeeReceiver);
+        address rewardManager = SATOSHI_CORE.rewardManager();
+        if (collGasCompToFeeReceiver > 0) {
+            totalActiveCollateral = totalActiveCollateral - collGasCompToFeeReceiver;
+            collateralToken.safeIncreaseAllowance(rewardManager, collGasCompToFeeReceiver);
+        }
+        IRewardManager(rewardManager).increaseCollPerUintStaked(collGasCompToFeeReceiver);
     }
 
     function _redistributeDebtAndColl(uint256 _debt, uint256 _coll) internal {
@@ -1143,6 +1178,91 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             currentInterestIndex =
                 currentInterestIndex + Math.mulDiv(currentInterestIndex, interestFactor, INTEREST_PRECISION);
         }
+    }
+
+    // --- Reward Emission ---
+    function _updateIntegrals(address account, uint256 balance, uint256 supply) internal {
+        // account, predebt, supply
+        uint256 integral = _updateRewardIntegral(supply);
+        _updateIntegralForAccount(account, balance, integral);
+    }
+
+    function _updateIntegralForAccount(address account, uint256 balance, uint256 currentIntegral) internal {
+        uint256 integralFor = rewardIntegralFor[account];
+
+        if (currentIntegral > integralFor) {
+            storedPendingReward[account] += (balance * (currentIntegral - integralFor)) / 1e18;
+            rewardIntegralFor[account] = currentIntegral;
+        }
+    }
+
+    function _updateRewardIntegral(uint256 supply) internal returns (uint256 integral) {
+        require(lastUpdate <= block.timestamp, "Invalid last update");
+        uint256 duration = block.timestamp - lastUpdate;
+        integral = rewardIntegral; // global integral
+        if (duration > 0) {
+            lastUpdate = block.timestamp;
+            if (supply > 0) {
+                integral += (duration * rewardRate * 1e18) / supply;
+                rewardIntegral = integral;
+            }
+        }
+
+        return integral;
+    }
+
+    // --- Reward Claim functions ---
+
+    function claimReward(address receiver) external returns (uint256) {
+        require(isClaimStart(), "TroveManager: Claim not started");
+        uint256 amount = _claimReward(msg.sender);
+
+        if (amount > 0) {
+            communityIssuance.transferAllocatedTokens(receiver, amount);
+        }
+        emit RewardClaimed(msg.sender, receiver, amount);
+        return amount;
+    }
+
+    function _claimReward(address account) internal returns (uint256) {
+        _applyPendingRewards(account);
+        uint256 amount = storedPendingReward[account];
+        if (amount > 0) storedPendingReward[account] = 0;
+
+        return amount;
+    }
+
+    function claimableReward(address account) external view returns (uint256) {
+        // previously calculated rewards
+        uint256 amount = storedPendingReward[account];
+
+        // pending active debt rewards
+        uint256 duration = block.timestamp - lastUpdate;
+        uint256 integral = rewardIntegral;
+        if (duration > 0) {
+            uint256 supply = totalActiveDebt;
+            if (supply > 0) {
+                integral += (duration * rewardRate * 1e18) / supply;
+            }
+        }
+        uint256 integralFor = rewardIntegralFor[account];
+
+        if (integral > integralFor) {
+            amount += (troves[account].debt * (integral - integralFor)) / 1e18;
+        }
+
+        return amount;
+    }
+
+    // set the time when the OSHI claim starts
+    function setClaimStartTime(uint32 _claimStartTime) external onlyOwner {
+        claimStartTime = _claimStartTime;
+        emit ClaimStartTimeSet(_claimStartTime);
+    }
+
+    // check the start time
+    function isClaimStart() public view returns (bool) {
+        return claimStartTime <= uint32(block.timestamp);
     }
 
     // --- Requires ---
