@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
-import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 
 /**
  * @title Satoshi Borrower Operations Router
  *        Handle the native token and ERC20 for the borrower operations
  */
 contract SatoshiBORouter is ISatoshiBORouter {
+    using SafeERC20 for *;
+
     IDebtToken public immutable debtToken;
     IBorrowerOperations public immutable borrowerOperationsProxy;
     IWETH public immutable weth;
@@ -191,7 +194,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
             weth.deposit{value: collAmount}();
         } else {
             if (msg.value != 0) revert InvalidMsgValue(msg.value);
-            collateralToken.transferFrom(msg.sender, address(this), collAmount);
+            collateralToken.safeTransferFrom(msg.sender, address(this), collAmount);
         }
 
         collateralToken.approve(address(borrowerOperationsProxy), collAmount);
@@ -205,20 +208,20 @@ contract SatoshiBORouter is ISatoshiBORouter {
             (bool success,) = payable(msg.sender).call{value: collAmount}("");
             if (!success) revert NativeTokenTransferFailed();
         } else {
-            collateralToken.transfer(msg.sender, collAmount);
+            collateralToken.safeTransfer(msg.sender, collAmount);
         }
     }
 
     function _beforeRepayDebt(uint256 debtAmount) private {
         if (debtAmount == 0) return;
 
-        debtToken.transferFrom(msg.sender, address(this), debtAmount);
+        debtToken.safeTransferFrom(msg.sender, address(this), debtAmount);
     }
 
     function _afterWithdrawDebt(uint256 debtAmount) private {
         if (debtAmount == 0) return;
 
-        debtToken.transfer(msg.sender, debtAmount);
+        debtToken.safeTransfer(msg.sender, debtAmount);
     }
 
     receive() external payable {

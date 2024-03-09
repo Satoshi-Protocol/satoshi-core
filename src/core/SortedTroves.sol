@@ -30,6 +30,7 @@ contract SortedTroves is ISortedTroves, SatoshiOwnable {
     function setConfig(ITroveManager _troveManager) external {
         require(address(troveManager) == address(0), "Already set");
         troveManager = _troveManager;
+        emit SetTroveManager(address(_troveManager));
     }
 
     /*

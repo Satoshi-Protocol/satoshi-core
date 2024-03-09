@@ -91,7 +91,7 @@ contract DebtToken is IDebtToken, ERC20 {
     // --- Functions for intra-Satoshi calls ---
 
     function mintWithGasCompensation(address _account, uint256 _amount) external returns (bool) {
-        require(msg.sender == address(borrowerOperations));
+        require(msg.sender == address(borrowerOperations), "DebtToken: Caller not BorrowerOps");
         _mint(_account, _amount);
         _mint(address(gasPool), DEBT_GAS_COMPENSATION);
 
@@ -99,7 +99,7 @@ contract DebtToken is IDebtToken, ERC20 {
     }
 
     function burnWithGasCompensation(address _account, uint256 _amount) external returns (bool) {
-        require(msg.sender == address(borrowerOperations));
+        require(msg.sender == address(borrowerOperations), "DebtToken: Caller not BorrowerOps");
         _burn(_account, _amount);
         _burn(address(gasPool), DEBT_GAS_COMPENSATION);
 

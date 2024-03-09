@@ -97,7 +97,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     }
 
     function _setMinNetDebt(uint256 _minNetDebt) internal {
-        require(_minNetDebt > 0);
+        require(_minNetDebt != 0, "BorrowerOps: Min net debt must be greater than 0");
         minNetDebt = _minNetDebt;
         emit MinNetDebtUpdated(_minNetDebt);
     }
@@ -231,7 +231,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         debtToken.mintWithGasCompensation(msg.sender, _debtAmount);
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }
@@ -248,7 +248,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         _adjustTrove(troveManager, account, 0, _collateralAmount, 0, 0, false, _upperHint, _lowerHint);
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }
@@ -264,7 +264,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         _adjustTrove(troveManager, account, 0, 0, _collWithdrawal, 0, false, _upperHint, _lowerHint);
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }
@@ -282,7 +282,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         _adjustTrove(troveManager, account, _maxFeePercentage, 0, 0, _debtAmount, true, _upperHint, _lowerHint);
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }
@@ -298,7 +298,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         _adjustTrove(troveManager, account, 0, 0, 0, _debtAmount, false, _upperHint, _lowerHint);
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }
@@ -329,7 +329,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         );
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }
@@ -366,7 +366,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         vars.MCR = troveManager.MCR();
 
         if (_isDebtIncrease) {
-            require(_debtChange > 0, "BorrowerOps: Debt increase requires non-zero debtChange");
+            require(_debtChange != 0, "BorrowerOps: Debt increase requires non-zero debtChange");
             _requireValidMaxFeePercentage(_maxFeePercentage);
             if (!isRecoveryMode) {
                 // If the adjustment incorporates a debt increase and system is in Normal Mode, trigger a borrowing fee
@@ -381,7 +381,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         );
 
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Debt
-        if (!_isDebtIncrease && _debtChange > 0) {
+        if (!_isDebtIncrease && _debtChange != 0) {
             _requireAtLeastMinNetDebt(_getNetDebt(vars.debt) - vars.netDebtChange);
         }
 
@@ -423,7 +423,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         debtToken.burnWithGasCompensation(msg.sender, debt - DEBT_GAS_COMPENSATION);
 
         // collect interest payable to rewardManager
-        if (troveManager.interestPayable() > 0) {
+        if (troveManager.interestPayable() != 0) {
             troveManager.collectInterests();
         }
     }

@@ -75,7 +75,7 @@ contract Factory is IFactory, SatoshiOwnable {
         return troveManagers.length;
     }
 
-    function deployNewInstance(IERC20 collateralToken, IPriceFeed priceFeed, DeploymentParams memory params)
+    function deployNewInstance(IERC20 collateralToken, IPriceFeed priceFeed, DeploymentParams calldata params)
         external
         onlyOwner
     {

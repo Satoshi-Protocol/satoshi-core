@@ -23,6 +23,7 @@ struct Data {
 interface ISortedTroves is ISatoshiOwnable {
     event NodeAdded(address _id, uint256 _NICR);
     event NodeRemoved(address _id);
+    event SetTroveManager(address _troveManager);
 
     function initialize(ISatoshiCore _satoshiCore) external;
 
