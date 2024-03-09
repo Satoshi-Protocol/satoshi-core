@@ -26,6 +26,7 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user2;
     address user3;
     address user4;
+    address user5;
     uint256 maxFeePercentage = 0.05e18; // 5%
 
     function setUp() public override {
@@ -36,6 +37,7 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user2 = vm.addr(2);
         user3 = vm.addr(3);
         user4 = vm.addr(4);
+        user5 = vm.addr(5);
 
         // setup contracts and deploy one instance
         (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
@@ -63,6 +65,10 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         );
     }
 
+    function _closeTrove(address caller) internal {
+        TroveBase.closeTrove(borrowerOperationsProxy, troveManagerBeaconProxy, caller);
+    }
+
     function _provideToSP(address caller, uint256 amount) internal {
         TroveBase.provideToSP(stabilityPoolProxy, caller, amount);
     }
@@ -73,6 +79,12 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     function _updateRoundData(RoundData memory data) internal {
         TroveBase.updateRoundData(oracleMockAddr, DEPLOYER, data);
+    }
+
+    function _transfer(address caller, address token, address to, uint256 amount) internal {
+        vm.startPrank(caller);
+        IERC20(token).transfer(to, amount);
+        vm.stopPrank();
     }
 
     function _claimCollateralGains(address caller) internal {
@@ -98,6 +110,83 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 expectedDebt = user1DebtBefore * (10000 + INTEREST_RATE_IN_BPS) / 10000;
         uint256 delta = SatoshiMath._getAbsoluteDifference(expectedDebt, user1DebtAfter);
         assert(delta < 1000);
+    }
+
+    function test_AccrueInterst2yCorrect() public {
+        // open a trove
+        _openTrove(user1, 1e18, 10000e18);
+        _transfer(user1, address(debtToken), user2, 60e18);
+        _transfer(user1, address(debtToken), user3, 60e18);
+        _transfer(user1, address(debtToken), user4, 60e18);
+        (uint256 user1CollBefore, uint256 user1DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+
+        vm.warp(block.timestamp + 365 days);
+        _updateRoundData(
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+        _openTrove(user2, 1e18, 60e18);
+
+        vm.warp(block.timestamp + 65 days);
+        _updateRoundData(
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+        _openTrove(user3, 1e18, 60e18);
+
+        vm.warp(block.timestamp + 100 days);
+        _updateRoundData(
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+        _openTrove(user4, 1e18, 60e18);
+
+        vm.warp(block.timestamp + 100 days);
+        _updateRoundData(
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+        _openTrove(user5, 1e18, 60e18);
+
+        vm.warp(block.timestamp + 10 days);
+        _updateRoundData(
+            RoundData({
+                answer: 40000_00_000_000,
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+        _closeTrove(user2);
+
+        // 365 days later
+        vm.warp(block.timestamp + 90 days);
+
+        (uint256 user1CollAfter, uint256 user1DebtAfter) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
+        assertEq(user1CollAfter, user1CollBefore);
+
+        // console.log("user1DebtBefore", user1DebtBefore);
+        // console.log("user1DebtAfter ", user1DebtAfter);
+        // check the debt
+        // uint256 expectedDebt = user1DebtBefore * (10000 + INTEREST_RATE_IN_BPS) / 10000;
+        // uint256 delta = SatoshiMath._getAbsoluteDifference(expectedDebt, user1DebtAfter);
+        // assert(delta < 1000);
     }
 
     function test_AccrueInterst2TroveCorrect() public {

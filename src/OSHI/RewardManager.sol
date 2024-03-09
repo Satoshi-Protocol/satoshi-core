@@ -254,6 +254,21 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         return availableUnstakeAmount;
     }
 
+    // --- Getter Functions ---
+
+    function getUnlockedAmount(address _user) external view returns (uint256) {
+        uint32[NUMBER_OF_LOCK_DURATIONS] memory nextUnlockIndex = stakeData[_user].nextUnlockIndex;
+        uint256 unlockedAmount;
+        for (uint256 i; i < NUMBER_OF_LOCK_DURATIONS; ++i) {
+            Stake[] memory userStake = userStakes[_user][i];
+            for (uint256 j = nextUnlockIndex[i]; j < userStake.length; ++j) {
+                if (userStake[j].endTime > block.timestamp) break;
+                unlockedAmount += userStake[j].amount;
+            }
+        }
+        return unlockedAmount;
+    }
+
     // --- Admin Functions ---
     function registerTroveManager(address _troveManager) external onlyOwner {
         registeredTroveManagers.push(_troveManager);

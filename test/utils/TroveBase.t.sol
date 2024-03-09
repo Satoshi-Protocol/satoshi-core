@@ -47,6 +47,16 @@ abstract contract TroveBase is Test {
         vm.stopPrank();
     }
 
+    function closeTrove(
+        IBorrowerOperations borrowerOperationsProxy, 
+        ITroveManager troveManagerBeaconProxy,
+        address caller
+    ) internal {
+        vm.startPrank(caller);
+        borrowerOperationsProxy.closeTrove(troveManagerBeaconProxy, caller);
+        vm.stopPrank();
+    }
+
     function provideToSP(IStabilityPool stabilityPoolProxy, address caller, uint256 amount) internal {
         vm.startPrank(caller);
         stabilityPoolProxy.provideToSP(amount);
