@@ -3,12 +3,12 @@ pragma solidity ^0.8.13;
 
 import {_1_MILLION} from "./DeploySetupConfig.sol";
 
-address constant FACTORY_ADDRESS = 0xe5aD859a3b4e7FCDf1cAE58c41115B6f3f1AF6D2;
-address constant PRICE_FEED_AGGREGATOR_ADDRESS = 0xd7505eCe56b6318749f3DDFdD6629c9302a8fD66;
-address constant OSHI_TOKEN_ADDRESS = 0x21BB93c193394C10702b69F9da682E64E01C23B8;
+address constant FACTORY_ADDRESS = 0x61C3ee94413120A8cE04dF89715A2B23E515C29B;
+address constant PRICE_FEED_AGGREGATOR_ADDRESS = 0xdD3bcDF8dd3f70fe2133a0Fe718ABe0B287De334;
+address constant OSHI_TOKEN_ADDRESS = 0xb8B616a6C15B6F6E6961804C08DBbd21727bb054;
 
 //NOTE: custom `PriceFeed.sol` contract for the collateral should be deploy first
-address constant PRICE_FEED_ADDRESS = 0x477FB5860dd4804845e4fe10041C16d029b10079;
+address constant PRICE_FEED_ADDRESS = 0x73934242C487e9b6B9FfBca700CE31F0FD205931;
 address constant COLLATERAL_ADDRESS = 0x51abb19F1ebc7B64040aFd0ef3C789d75C8707e0;
 
 uint256 constant MINUTE_DECAY_FACTOR = 999037758833783500; //  (half life of 12 hours)
@@ -23,4 +23,4 @@ uint256 constant MCR = 11 * 1e17; //  (110%)
 // OSHI token configuration
 uint256 constant TM_ALLOCATION = 20 * _1_MILLION; //  20,000,000 OSHI (20% of total supply)
 uint128 constant REWARD_RATE = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
-uint32 constant TM_CLAIM_START_TIME = 1709992800; 
+uint32 constant TM_CLAIM_START_TIME = 1710079200; 
