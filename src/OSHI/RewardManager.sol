@@ -50,9 +50,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     uint256 public satForFeeReceiver;
 
     // User snapshots of F_SAT and F_COLL, taken at the point at which their latest deposit was made
-    mapping(address => Snapshot) public snapshots;
-    mapping(address => mapping(uint256 => Stake[])) public userStakes;
-    mapping(address => StakeData) public stakeData;
+    mapping(address => Snapshot) internal snapshots;
+    mapping(address => mapping(uint256 => Stake[])) internal userStakes;
+    mapping(address => StakeData) internal stakeData;
 
     constructor(ISatoshiCore _satoshiCore) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -253,6 +253,19 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
             }
         }
         return availableUnstakeAmount;
+    }
+
+
+    function getSnapshot(address _user) external view returns (Snapshot memory) {
+        return snapshots[_user];
+    }
+
+    function getUserStakes(address _user, uint256 _index) external view returns (Stake[] memory) {
+        return userStakes[_user][_index];
+    }
+
+    function getStakeData(address _user) external view returns (StakeData memory) {
+        return stakeData[_user];
     }
 
     // --- Admin Functions ---

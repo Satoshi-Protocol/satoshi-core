@@ -80,4 +80,7 @@ interface IRewardManager is ISatoshiOwnable {
     function collTokenIndex(address _collToken) external view returns (uint256);
     function totalOSHIWeightedStaked() external view returns (uint256);
     function getAvailableUnstakeAmount(address _user) external view returns (uint256);
+    function getSnapshot(address _user) external view returns (Snapshot memory);
+    function getUserStakes(address _user, uint256 _index) external view returns (Stake[] memory);
+    function getStakeData(address _user) external view returns (StakeData memory);
 }
