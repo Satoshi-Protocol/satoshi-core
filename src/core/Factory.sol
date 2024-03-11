@@ -39,8 +39,9 @@ contract Factory is IFactory, SatoshiOwnable {
     uint256 public immutable gasCompensation;
     ICommunityIssuance public immutable communityIssuance;
     IRewardManager public immutable rewardManager;
-
     ITroveManager[] public troveManagers;
+
+    uint128 constant maxRewardRate = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
 
     constructor(
         ISatoshiCore _satoshiCore,
@@ -130,5 +131,16 @@ contract Factory is IFactory, SatoshiOwnable {
             )
         );
         return ITroveManager(address(new BeaconProxy(address(troveManagerBeacon), data)));
+    }
+
+    function setRewardRate(uint128[] calldata _numerator, uint128 _denominator) external onlyOwner {
+        require(_numerator.length == troveManagers.length, "Factory: invalid length");
+        uint128 totalRewardRate;
+        for (uint256 i; i < _numerator.length; ++i) {
+            uint128 troveRewardRate = _numerator[i] * maxRewardRate / _denominator;
+            totalRewardRate += troveRewardRate;
+            troveManagers[i].setRewardRate(troveRewardRate);
+        }
+        require(totalRewardRate <= maxRewardRate, "Factory: invalid total reward rate");
     }
 }

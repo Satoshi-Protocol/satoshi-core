@@ -163,6 +163,8 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
         uint32 _claimStartTime
     ) external;
 
+    function setRewardRate(uint128 _newRewardRate) external;
+
     function setPaused(bool _paused) external;
 
     function startSunset() external;
@@ -321,4 +323,10 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function setClaimStartTime(uint32 _claimStartTime) external;
 
     function isClaimStart() external view returns (bool);
+
+    function rewardRate() external view returns (uint128);
+
+    function lastUpdate() external view returns (uint256);
+
+    function claimStartTime() external view returns (uint32);
 }

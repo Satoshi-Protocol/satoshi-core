@@ -45,6 +45,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     IGasPool public gasPool;
     IDebtToken public debtToken;
     ICommunityIssuance public communityIssuance;
+    address public factory;
 
     IPriceFeedAggregator public priceFeedAggregator;
     IERC20 public collateralToken;
@@ -165,7 +166,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         liquidationManager = _liquidationManager;
         priceFeedAggregator = _priceFeedAggregator;
         communityIssuance = _communityIssuance;
-        lastUpdate = uint32(block.timestamp);
+        lastUpdate = block.timestamp;
+        factory = msg.sender;
     }
 
     function setConfig(ISortedTroves _sortedTroves, IERC20 _collateralToken) external {
@@ -267,6 +269,12 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             interestRate = newInterestRate;
         }
         MCR = _MCR;
+    }
+
+    function setRewardRate(uint128 _newRewardRate) external {
+        require(msg.sender == factory, "TroveManager: Only factory");
+        _updateRewardIntegral(totalActiveDebt);
+        rewardRate = _newRewardRate;
     }
 
     function collectInterests() public {
@@ -1145,6 +1153,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     }
 
     function _updateBalances() private {
+        _updateRewardIntegral(totalActiveDebt);
         _accrueActiveInterests();
     }
 
@@ -1211,7 +1220,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         return integral;
     }
 
-    // --- Reward Claim functions ---
+    // --- OSHI Reward Claim functions ---
 
     function claimReward(address receiver) external returns (uint256) {
         require(isClaimStart(), "TroveManager: Claim not started");
