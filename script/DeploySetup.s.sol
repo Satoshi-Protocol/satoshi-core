@@ -284,7 +284,8 @@ contract DeploySetupScript is Script {
         multiTroveGetter = new MultiTroveGetter();
 
         // SatoshiBORouter
-        address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, ++nonce);
+        nonce = vm.getNonce(deployer);
+        address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, nonce);
         address cpReferralManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         satoshiBORouter = new SatoshiBORouter(
             debtToken, borrowerOperationsProxy, IReferralManager(cpReferralManagerAddr), IWETH(WETH_ADDRESS)
