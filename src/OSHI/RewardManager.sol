@@ -122,7 +122,8 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
                     userStakes[msg.sender][i][j].amount -= withdrawAmount;
                 }
                 // set next unlock index
-                nextUnlockIndex[i]++;
+                if (userStakes[msg.sender][i][j].amount == 0)
+                    nextUnlockIndex[i]++;
             }
             // update next unlock index
             data.nextUnlockIndex[i] = nextUnlockIndex[i];

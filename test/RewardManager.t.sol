@@ -219,6 +219,30 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
     }
 
+    function test_stakeAndUnstakePartial() public {
+        // user1 open a trove
+        _openTrove(user1, 1e18, 1000e18);
+        vm.warp(block.timestamp + 10 days);
+        // user1 claim OSHI reward
+        uint256 OSHIAmount = _troveClaimReward(user1);
+        // user1 stake OSHI to reward manager
+        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
+        vm.warp(block.timestamp + 1 days);
+        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
+
+        // 3 months later, user1 can unstake OSHI
+        vm.warp(block.timestamp + 89 days);
+        uint256 unlockedAmount = rewardManager.getAvailableUnstakeAmount(user1);
+        _unstakeOSHIFromRewardManager(user1, OSHIAmount / 2 - 1);
+        vm.warp(block.timestamp + 1 days);
+        _unstakeOSHIFromRewardManager(user1, OSHIAmount / 2 + 1);
+        assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
+        assertEq(oshiToken.balanceOf(user1), OSHIAmount);
+        // assertEq(OSHIAmount, unlockedAmount);
+        assertEq(rewardManager.getPendingSATGain(user1), 0);
+        assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
+    }
+
     function test_unstake12MonthFromRMAfterUnlock() public {
         // user1 open a trove
         _openTrove(user1, 1e18, 1000e18);
