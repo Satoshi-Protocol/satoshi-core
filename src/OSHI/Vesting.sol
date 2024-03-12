@@ -32,37 +32,34 @@ contract Vesting is Ownable {
         _start = _startTimestamp + _TWELVE_MONTHS; // 12 month cliff
         token = IERC20(_token);
         _transferOwnership(_beneficiary);
-
-        // transfer OSHI token to this contract
-        token.safeTransferFrom(msg.sender, address(this), _amount);
         emit TokenVested(_beneficiary, _amount, _start);
     }
 
     /**
      * @dev Getter for the start timestamp.
      */
-    function start() public view virtual returns (uint256) {
+    function start() public view returns (uint256) {
         return _start;
     }
 
     /**
      * @dev Getter for the vesting duration.
      */
-    function duration() public view virtual returns (uint256) {
+    function duration() public pure returns (uint256) {
         return _duration;
     }
 
     /**
      * @dev Getter for the end timestamp.
      */
-    function end() public view virtual returns (uint256) {
+    function end() public view returns (uint256) {
         return start() + duration();
     }
 
     /**
      * @dev Amount of token already released
      */
-    function released() public view virtual returns (uint256) {
+    function released() public view returns (uint256) {
         return _erc20Released;
     }
 
@@ -70,7 +67,7 @@ contract Vesting is Ownable {
      * @dev Getter for the amount of releasable `token` tokens. `token` should be the address of an
      * IERC20 contract.
      */
-    function releasable() public view virtual returns (uint256) {
+    function releasable() public view returns (uint256) {
         return vestedAmount(uint64(block.timestamp)) - released();
     }
 
@@ -79,7 +76,7 @@ contract Vesting is Ownable {
      *
      * Emits a {TokenReleased} event.
      */
-    function release() public virtual {
+    function release() public {
         uint256 amount = releasable();
         _erc20Released += amount;
         emit TokenReleased(address(token), amount);
@@ -89,7 +86,7 @@ contract Vesting is Ownable {
     /**
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
      */
-    function vestedAmount(uint64 timestamp) public view virtual returns (uint256) {
+    function vestedAmount(uint64 timestamp) public view returns (uint256) {
         return _vestingSchedule(token.balanceOf(address(this)) + released(), timestamp);
     }
 
@@ -97,7 +94,7 @@ contract Vesting is Ownable {
      * @dev Virtual implementation of the vesting formula. This returns the amount vested, as a function of time, for
      * an asset given its total historical allocation.
      */
-    function _vestingSchedule(uint256 totalAllocation, uint64 timestamp) internal view virtual returns (uint256) {
+    function _vestingSchedule(uint256 totalAllocation, uint64 timestamp) internal view returns (uint256) {
         if (timestamp < start()) {
             return 0;
         } else if (timestamp >= end()) {

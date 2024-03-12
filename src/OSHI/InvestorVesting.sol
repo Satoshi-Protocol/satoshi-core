@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Investor Vesting Contract
- *        Rule: Release 10% at M4, 6 month cliff, 24 month linear vesting
+ *        Rule: Release 10% at M4, 6 months cliff, 24 months linear vesting
  */
 
 contract InvestorVesting is Ownable {
@@ -16,8 +16,8 @@ contract InvestorVesting is Ownable {
     event TokenReleased(address indexed, uint256);
     event TokenVested(address, uint256, uint64);
 
-    uint256 private _erc20Released;
-    uint256 private _tokenReleasedM4;
+    uint256 private _tokenReleased;
+    uint256 private _tokenReleasedAtM4;
     uint256 private _tokenVestingAmount;
     uint64 private immutable _start;
     uint64 private constant _duration = 30 days * 24;
@@ -27,56 +27,57 @@ contract InvestorVesting is Ownable {
     IERC20 public immutable token;  // OSHI token
     
     /**
-     * @dev Sets the sender as the satoshi owner, the beneficiary as the pending owner, the start timestamp and the
+     * @dev Sets the beneficiary as the owner, the start timestamp and the
      * vesting duration of the vesting wallet.
      */
     constructor(address _token, uint256 _amount, address _beneficiary, uint64 startTimestamp) Ownable() {
         require(_beneficiary != address(0), "TeamVesting: beneficiary is the zero address");
         _start = startTimestamp;
         token = IERC20(_token);
-        _tokenReleasedM4 = _amount / _TEN_PERCENT; // release 10% at M4
-        _tokenVestingAmount = _amount - _tokenReleasedM4;
+        _tokenReleasedAtM4 = _amount / _TEN_PERCENT; // release 10% at M4
+        _tokenVestingAmount = _amount - _tokenReleasedAtM4;
         _transferOwnership(_beneficiary);
-
-        // transfer OSHI token to this contract
-        token.safeTransferFrom(msg.sender, address(this), _amount);
         emit TokenVested(_beneficiary, _amount, _start);
     }
 
     /**
      * @dev Getter for the start timestamp.
      */
-    function start() public view virtual returns (uint256) {
+    function start() public view returns (uint256) {
         return _start;
     }
 
     /**
      * @dev Getter for the vesting duration.
      */
-    function duration() public view virtual returns (uint256) {
+    function duration() public pure returns (uint256) {
         return _duration;
     }
 
     /**
      * @dev Getter for the end timestamp.
      */
-    function end() public view virtual returns (uint256) {
+    function end() public view returns (uint256) {
         return start() + _SIX_MONTHS + duration();
     }
 
     /**
-     * @dev Amount of token already released
+     * @dev Amount of token already released (linear vesting)
      */
-    function released() public view virtual returns (uint256) {
-        return _erc20Released;
+    function released() public view returns (uint256) {
+        return _tokenReleased;
     }
 
     /**
      * @dev Getter for the amount of releasable `token` tokens. `token` should be the address of an
      * IERC20 contract.
      */
-    function releasable() public view virtual returns (uint256) {
+    function releasable() public view returns (uint256) {
         return vestedAmount(uint64(block.timestamp)) - released();
+    }
+
+    function unreleased() external view returns (uint256) {
+        return _tokenVestingAmount + _tokenReleasedAtM4;
     }
 
     /**
@@ -84,28 +85,34 @@ contract InvestorVesting is Ownable {
      *
      * Emits a {TokenReleased} event.
      */
-    function releaseAfterM6() public virtual {
+    function release() public {
+        if (_tokenReleasedAtM4 > 0) {
+            releaseAtM4();
+        }
+        releaseAfterM6();
+    }
+
+    function releaseAfterM6() public {
         uint256 amount = releasable();
-        _erc20Released += amount;
+        _tokenReleased += amount;
         _tokenVestingAmount -= amount;
-        emit TokenReleased(address(token), amount);
         token.safeTransfer(owner(), amount);
+        emit TokenReleased(address(token), amount);
     }
 
     function releaseAtM4() public {
         require(block.timestamp >= start() + _FOUR_MONTHS, "InvestorVesting: Month 4 not reached");
-        require(_tokenReleasedM4 > 0, "InvestorVesting: No tokens to release");
-        _tokenReleasedM4 = 0;
+        require(_tokenReleasedAtM4 > 0, "InvestorVesting: No tokens to release");
+        _tokenReleasedAtM4 = 0;
 
-        // Add the logic to transfer the tokens from the contract to the investor
-        token.safeTransfer(owner(), _tokenReleasedM4);
-        emit TokenReleased(address(token), _tokenReleasedM4);
+        token.safeTransfer(owner(), _tokenReleasedAtM4);
+        emit TokenReleased(address(token), _tokenReleasedAtM4);
     }
 
     /**
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
      */
-    function vestedAmount(uint64 timestamp) public view virtual returns (uint256) {
+    function vestedAmount(uint64 timestamp) public view returns (uint256) {
         return _vestingSchedule(_tokenVestingAmount + released(), timestamp);
     }
 
@@ -113,8 +120,8 @@ contract InvestorVesting is Ownable {
      * @dev Virtual implementation of the vesting formula. This returns the amount vested, as a function of time, for
      * an asset given its total historical allocation.
      */
-    function _vestingSchedule(uint256 totalAllocation, uint64 timestamp) internal view virtual returns (uint256) {
-        if (timestamp < start()) {
+    function _vestingSchedule(uint256 totalAllocation, uint64 timestamp) internal view returns (uint256) {
+        if (timestamp < start() + _SIX_MONTHS) {
             return 0;
         } else if (timestamp >= end()) {
             return totalAllocation;
