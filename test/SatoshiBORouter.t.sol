@@ -26,14 +26,12 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
     ISatoshiBORouter satoshiBORouter;
     IReferralManager referralManager;
     address user;
-    address referrer;
 
     function setUp() public override {
         super.setUp();
 
         // testing user
         user = vm.addr(1);
-        referrer = vm.addr(2);
 
         // use WETH as collateral
         weth = IWETH(_deployWETH(DEPLOYER));
@@ -112,7 +110,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.debtAmt,
             vars.upperHint,
             vars.lowerHint,
-            referrer
+            address(0)
         );
 
         // state after

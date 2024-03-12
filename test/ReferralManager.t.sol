@@ -53,6 +53,14 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
             ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER, IReferralManager(cpReferralManagerAddr)));
         referralManager = IReferralManager(_deployReferralManager(DEPLOYER, ISatoshiBORouter(cpSatoshiBORouterAddr)));
 
+        // referrer set delegate approval for satoshiBORouter
+        vm.startPrank(referrer);
+        borrowerOperationsProxy.setDelegateApproval(address(satoshiBORouter), true);
+        vm.stopPrank();
+        // referrer open trove first
+        deal(referrer, 1e18);
+        _openTrove(referrer);
+
         // user set delegate approval for satoshiBORouter
         vm.startPrank(user);
         borrowerOperationsProxy.setDelegateApproval(address(satoshiBORouter), true);
@@ -298,7 +306,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
     function testFailExecuteReferral() public {
         vm.startPrank(user);
 
-        referralManager.executeReferral(user, user, 10000);
+        referralManager.executeReferral(user, user, 10000, troveManagerBeaconProxy);
 
         vm.stopPrank();
     }
@@ -346,6 +354,26 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         assertEq(totalPointsAfter, totalPointsBefore);
         assertEq(referrerPointsAfter, referrerPointsBefore);
 
+        vm.stopPrank();
+    }
+
+    // referrer open trove first
+    function _openTrove(address addr) internal {
+        vm.startPrank(addr);
+        LocalVars memory vars;
+        vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
+        vars.debtAmt = 10000e18; // 10000 USD
+        vars.maxFeePercentage = 0.05e18; // 5%
+        satoshiBORouter.openTrove{value: vars.collAmt}(
+            troveManagerBeaconProxy,
+            addr,
+            0.05e18, /* vars.maxFeePercentage 5% */
+            vars.collAmt,
+            vars.debtAmt,
+            vars.upperHint,
+            vars.lowerHint,
+            address(0)
+        );
         vm.stopPrank();
     }
 }

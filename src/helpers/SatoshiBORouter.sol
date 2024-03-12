@@ -66,7 +66,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
-        _afterWithdrawDebt(account, _referrer, userDebtAmount);
+        _afterWithdrawDebt(account, _referrer, userDebtAmount, troveManager);
     }
 
     function addColl(
@@ -118,7 +118,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
 
         address _referrer = referralManager.getReferrer(account);
-        _afterWithdrawDebt(account, _referrer, userDebtAmount);
+        _afterWithdrawDebt(account, _referrer, userDebtAmount, troveManager);
     }
 
     function repayDebt(
@@ -176,11 +176,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
         // withdraw debt
         if (_isDebtIncrease) {
-            uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
-            require(userDebtAmount == _debtChange, "SatoshiBORouter: Debt amount mismatch");
+            require(debtTokenBalanceAfter - debtTokenBalanceBefore == _debtChange, "SatoshiBORouter: Debt amount mismatch");
 
-            address _referrer = referralManager.getReferrer(account);
-            _afterWithdrawDebt(account, _referrer, userDebtAmount);
+            _afterWithdrawDebt(account, referralManager.getReferrer(account), _debtChange, troveManager);
         }
     }
 
@@ -233,13 +231,13 @@ contract SatoshiBORouter is ISatoshiBORouter {
         debtToken.safeTransferFrom(msg.sender, address(this), debtAmount);
     }
 
-    function _afterWithdrawDebt(address _borrower, address _referrer, uint256 debtAmount) private {
+    function _afterWithdrawDebt(address _borrower, address _referrer, uint256 debtAmount, ITroveManager troveManager) private {
         if (debtAmount == 0) return;
 
         debtToken.safeTransfer(msg.sender, debtAmount);
 
         // execute referral
-        referralManager.executeReferral(_borrower, _referrer, debtAmount);
+        referralManager.executeReferral(_borrower, _referrer, debtAmount, troveManager);
     }
 
     receive() external payable {

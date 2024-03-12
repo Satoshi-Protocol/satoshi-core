@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IReferralManager} from "./interfaces/IReferralManager.sol";
 import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
+import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 
 contract ReferralManager is IReferralManager, Ownable {
     ISatoshiBORouter public immutable satoshiBORouter;
@@ -24,6 +25,7 @@ contract ReferralManager is IReferralManager, Ownable {
     error InvalidTimestamp(uint256 timestamp);
     error InvalidZeroAddress();
     error InvalidSelfReferral();
+    error InvalidReferrer(address _referrer);
     error Unauthorized(address _caller);
 
     modifier onlySatoshiBORouter() {
@@ -39,12 +41,15 @@ contract ReferralManager is IReferralManager, Ownable {
         endTimestamp = _endTimestamp;
     }
 
-    function executeReferral(address _borrower, address _referrer, uint256 _points) external onlySatoshiBORouter {
+    function executeReferral(address _borrower, address _referrer, uint256 _points, ITroveManager troveManager) external onlySatoshiBORouter {
         // only execute referral if it's active
         if (!_isReferralActive()) return;
         // no referrer
         if (_referrer == address(0)) return;
+        // cannot refer self
         if (_borrower == _referrer) revert InvalidSelfReferral();
+        // cannot refer a non-trove
+        if(troveManager.getTroveStatus(_referrer) == 0) revert InvalidReferrer(_referrer);
 
         address currentReferrer = referrers[_borrower];
         if (currentReferrer == address(0)) {

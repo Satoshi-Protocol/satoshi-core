@@ -238,7 +238,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _unstakeOSHIFromRewardManager(user1, OSHIAmount / 2 + 1);
         assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
         assertEq(oshiToken.balanceOf(user1), OSHIAmount);
-        // assertEq(OSHIAmount, unlockedAmount);
+        assertEq(OSHIAmount / 2 , unlockedAmount);
         assertEq(rewardManager.getPendingSATGain(user1), 0);
         assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
     }
