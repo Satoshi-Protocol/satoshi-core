@@ -21,7 +21,6 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
  *        stake 3 months: 1x, 6 months: 2x, 9 months: 3x, 12 months: 4x
  *        The lock weight will not decay.
  */
-
 contract RewardManager is IRewardManager, SatoshiOwnable {
     using SafeERC20 for *;
 
@@ -122,8 +121,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
                     userStakes[msg.sender][i][j].amount -= withdrawAmount;
                 }
                 // set next unlock index
-                if (userStakes[msg.sender][i][j].amount == 0)
+                if (userStakes[msg.sender][i][j].amount == 0) {
                     nextUnlockIndex[i]++;
+                }
             }
             // update next unlock index
             data.nextUnlockIndex[i] = nextUnlockIndex[i];
@@ -255,7 +255,6 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         }
         return availableUnstakeAmount;
     }
-
 
     function getSnapshot(address _user) external view returns (Snapshot memory) {
         return snapshots[_user];

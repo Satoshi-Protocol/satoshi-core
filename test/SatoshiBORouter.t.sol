@@ -48,8 +48,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         uint64 nonce = vm.getNonce(DEPLOYER);
         address cpSatoshiBORouterAddr = vm.computeCreateAddress(DEPLOYER, nonce);
         address cpReferralManagerAddr = vm.computeCreateAddress(DEPLOYER, ++nonce);
-        satoshiBORouter =
-            ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER, IReferralManager(cpReferralManagerAddr)));
+        satoshiBORouter = ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER, IReferralManager(cpReferralManagerAddr)));
         referralManager = IReferralManager(_deployReferralManager(DEPLOYER, ISatoshiBORouter(cpSatoshiBORouterAddr)));
 
         // user set delegate approval for satoshiBORouter

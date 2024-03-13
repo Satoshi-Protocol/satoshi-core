@@ -7,21 +7,17 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vesting} from "./Vesting.sol";
 import {InvestorVesting} from "./InvestorVesting.sol";
+import {IVestingManager, VestingType} from "../interfaces/OSHI/IVestingManager.sol";
 
 /**
  * @title Vesting Manager Contract
  *        Deploy the vesting contracts for the team, advisors and investors
  */
-
-contract VestingManager is SatoshiOwnable {
+contract VestingManager is SatoshiOwnable, IVestingManager {
     using SafeERC20 for IERC20;
 
-    event VestingDeployed(address indexed, uint256, uint64);
-
-    IERC20 public immutable token;  // OSHI token
+    IERC20 public immutable token; // OSHI token
     uint256 internal constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
-
-    enum VestingType { TEAM, ADVISOR, INVESTOR, RESERVE }
 
     constructor(ISatoshiCore _satoshiCore, address _token) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -31,7 +27,11 @@ contract VestingManager is SatoshiOwnable {
     /**
      * @dev Deploy the vesting contract for the team and advisors
      */
-    function deployVesting(address _beneficiary, uint256 _amount, uint64 _startTimestamp, VestingType _type) external onlyOwner returns (address) {
+    function deployVesting(address _beneficiary, uint256 _amount, uint64 _startTimestamp, VestingType _type)
+        external
+        onlyOwner
+        returns (address)
+    {
         require(_beneficiary != address(0), "VestingManager: beneficiary is the zero address");
         require(_amount != 0, "VestingManager: amount is 0");
         if (_type == VestingType.TEAM) {
@@ -50,7 +50,11 @@ contract VestingManager is SatoshiOwnable {
     /**
      * @dev Deploy the vesting contract for the investors
      */
-    function deployInvestorVesting(address _beneficiary, uint256 _amount, uint64 _startTimestamp) external onlyOwner returns (address) {
+    function deployInvestorVesting(address _beneficiary, uint256 _amount, uint64 _startTimestamp)
+        external
+        onlyOwner
+        returns (address)
+    {
         require(_beneficiary != address(0), "VestingManager: beneficiary is the zero address");
         require(_amount != 0, "VestingManager: amount is 0");
         require(_amount <= 10 * _1_MILLION, "VestingManager: amount should less than 10 million");

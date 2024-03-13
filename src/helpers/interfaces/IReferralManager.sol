@@ -11,7 +11,8 @@ interface IReferralManager {
 
     function endTimestamp() external view returns (uint256);
 
-    function executeReferral(address _borrower, address _referrer, uint256 _points, ITroveManager troveManager) external;
+    function executeReferral(address _borrower, address _referrer, uint256 _points, ITroveManager troveManager)
+        external;
 
     function isReferralActive() external view returns (bool);
 

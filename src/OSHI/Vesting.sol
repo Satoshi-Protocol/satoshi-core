@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -10,10 +10,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *        Rule: 12 month cliff, 30 month linear vesting
  *
  */
-
 contract Vesting is Ownable {
     using SafeERC20 for IERC20;
-    
+
     event TokenReleased(address indexed, uint256);
     event TokenVested(address, uint256, uint64);
 
@@ -21,8 +20,8 @@ contract Vesting is Ownable {
     uint64 private immutable _start;
     uint64 private constant _duration = 30 days * 30;
     uint64 private constant _TWELVE_MONTHS = 30 days * 12;
-    IERC20 public immutable token;  // OSHI token
-    
+    IERC20 public immutable token; // OSHI token
+
     /**
      * @dev Sets the sender as the satoshi owner, the beneficiary as the pending owner, the start timestamp and the
      * vesting duration of the vesting wallet.
@@ -103,5 +102,4 @@ contract Vesting is Ownable {
             return (totalAllocation * (timestamp - start())) / duration();
         }
     }
-
 }

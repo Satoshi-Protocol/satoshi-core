@@ -96,7 +96,6 @@ contract FactoryTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function test_setRewardrate() public {
-       
         uint128 rewardRateBefore = troveManagerBeaconProxy.rewardRate();
         vm.prank(OWNER);
         uint128[] memory numerator = new uint128[](1);

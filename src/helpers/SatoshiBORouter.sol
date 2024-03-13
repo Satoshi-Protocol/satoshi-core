@@ -176,7 +176,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
         // withdraw debt
         if (_isDebtIncrease) {
-            require(debtTokenBalanceAfter - debtTokenBalanceBefore == _debtChange, "SatoshiBORouter: Debt amount mismatch");
+            require(
+                debtTokenBalanceAfter - debtTokenBalanceBefore == _debtChange, "SatoshiBORouter: Debt amount mismatch"
+            );
 
             _afterWithdrawDebt(account, referralManager.getReferrer(account), _debtChange, troveManager);
         }
@@ -231,7 +233,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
         debtToken.safeTransferFrom(msg.sender, address(this), debtAmount);
     }
 
-    function _afterWithdrawDebt(address _borrower, address _referrer, uint256 debtAmount, ITroveManager troveManager) private {
+    function _afterWithdrawDebt(address _borrower, address _referrer, uint256 debtAmount, ITroveManager troveManager)
+        private
+    {
         if (debtAmount == 0) return;
 
         debtToken.safeTransfer(msg.sender, debtAmount);

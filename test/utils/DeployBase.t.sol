@@ -29,6 +29,7 @@ import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChai
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {ReferralManager} from "../../src/helpers/ReferralManager.sol";
+import {VestingManager} from "../../src/OSHI/VestingManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -46,6 +47,7 @@ import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IReferralManager} from "../../src/helpers/interfaces/IReferralManager.sol";
+import {IVestingManager} from "../../src/interfaces/OSHI/IVestingManager.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -120,6 +122,7 @@ abstract contract DeployBase is Test {
     IFactory factory;
     ICommunityIssuance communityIssuance;
     IOSHIToken oshiToken;
+    IVestingManager vestingManager;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
@@ -150,6 +153,7 @@ abstract contract DeployBase is Test {
     address cpCommunityIssuanceAddr;
     address cpOshiTokenAddr;
     address cpRewardManagerAddr;
+    address cpVestingManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -224,6 +228,7 @@ abstract contract DeployBase is Test {
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -263,6 +268,7 @@ abstract contract DeployBase is Test {
         _deployCommunityIssuance(deployer);
         _deployOSHIToken(deployer);
         _deployRewardManager(deployer);
+        _deployVestingManager(deployer);
     }
 
     function _deployUUPSUpgradeableContracts(address deployer) internal {
@@ -353,13 +359,20 @@ abstract contract DeployBase is Test {
     function _deployOSHIToken(address deployer) internal {
         vm.startPrank(deployer);
         assert(oshiToken == IOSHIToken(address(0))); // check if oshi token contract is not deployed
-        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, VAULT);
+        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, cpVestingManagerAddr);
         vm.stopPrank();
     }
 
     function _deployRewardManager(address deployer) internal {
         vm.prank(deployer);
         rewardManager = new RewardManager(ISatoshiCore(cpSatoshiCoreAddr));
+        vm.stopPrank();
+    }
+
+    function _deployVestingManager(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(vestingManager == IVestingManager(address(0))); // check if vesting manager contract is not deployed
+        vestingManager = new VestingManager(ISatoshiCore(cpSatoshiCoreAddr), cpOshiTokenAddr);
         vm.stopPrank();
     }
 
@@ -533,10 +546,7 @@ abstract contract DeployBase is Test {
         return wethAddr;
     }
 
-    function _deploySatoshiBORouter(address deployer, IReferralManager referralManager)
-        internal
-        returns (address)
-    {
+    function _deploySatoshiBORouter(address deployer, IReferralManager referralManager) internal returns (address) {
         vm.startPrank(deployer);
         assert(debtToken != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed

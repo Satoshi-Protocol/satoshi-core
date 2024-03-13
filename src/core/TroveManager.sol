@@ -180,7 +180,14 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         activeInterestIndex = INTEREST_PRECISION;
         lastActiveIndexUpdate = block.timestamp;
 
-        emit SetConfig(address(sortedTroves), address(collateralToken), systemDeploymentTime, sunsetting, activeInterestIndex, lastActiveIndexUpdate);
+        emit SetConfig(
+            address(sortedTroves),
+            address(collateralToken),
+            systemDeploymentTime,
+            sunsetting,
+            activeInterestIndex,
+            lastActiveIndexUpdate
+        );
     }
 
     /**
@@ -242,8 +249,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         }
         require(
             _minuteDecayFactor >= 977159968434245000 // half-life of 30 minutes
-                && _minuteDecayFactor <= 999931237762985000 // half-life of 1 week
-            , "TroveManager: Invalid decay factor"
+                && _minuteDecayFactor <= 999931237762985000, // half-life of 1 week
+            "TroveManager: Invalid decay factor"
         );
         require(_redemptionFeeFloor <= _maxRedemptionFee && _maxRedemptionFee <= DECIMAL_PRECISION);
         require(_borrowingFeeFloor <= _maxBorrowingFee && _maxBorrowingFee <= DECIMAL_PRECISION);

@@ -26,15 +26,11 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address user2;
     address user3;
     address user4;
-    address vault;
     uint256 maxFeePercentage = 0.05e18; // 5%
     uint256 internal _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
 
     function setUp() public override {
         super.setUp();
-
-        // 55% oshi allocation
-        vault = vm.addr(1);
 
         // testing user
         user1 = vm.addr(2);
@@ -51,7 +47,7 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
         // deploy debt token tester
-        _deployOSHITokenTester(vault);
+        _deployOSHITokenTester(address(vestingManager));
 
         // mint some tokens
         oshiTokenTester.unprotectedMint(user1, 150);
@@ -100,8 +96,8 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(oshiTokenTester.balanceOf(user1), 150);
         assertEq(oshiTokenTester.balanceOf(user2), 100);
         assertEq(oshiTokenTester.balanceOf(user3), 50);
-        assertEq(oshiTokenTester.balanceOf(vault), _1_MILLION * 55);
-        assertEq(oshiToken.balanceOf(VAULT), _1_MILLION * 55);
+        assertEq(oshiTokenTester.balanceOf(address(vestingManager)), _1_MILLION * 55);
+        assertEq(oshiToken.balanceOf(address(vestingManager)), _1_MILLION * 55);
         assertEq(oshiToken.totalSupply(), _1_MILLION * 100);
         address communityIssuanceAddress = oshiTokenTester.communityIssuanceAddress();
         assertEq(oshiTokenTester.balanceOf(communityIssuanceAddress), _1_MILLION * 45);

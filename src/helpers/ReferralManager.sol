@@ -41,7 +41,10 @@ contract ReferralManager is IReferralManager, Ownable {
         endTimestamp = _endTimestamp;
     }
 
-    function executeReferral(address _borrower, address _referrer, uint256 _points, ITroveManager troveManager) external onlySatoshiBORouter {
+    function executeReferral(address _borrower, address _referrer, uint256 _points, ITroveManager troveManager)
+        external
+        onlySatoshiBORouter
+    {
         // only execute referral if it's active
         if (!_isReferralActive()) return;
         // no referrer
@@ -49,7 +52,7 @@ contract ReferralManager is IReferralManager, Ownable {
         // cannot refer self
         if (_borrower == _referrer) revert InvalidSelfReferral();
         // cannot refer a non-trove
-        if(troveManager.getTroveStatus(_referrer) == 0) revert InvalidReferrer(_referrer);
+        if (troveManager.getTroveStatus(_referrer) == 0) revert InvalidReferrer(_referrer);
 
         address currentReferrer = referrers[_borrower];
         if (currentReferrer == address(0)) {

@@ -21,6 +21,7 @@ import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {DeployBase} from "./utils/DeployBase.t.sol";
+import {VestingManager} from "../src/OSHI/VestingManager.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -92,11 +93,15 @@ contract DeploySetupTest is Test, DeployBase {
         _deployOSHIToken(DEPLOYER);
         assert(cpOshiTokenAddr == address(oshiToken));
         assert(oshiToken.communityIssuanceAddress() == cpCommunityIssuanceAddr);
-        assert(oshiToken.vaultAddress() == VAULT);
+        assert(oshiToken.vaultAddress() == cpVestingManagerAddr);
 
         _deployRewardManager(DEPLOYER);
         assert(cpRewardManagerAddr == address(rewardManager));
         assert(rewardManager.owner() == OWNER);
+
+        _deployVestingManager(DEPLOYER);
+        assert(cpVestingManagerAddr == address(vestingManager));
+        assert(vestingManager.owner() == OWNER);
 
         /* Deploy UUPS proxy contracts */
 
