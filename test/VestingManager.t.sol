@@ -186,5 +186,12 @@ contract VestingManager is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(vesting.released(), ReleaseAtM4 + ReleaseAtM6 / duration);
         assertEq(vesting.releasable(), 0);
         assertEq(oshiToken.balanceOf(user2), ReleaseAtM4 + ReleaseAtM6 / duration);
+        // 24 months later
+        vm.warp(block.timestamp + 30 days * 23);
+        assertEq(vesting.releasable(), ReleaseAtM6 - ReleaseAtM6 / duration);
+        vesting.release();
+        assertEq(vesting.released(), amount);
+        assertEq(vesting.releasable(), 0);
+        assertEq(oshiToken.balanceOf(user2), amount);
     }
 }

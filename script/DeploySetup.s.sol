@@ -23,6 +23,7 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
+import {IVestingManager} from "../src/interfaces/OSHI/IVestingManager.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
@@ -37,6 +38,7 @@ import {TroveManager} from "../src/core/TroveManager.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {CommunityIssuance} from "../src/OSHI/CommunityIssuance.sol";
 import {RewardManager} from "../src/OSHI/RewardManager.sol";
+import {VestingManager} from "../src/OSHI/VestingManager.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
@@ -71,6 +73,7 @@ contract DeploySetupScript is Script {
     ICommunityIssuance communityIssuance;
     IOSHIToken oshiToken;
     IRewardManager rewardManager;
+    IVestingManager vestingManager;
     /* implementation contracts addresses */
     ISortedTroves sortedTrovesImpl;
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -108,6 +111,7 @@ contract DeploySetupScript is Script {
     address cpCommunityIssuanceAddr;
     address cpOshiTokenAddr;
     address cpRewardManagerAddr;
+    address cpVestingManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -146,6 +150,7 @@ contract DeploySetupScript is Script {
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -207,12 +212,16 @@ contract DeploySetupScript is Script {
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
 
         // OSHI Token
-        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, SATOSHI_CORE_FEE_RECEIVER); // @todo set vault address
+        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, cpVestingManagerAddr);
         assert(cpOshiTokenAddr == address(oshiToken));
 
         // RewardManager
         rewardManager = new RewardManager(satoshiCore);
         assert(cpRewardManagerAddr == address(rewardManager));
+
+        // VestingManager
+        vestingManager = new VestingManager(ISatoshiCore(cpSatoshiCoreAddr), cpOshiTokenAddr);
+        assert(cpVestingManagerAddr == address(vestingManager));
 
         // Deploy proxy contracts
         bytes memory data;
@@ -317,6 +326,7 @@ contract DeploySetupScript is Script {
         console.log("communityIssuance:", address(communityIssuance));
         console.log("oshiToken:", address(oshiToken));
         console.log("rewardManager:", address(rewardManager));
+        console.log("vestingManager:", address(vestingManager));
         console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
         console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
         console.log("liquidationManagerProxy:", address(liquidationManagerProxy));
