@@ -31,6 +31,7 @@ contract Reserve is SatoshiOwnable {
      * vesting duration of the vesting wallet.
      */
     constructor(ISatoshiCore _satoshiCore, address _token, uint256 _amount, uint64 _startTimestamp) {
+        require(_startTimestamp >= block.timestamp, "Reserve: start is before current time");
         __SatoshiOwnable_init(_satoshiCore);
         _start = _startTimestamp;
         token = IERC20(_token);
