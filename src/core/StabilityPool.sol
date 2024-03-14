@@ -25,6 +25,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint128 public constant SUNSET_DURATION = 180 days;
+    uint256 public constant OSHI_EMISSION_DURATION = 5 * 365 days; // 5 years
 
     IDebtToken public debtToken;
     IFactory public factory;
@@ -650,10 +651,22 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     // --- OSHI issuance functions ---
     function _triggerOSHIIssuance() internal {
         _updateG(_OSHIIssuance());
+        if (block.timestamp >= SATOSHI_CORE.startTime() + OSHI_EMISSION_DURATION && rewardRate != 0) {
+            rewardRate = 0;
+        }
         lastUpdate = uint32(block.timestamp);
     }
 
     function _OSHIIssuance() internal view returns (uint256) {
+        // check OSHI issuance is finished
+        uint256 emissionEndTime = SATOSHI_CORE.startTime() + OSHI_EMISSION_DURATION;
+        if (block.timestamp > emissionEndTime) {
+            if (lastUpdate > emissionEndTime) {
+                return 0;
+            } else {
+                return (emissionEndTime - lastUpdate) * rewardRate;
+            }
+        }
         uint256 duration = block.timestamp - lastUpdate;
         return duration * rewardRate;
     }

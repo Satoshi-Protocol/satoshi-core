@@ -37,6 +37,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 PBefore;
         uint256 SBefore;
         uint256 GBefore;
+        uint256 OSHIBefore;
+        uint256 OSHIAfter;
         // user state
         uint256[4] userCollBefore;
         uint256[4] userCollAfter;
@@ -96,6 +98,12 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256[] memory collateralIndexes = new uint256[](1);
         collateralIndexes[0] = 0;
         stabilityPoolProxy.claimCollateralGains(caller, collateralIndexes);
+        vm.stopPrank();
+    }
+
+    function _claimOSHIReward(address caller) internal {
+        vm.startPrank(caller);
+        stabilityPoolProxy.claimReward(caller);
         vm.stopPrank();
     }
 
@@ -451,5 +459,33 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vars.stakeAfter = stabilityPoolProxy.getCompoundedDebtDeposit(user2);
         uint256 expectedStake = 2 * provideAmt - (vars.userDebtBefore[1] + vars.userDebtBefore[2]) / 6;
         assertTrue(SatoshiMath._approximatelyEqual(vars.stakeAfter, expectedStake, 10000));
+    }
+
+    // deposit to SP and check the stake amount in SP
+    function testOSHIEmissionWhenEmissionEnd() public {
+        StabilityPoolVars memory vars;
+        // open trove
+        _openTrove(user1, 1e18, 10000e18);
+        vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertEq(vars.stabilityPoolDebtBefore, 0);
+
+        // deposit to SP
+        _provideToSP(user1, 200e18);
+        vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
+        assertEq(vars.stabilityPoolDebtAfter, 200e18);
+        // 5 years later
+        vm.warp(block.timestamp + 365 days * 5);
+        uint256 oshiReward = stabilityPoolProxy.claimableReward(user1);
+        _claimOSHIReward(user1);
+        vars.OSHIBefore = oshiToken.balanceOf(user1);
+        assertGt(oshiReward, 0);
+        assertEq(vars.OSHIBefore, oshiReward);
+
+        vm.warp(block.timestamp + 100 days);
+        uint256 oshiReward2 = stabilityPoolProxy.claimableReward(user1);
+        assertEq(oshiReward2, 0);
+        assertEq(stabilityPoolProxy.rewardRate(), 0);
+        _claimOSHIReward(user1);
+        assertEq(oshiToken.balanceOf(user1), vars.OSHIBefore);
     }
 }

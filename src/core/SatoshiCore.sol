@@ -35,7 +35,7 @@ contract SatoshiCore is ISatoshiCore {
 
     constructor(address _owner, address _guardian, address _feeReceiver, address _rewardManager) {
         owner = _owner;
-        startTime = (block.timestamp / 1 weeks) * 1 weeks;
+        startTime = block.timestamp;
         guardian = _guardian;
         feeReceiver = _feeReceiver;
         rewardManager = _rewardManager;

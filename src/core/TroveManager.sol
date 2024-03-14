@@ -300,13 +300,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         return priceFeedAggregator.fetchPrice(collateralToken);
     }
 
-    function getWeekAndDay() public view returns (uint256, uint256) {
-        uint256 duration = (block.timestamp - SATOSHI_CORE.startTime());
-        uint256 week = duration / 1 weeks;
-        uint256 day = (duration % 1 weeks) / 1 days;
-        return (week, day);
-    }
-
     function getTroveOwnersCount() external view returns (uint256) {
         return TroveOwners.length;
     }

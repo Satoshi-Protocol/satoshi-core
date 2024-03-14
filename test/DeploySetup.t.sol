@@ -61,7 +61,7 @@ contract DeploySetupTest is Test, DeployBase {
         assert(satoshiCore.guardian() == GUARDIAN);
         assert(satoshiCore.feeReceiver() == FEE_RECEIVER);
         assert(satoshiCore.rewardManager() == REWARD_MANAGER);
-        assert(satoshiCore.startTime() == (block.timestamp / 1 weeks) * 1 weeks);
+        assert(satoshiCore.startTime() == block.timestamp);
 
         // DebtToken
         _deployDebtToken(DEPLOYER);

@@ -115,4 +115,6 @@ interface IStabilityPool is ISatoshiOwnable {
     function setClaimStartTime(uint32 _startTime) external;
 
     function isClaimStart() external view returns (bool);
+
+    function rewardRate() external view returns (uint128);
 }

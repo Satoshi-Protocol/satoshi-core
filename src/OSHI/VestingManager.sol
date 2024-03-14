@@ -18,6 +18,8 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
 
     IERC20 public immutable token; // OSHI token
     uint256 internal constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
+    uint256 internal allocatedToTeam = 15 * _1_MILLION; // 15 million
+    uint256 internal allocatedToAdvisor = 2 * _1_MILLION; // 2 million
 
     constructor(ISatoshiCore _satoshiCore, address _token) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -34,10 +36,13 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
     {
         require(_beneficiary != address(0), "VestingManager: beneficiary is the zero address");
         require(_amount != 0, "VestingManager: amount is 0");
+        require(_type == VestingType.TEAM || _type == VestingType.ADVISOR, "VestingManager: invalid vesting type");
         if (_type == VestingType.TEAM) {
-            require(_amount == 15 * _1_MILLION, "VestingManager: amount is not 15 million");
+            require(_amount <= allocatedToTeam, "VestingManager: amount exceeds");
+            allocatedToTeam -= _amount;
         } else if (_type == VestingType.ADVISOR) {
-            require(_amount <= 2 * _1_MILLION, "VestingManager: amount should less than 2 million");
+            require(_amount <= allocatedToAdvisor, "VestingManager: amount exceeds");
+            allocatedToAdvisor -= _amount;
         }
 
         Vesting vesting = new Vesting(address(token), _amount, _beneficiary, _startTimestamp);

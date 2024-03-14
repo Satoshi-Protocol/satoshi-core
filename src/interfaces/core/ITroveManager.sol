@@ -275,8 +275,6 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
 
     function getTroveStatus(address _borrower) external view returns (uint256);
 
-    function getWeekAndDay() external view returns (uint256, uint256);
-
     function hasPendingRewards(address _borrower) external view returns (bool);
 
     function interestPayable() external view returns (uint256);
