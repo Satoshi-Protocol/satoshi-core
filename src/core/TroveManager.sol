@@ -59,6 +59,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 constant SECONDS_IN_ONE_MINUTE = 60;
     uint256 constant INTEREST_PRECISION = 1e27;
     uint256 constant SECONDS_IN_YEAR = 365 days;
+    uint256 constant OSHI_EMISSION_DURATION = 5 * SECONDS_IN_YEAR; // 5 years
 
     // Maximum interest rate must be lower than the minimum LST staking yield
     // so that over time the actual TCR becomes greater than the calculated TCR.
@@ -1205,10 +1206,28 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         }
     }
 
-    function _updateRewardIntegral(uint256 supply) internal returns (uint256 integral) {
+    function _updateRewardIntegral(uint256 supply) internal returns (uint256) {
         require(lastUpdate <= block.timestamp, "Invalid last update");
-        uint256 duration = block.timestamp - lastUpdate;
-        integral = rewardIntegral; // global integral
+        uint256 emissionEndTime = SATOSHI_CORE.startTime() + OSHI_EMISSION_DURATION;
+        uint256 integral = rewardIntegral; // global integral
+        if (block.timestamp > emissionEndTime) {
+            if (lastUpdate > emissionEndTime) {
+                lastUpdate = block.timestamp;
+            } else { // lastUpdate <= emissionEndTime
+                uint256 duration = emissionEndTime - lastUpdate;
+                integral = _computeIntegral(duration, supply);
+            }
+            if (rewardRate != 0) rewardRate = 0;
+        } else {
+            uint256 duration = block.timestamp - lastUpdate;
+            integral = _computeIntegral(duration, supply);
+        }
+
+        return integral;
+    }
+
+    function _computeIntegral(uint256 duration, uint256 supply) internal returns (uint256){
+        uint256 integral = rewardIntegral;
         if (duration > 0) {
             lastUpdate = block.timestamp;
             if (supply > 0) {
@@ -1216,7 +1235,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
                 rewardIntegral = integral;
             }
         }
-
         return integral;
     }
 

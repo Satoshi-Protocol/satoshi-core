@@ -30,10 +30,10 @@ contract InvestorVesting is Ownable {
      * @dev Sets the beneficiary as the owner, the start timestamp and the
      * vesting duration of the vesting wallet.
      */
-    constructor(address _token, uint256 _amount, address _beneficiary, uint64 startTimestamp) Ownable() {
+    constructor(address _token, uint256 _amount, address _beneficiary, uint64 _startTimestamp) Ownable() {
         require(_startTimestamp >= block.timestamp, "InvestorVesting: start is before current time");
         require(_beneficiary != address(0), "InvestorVesting: beneficiary is the zero address");
-        _start = startTimestamp;
+        _start = _startTimestamp;
         token = IERC20(_token);
         _tokenVestingAtM4 = _amount / _TEN_PERCENT; // release 10% at M4
         _tokenVestingAtM6 = _amount - _tokenVestingAtM4;
