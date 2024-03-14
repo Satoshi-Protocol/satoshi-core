@@ -19,4 +19,5 @@ interface IVestingManager is ISatoshiOwnable {
     function deployInvestorVesting(address _beneficiary, uint256 _amount, uint64 _startTimestamp)
         external
         returns (address);
+    function deployReserveVesting(uint256 _amount, uint64 _startTimestamp) external returns (address);
 }

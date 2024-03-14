@@ -6,8 +6,10 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vesting} from "./Vesting.sol";
+import {Reserve} from "./Reserve.sol";
 import {InvestorVesting} from "./InvestorVesting.sol";
 import {IVestingManager, VestingType} from "../interfaces/OSHI/IVestingManager.sol";
+import {IReserve} from "../interfaces/OSHI/IReserve.sol";
 
 /**
  * @title Vesting Manager Contract
@@ -20,6 +22,7 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
     uint256 internal constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
     uint256 internal allocatedToTeam = 15 * _1_MILLION; // 15 million
     uint256 internal allocatedToAdvisor = 2 * _1_MILLION; // 2 million
+    uint256 internal allocatedToReserve = 21 * _1_MILLION; // 21 million
 
     constructor(ISatoshiCore _satoshiCore, address _token) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -69,5 +72,20 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
         emit VestingDeployed(address(investorVesting), _amount, _startTimestamp);
 
         return address(investorVesting);
+    }
+
+    /**
+     * @dev Deploy the vesting contract for the reserve
+     */
+    function deployReserveVesting(uint256 _amount, uint64 _startTimestamp) external onlyOwner returns (address) {
+        require(_amount != 0, "VestingManager: amount is 0");
+        require(_amount == allocatedToReserve, "VestingManager: amount not match");
+        allocatedToReserve -= _amount;
+
+        Reserve reserve = new Reserve(SATOSHI_CORE, address(token), _amount, _startTimestamp);
+        token.safeTransfer(address(reserve), _amount);
+        emit VestingDeployed(address(reserve), _amount, _startTimestamp);
+
+        return address(reserve);
     }
 }

@@ -8,6 +8,7 @@ import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITrov
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IVestingManager, VestingType} from "../src/interfaces/OSHI/IVestingManager.sol";
 import {IVesting} from "../src/interfaces/OSHI/IVesting.sol";
+import {IReserve} from "../src/interfaces/OSHI/IReserve.sol";
 import {IInvestorVesting} from "../src/interfaces/OSHI/IInvestorVesting.sol";
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
@@ -193,5 +194,43 @@ contract VestingManager is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(vesting.released(), amount);
         assertEq(vesting.releasable(), 0);
         assertEq(oshiToken.balanceOf(user2), amount);
+    }
+
+    function test_deployReserveVesting() public {
+        uint64 startTimestamp = uint64(block.timestamp);
+        uint256 amount = 21 * _1_MILLION;
+        vm.prank(OWNER);
+        address reserveAddr = vestingManager.deployReserveVesting(amount, startTimestamp);
+        IReserve reserve = IReserve(reserveAddr);
+        assertEq(oshiToken.balanceOf(reserveAddr), amount);
+        assertEq(address(reserve.token()), address(oshiToken));
+        assertEq(reserve.owner(), OWNER);
+        assertEq(reserve.totalAmount(), amount);
+        assertEq(reserve.eachPeriodReleasedAmount(), amount / 20);
+        assertEq(reserve.duration(), 60);
+        assertEq(reserve.start(), startTimestamp);
+        assertEq(reserve.releasable(), reserve.eachPeriodReleasedAmount());
+        // release 1.05%
+        reserve.release();
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount());
+        assertEq(reserve.releasable(), 0);
+        assertEq(oshiToken.balanceOf(OWNER), reserve.eachPeriodReleasedAmount());
+        // 4 months later
+        vm.warp(block.timestamp + 30 days * 4);
+        assertEq(reserve.releasable(), reserve.eachPeriodReleasedAmount());
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount());
+        // release 1.05%
+        reserve.release();
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount() * 2);
+        assertEq(reserve.releasable(), 0);
+        assertEq(oshiToken.balanceOf(OWNER), reserve.eachPeriodReleasedAmount() * 2);
+        // 60 months later
+        vm.warp(block.timestamp + 30 days * 56);
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount() * 2);
+        assertEq(reserve.releasable(), amount - reserve.eachPeriodReleasedAmount() * 2);
+        reserve.release();
+        assertEq(reserve.released(), amount);
+        assertEq(reserve.releasable(), 0);
+        assertEq(oshiToken.balanceOf(OWNER), amount);
     }
 }
