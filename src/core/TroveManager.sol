@@ -1213,7 +1213,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         if (block.timestamp > emissionEndTime) {
             if (lastUpdate > emissionEndTime) {
                 lastUpdate = block.timestamp;
-            } else { // lastUpdate <= emissionEndTime
+            } else {
+                // lastUpdate <= emissionEndTime
                 uint256 duration = emissionEndTime - lastUpdate;
                 integral = _computeIntegral(duration, supply);
             }
@@ -1226,7 +1227,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         return integral;
     }
 
-    function _computeIntegral(uint256 duration, uint256 supply) internal returns (uint256){
+    function _computeIntegral(uint256 duration, uint256 supply) internal returns (uint256) {
         uint256 integral = rewardIntegral;
         if (duration > 0) {
             lastUpdate = block.timestamp;

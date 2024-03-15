@@ -184,6 +184,22 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(rewardManager.satForFeeReceiver(), 5e18);
     }
 
+    function test_FeeReceiverReceiveCorrectAmount() public {
+        _openTrove(user1, 1e18, 1000e18);
+        // after 5 years
+        vm.warp(block.timestamp + 365 days * 5);
+        _troveClaimReward(user1);
+        uint256 expectedOSHIAmount = 20 * _1_MILLION;
+        assertApproxEqAbs(oshiToken.balanceOf(user1), expectedOSHIAmount, 1e10);
+        assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
+        assertEq(rewardManager.getPendingSATGain(user1), 0);
+        assertEq(rewardManager.satForFeeReceiver(), 5e18);
+
+        vm.prank(OWNER);
+        rewardManager.claimFee();
+        assertEq(debtToken.balanceOf(FEE_RECEIVER), 5e18);
+    }
+
     function test_unstakeFromRMBeforeUnlock() public {
         // user1 open a trove
         _openTrove(user1, 1e18, 1000e18);

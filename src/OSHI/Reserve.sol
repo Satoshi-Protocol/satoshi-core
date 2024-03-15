@@ -8,7 +8,7 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 
 /**
  * @title Reserve Contract
- *        Rule: unlock 1.05% every 3 months, total 60 months
+ *        Rule: unlock 2.1% every 6 months, total 60 months
  *
  */
 contract Reserve is SatoshiOwnable {
@@ -19,11 +19,12 @@ contract Reserve is SatoshiOwnable {
 
     uint64 private immutable _start;
     uint64 private constant _duration = 60; // 60 months
-    uint64 private constant _THREE_MONTHS = 30 days * 3;
+    uint64 private constant _MONTH = 30 days;
+    uint64 private constant _PERIOD = 6;
     uint256 internal constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
     uint256 private _released;
     uint256 private _totalAmount;
-    uint256 private _eachPeriodReleasedAmount; // 1.05% every 3 months
+    uint256 private _eachPeriodReleasedAmount; // 2.1% every 6 months
     IERC20 public immutable token; // OSHI token
 
     /**
@@ -36,7 +37,7 @@ contract Reserve is SatoshiOwnable {
         _start = _startTimestamp;
         token = IERC20(_token);
         _totalAmount = _amount;
-        _eachPeriodReleasedAmount = _amount / (_duration / 3);
+        _eachPeriodReleasedAmount = _amount / (_duration / _PERIOD);
         emit TokenVested(owner(), _amount, _start);
     }
 
@@ -70,7 +71,7 @@ contract Reserve is SatoshiOwnable {
     }
 
     function releasable() public view returns (uint256) {
-        uint256 periodElapsed = (block.timestamp - start()) / _THREE_MONTHS + 1;
+        uint256 periodElapsed = (block.timestamp - start()) / (_PERIOD * _MONTH) + 1;
         uint256 toRelease = periodElapsed * eachPeriodReleasedAmount();
         if (toRelease > _totalAmount) {
             toRelease = _totalAmount;

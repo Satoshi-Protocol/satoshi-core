@@ -54,6 +54,7 @@ interface IRewardManager is ISatoshiOwnable {
     function stake(uint256 _amount, LockDuration _duration) external;
     function unstake(uint256 _amount) external;
     function claimReward() external;
+    function claimFee() external;
     function increaseCollPerUintStaked(uint256 _amount) external;
     function increaseSATPerUintStaked(uint256 _amount) external;
     function getPendingCollGain(address _user) external view returns (uint256[] memory);
