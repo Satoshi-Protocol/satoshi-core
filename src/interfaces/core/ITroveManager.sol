@@ -327,6 +327,8 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
 
     function setClaimStartTime(uint32 _claimStartTime) external;
 
+    function claimableReward(address) external view returns (uint256);
+
     function isClaimStart() external view returns (bool);
 
     function rewardRate() external view returns (uint128);

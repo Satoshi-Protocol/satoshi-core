@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
@@ -41,6 +41,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256[5] userDebtAfter;
         uint256[5] userMintingFee;
         uint256 ClaimableOSHIinSP;
+        uint256[5] claimableTroveReward;
     }
 
     function setUp() public override {
@@ -99,7 +100,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
-    function _troveClaimReward(address caller) internal returns (uint256 amount) {
+    function _troveClaimOSHIReward(address caller) internal returns (uint256 amount) {
         vm.prank(caller);
         amount = troveManagerBeaconProxy.claimReward(caller);
     }
@@ -128,6 +129,28 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
+    function _redeemCollateral(address caller, uint256 redemptionAmount) internal {
+        uint256 price = troveManagerBeaconProxy.fetchPrice();
+        (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount) =
+            hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, price, 0);
+        (address hintAddress,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, partialRedemptionHintNICR, 10, 42);
+
+        (address upperPartialRedemptionHint, address lowerPartialRedemptionHint) =
+            sortedTrovesBeaconProxy.findInsertPosition(partialRedemptionHintNICR, hintAddress, hintAddress);
+
+        // redeem
+        vm.prank(caller);
+        troveManagerBeaconProxy.redeemCollateral(
+            truncatedDebtAmount,
+            firstRedemptionHint,
+            upperPartialRedemptionHint,
+            lowerPartialRedemptionHint,
+            partialRedemptionHintNICR,
+            0,
+            maxFeePercentage
+        );
+    }
+
     function _recordUserStateBeforeToVar(RewardManagerVars memory vars) internal view {
         (vars.userCollBefore[0], vars.userDebtBefore[0]) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
         (vars.userCollBefore[1], vars.userDebtBefore[1]) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
@@ -149,6 +172,14 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         (vars.userCollAfter[2], vars.userDebtAfter[2]) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
         (vars.userCollAfter[3], vars.userDebtAfter[3]) = troveManagerBeaconProxy.getTroveCollAndDebt(user4);
         (vars.userCollAfter[4], vars.userDebtAfter[4]) = troveManagerBeaconProxy.getTroveCollAndDebt(user5);
+    }
+
+    function _recordClaimableTroveRewardToVar(RewardManagerVars memory vars) internal view {
+        vars.claimableTroveReward[0] = troveManagerBeaconProxy.claimableReward(user1);
+        vars.claimableTroveReward[1] = troveManagerBeaconProxy.claimableReward(user2);
+        vars.claimableTroveReward[2] = troveManagerBeaconProxy.claimableReward(user3);
+        vars.claimableTroveReward[3] = troveManagerBeaconProxy.claimableReward(user4);
+        vars.claimableTroveReward[4] = troveManagerBeaconProxy.claimableReward(user5);
     }
 
     function test_AccrueInterst2TroveCorrect() public {
@@ -176,7 +207,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         // after 5 years
         vm.warp(block.timestamp + 365 days * 5);
-        _troveClaimReward(user1);
+        _troveClaimOSHIReward(user1);
         uint256 expectedOSHIAmount = 20 * _1_MILLION;
         assertApproxEqAbs(oshiToken.balanceOf(user1), expectedOSHIAmount, 1e10);
         assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
@@ -188,7 +219,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         // after 5 years
         vm.warp(block.timestamp + 365 days * 5);
-        _troveClaimReward(user1);
+        _troveClaimOSHIReward(user1);
         uint256 expectedOSHIAmount = 20 * _1_MILLION;
         assertApproxEqAbs(oshiToken.balanceOf(user1), expectedOSHIAmount, 1e10);
         assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
@@ -205,7 +236,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         vm.warp(block.timestamp + 10 days);
         // user1 claim OSHI reward
-        uint256 OSHIAmount = _troveClaimReward(user1);
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
         _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
         vm.warp(block.timestamp + 10 days);
@@ -220,7 +251,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         vm.warp(block.timestamp + 10 days);
         // user1 claim OSHI reward
-        uint256 OSHIAmount = _troveClaimReward(user1);
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
         _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
 
@@ -240,7 +271,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         vm.warp(block.timestamp + 10 days);
         // user1 claim OSHI reward
-        uint256 OSHIAmount = _troveClaimReward(user1);
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
         _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
         vm.warp(block.timestamp + 1 days);
@@ -264,7 +295,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user1, 1e18, 1000e18);
         vm.warp(block.timestamp + 10 days);
         // user1 claim OSHI reward
-        uint256 OSHIAmount = _troveClaimReward(user1);
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
         _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
         _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.TWELVE);
@@ -290,7 +321,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _recordUserStateBeforeToVar(vars);
         vm.warp(block.timestamp + 10 days);
         // user1 claim OSHI reward
-        uint256 OSHIAmount = _troveClaimReward(user1);
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
         _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
         assertEq(OSHIAmount, rewardManager.totalOSHIWeightedStaked());
@@ -337,7 +368,88 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     // // getPendingCollGain returns the correct amount
-    // function test_getPendingCollGain() public {
-    //     _openTrove(user1, collateralAmt, debtAmt);
-    // }
+    function test_getPendingCollGain() public {
+        RewardManagerVars memory vars;
+        _openTrove(user1, 1e18, 1000e18);
+        _openTrove(user2, 1e18, 1000e18);
+        _openTrove(user3, 1e18, 1000e18);
+        _openTrove(user4, 1e18, 1000e18);
+        _openTrove(user5, 1e18, 1000e18);
+
+        vm.warp(block.timestamp + 365 days);
+        _recordClaimableTroveRewardToVar(vars);
+        _recordUserStateBeforeToVar(vars);
+        // check user OSHI reward
+        assertEq(vars.claimableTroveReward[0], vars.claimableTroveReward[1]);
+        uint256 expectedReward = troveManagerBeaconProxy.rewardRate() * 365 days / 5;
+        assertApproxEqAbs(vars.claimableTroveReward[0], expectedReward, 1000);
+        assertEq(vars.claimableTroveReward[0], vars.claimableTroveReward[1]);
+        assertEq(vars.claimableTroveReward[0], vars.claimableTroveReward[2]);
+        assertEq(vars.claimableTroveReward[0], vars.claimableTroveReward[3]);
+        assertEq(vars.claimableTroveReward[0], vars.claimableTroveReward[4]);
+
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
+        assertEq(OSHIAmount, vars.claimableTroveReward[0]);
+
+        // user1 stake OSHI to reward manager
+        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.TWELVE);
+
+        _updateRoundData(
+            RoundData({
+                answer: 60000_00_000_000, // 60000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+
+        // user2 redeem -> reward manager will get coll gain and interest
+        uint256 redeemAmount = 100e18;
+        _redeemCollateral(user2, redeemAmount);
+
+        uint256 redemptionRate = troveManagerBeaconProxy.getRedemptionRate();
+        assertGt(vars.userDebtBefore[1], debtToken.balanceOf(user2));
+
+        uint256 price = troveManagerBeaconProxy.fetchPrice();
+        uint256 expectedRedemptionAmount = redeemAmount * 1e18 / price;
+        uint256 expectedToRM = expectedRedemptionAmount * redemptionRate / 1e18;
+
+        assertEq(collateralMock.balanceOf(address(rewardManager)), expectedToRM);
+
+        // check pending coll gain
+        uint256 pendingCollGain = rewardManager.getPendingCollGain(user1)[0];
+        assertApproxEqAbs(pendingCollGain, expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100);
+
+        uint256 pendingCollForFeeReceiver = rewardManager.collForFeeReceiver(0);
+        assertApproxEqAbs(
+            pendingCollForFeeReceiver, expectedToRM - expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100
+        );
+    }
+
+    // test owner can increase coll to reward manager
+    function test_increaseSATPerUintStakedbyOwner() public {
+        _openTrove(user1, 1e18, 1000e18);
+        _openTrove(user2, 1e18, 1000e18);
+        _openTrove(user3, 1e18, 1000e18);
+        _openTrove(user4, 1e18, 1000e18);
+        _openTrove(user5, 1e18, 1000e18);
+
+        // check fee receiver SAT gain in reward manager, no one stake in reward manager
+        assertEq(rewardManager.satForFeeReceiver(), 5e18 * 5);
+
+        vm.prank(OWNER);
+        rewardManager.claimFee();
+        assertEq(debtToken.balanceOf(FEE_RECEIVER), 5e18 * 5);
+
+        // someone stake OSHI in Reward Manager
+        vm.warp(block.timestamp + 30 days);
+        uint256 OSHIAmount = _troveClaimOSHIReward(user1);
+        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
+
+        vm.startPrank(FEE_RECEIVER);
+        debtToken.approve(address(rewardManager), 5e18 * 5);
+        rewardManager.increaseSATPerUintStaked(5e18 * 5);
+        vm.stopPrank();
+        assert(rewardManager.F_SAT() > 0);
+    }
 }

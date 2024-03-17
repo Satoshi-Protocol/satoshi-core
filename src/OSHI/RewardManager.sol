@@ -24,7 +24,7 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 contract RewardManager is IRewardManager, SatoshiOwnable {
     using SafeERC20 for *;
 
-    uint256 public constant DECIMAL_PRECISION = 1e18;
+    uint256 public constant DECIMAL_PRECISION = 1e27;
     uint256 public constant FEE_TO_STAKER_RATIO = 975;
     uint256 public constant FEE_RATIO_BASE = 1000;
 
@@ -367,7 +367,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         bool isRegistered;
         if (
             msg.sender == SATOSHI_CORE.owner() || msg.sender == address(borrowerOperations)
-                || msg.sender == address(debtToken)
+                || msg.sender == address(debtToken) || msg.sender == SATOSHI_CORE.feeReceiver()
         ) isRegistered = true;
         if (!isRegistered) {
             for (uint256 i; i < registeredTroveManagers.length; ++i) {
