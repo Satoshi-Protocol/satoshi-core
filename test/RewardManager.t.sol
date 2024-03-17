@@ -122,7 +122,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
-    function _claimsOSHIReward(address caller) internal {
+    function _claimsRewardManagerReward(address caller) internal {
         vm.startPrank(caller);
         rewardManager.claimReward();
         vm.stopPrank();
@@ -308,16 +308,18 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim sOSHI reward (protocol revenue)
         // uint256 interest = (vars.userDebtBefore[0]) * INTEREST_RATE_IN_BPS / 10000;
         uint256 expectedReward = (50567282792268718326 + 5e18) * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION;
-        assertApproxEqAbs(expectedReward, rewardManager.getPendingSATGain(user1), 1e10);
-        _claimsOSHIReward(user1);
+        uint256 user1PendingSATGain = rewardManager.getPendingSATGain(user1);
+        assertApproxEqAbs(expectedReward, user1PendingSATGain, 1e10);
+        _claimsRewardManagerReward(user1);
 
         // check pending reward is 0
         assertEq(rewardManager.getPendingSATGain(user1), 0);
         assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
         // check the state
         // user2 minting fee + user1 intererst
-        // assertEq(debtToken.balanceOf(user1), expectedReward);
+        assertEq(user1PendingSATGain, debtToken.balanceOf(user1) - 1000e18);
         _unstakeOSHIFromRewardManager(user1, OSHIAmount);
+        assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
     }
 
     function test_getOSHIFromSP() public {
@@ -333,4 +335,9 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(oshiToken.balanceOf(user1), vars.ClaimableOSHIinSP);
         assertEq(stabilityPoolProxy.claimableReward(user1), 0);
     }
+
+    // // getPendingCollGain returns the correct amount
+    // function test_getPendingCollGain() public {
+    //     _openTrove(user1, collateralAmt, debtAmt);
+    // }
 }

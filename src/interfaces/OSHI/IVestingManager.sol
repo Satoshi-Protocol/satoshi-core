@@ -7,7 +7,8 @@ enum VestingType {
     TEAM,
     ADVISOR,
     INVESTOR,
-    RESERVE
+    RESERVE,
+    ECOSYSTEM
 }
 
 interface IVestingManager is ISatoshiOwnable {
@@ -20,4 +21,5 @@ interface IVestingManager is ISatoshiOwnable {
         external
         returns (address);
     function deployReserveVesting(uint256 _amount, uint64 _startTimestamp) external returns (address);
+    function deployEcosystemVesting(uint256 _amount, uint64 _startTimestamp) external returns (address);
 }

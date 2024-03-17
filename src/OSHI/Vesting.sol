@@ -27,7 +27,6 @@ contract Vesting is Ownable {
      * vesting duration of the vesting wallet.
      */
     constructor(address _token, uint256 _amount, address _beneficiary, uint64 _startTimestamp) Ownable() {
-        require(_startTimestamp >= block.timestamp, "Vesting: start is before current time");
         require(_beneficiary != address(0), "Vesting: beneficiary is the zero address");
         _start = _startTimestamp + _TWELVE_MONTHS; // 12 month cliff
         token = IERC20(_token);

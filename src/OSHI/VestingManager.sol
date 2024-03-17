@@ -23,6 +23,8 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
     uint256 internal allocatedToTeam = 15 * _1_MILLION; // 15 million
     uint256 internal allocatedToAdvisor = 2 * _1_MILLION; // 2 million
     uint256 internal allocatedToReserve = 21 * _1_MILLION; // 21 million
+    uint256 internal allocatedToEcosystem = 15 * _1_MILLION; // 15 million
+    uint256 internal allocatedToInvestor = 15 * _1_MILLION; // 10 million
 
     constructor(ISatoshiCore _satoshiCore, address _token) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -65,7 +67,8 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
     {
         require(_beneficiary != address(0), "VestingManager: beneficiary is the zero address");
         require(_amount != 0, "VestingManager: amount is 0");
-        require(_amount <= 10 * _1_MILLION, "VestingManager: amount should less than 10 million");
+        require(_amount <= allocatedToInvestor, "VestingManager: amount should less than 10 million");
+        allocatedToInvestor -= _amount;
 
         InvestorVesting investorVesting = new InvestorVesting(address(token), _amount, _beneficiary, _startTimestamp);
         token.safeTransfer(address(investorVesting), _amount);
@@ -79,10 +82,26 @@ contract VestingManager is SatoshiOwnable, IVestingManager {
      */
     function deployReserveVesting(uint256 _amount, uint64 _startTimestamp) external onlyOwner returns (address) {
         require(_amount != 0, "VestingManager: amount is 0");
-        require(_amount == allocatedToReserve, "VestingManager: amount not match");
+        require(_amount <= allocatedToReserve, "VestingManager: amount exceeds");
+        uint64 duration = 6;
         allocatedToReserve -= _amount;
 
-        Reserve reserve = new Reserve(SATOSHI_CORE, address(token), _amount, _startTimestamp);
+        Reserve reserve = new Reserve(SATOSHI_CORE, address(token), _amount, _startTimestamp, duration);
+        token.safeTransfer(address(reserve), _amount);
+        emit VestingDeployed(address(reserve), _amount, _startTimestamp);
+
+        return address(reserve);
+    }
+    /**
+     * @dev Deploy the vesting contract for the ecosystem
+     */
+
+    function deployEcosystemVesting(uint256 _amount, uint64 _startTimestamp) external onlyOwner returns (address) {
+        require(_amount == allocatedToEcosystem, "VestingManager: amount not match");
+        uint64 duration = 3;
+        allocatedToEcosystem -= _amount;
+
+        Reserve reserve = new Reserve(SATOSHI_CORE, address(token), _amount, _startTimestamp, duration);
         token.safeTransfer(address(reserve), _amount);
         emit VestingDeployed(address(reserve), _amount, _startTimestamp);
 

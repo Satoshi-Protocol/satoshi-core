@@ -233,4 +233,42 @@ contract VestingManager is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(reserve.releasable(), 0);
         assertEq(oshiToken.balanceOf(OWNER), amount);
     }
+
+    function test_deployEcosystemVesting() public {
+        uint64 startTimestamp = uint64(block.timestamp);
+        uint256 amount = 15 * _1_MILLION;
+        vm.prank(OWNER);
+        address reserveAddr = vestingManager.deployEcosystemVesting(amount, startTimestamp);
+        IReserve reserve = IReserve(reserveAddr);
+        assertEq(oshiToken.balanceOf(reserveAddr), amount);
+        assertEq(address(reserve.token()), address(oshiToken));
+        assertEq(reserve.owner(), OWNER);
+        assertEq(reserve.totalAmount(), amount);
+        assertEq(reserve.eachPeriodReleasedAmount(), amount / 20);
+        assertEq(reserve.duration(), 60);
+        assertEq(reserve.start(), startTimestamp);
+        assertEq(reserve.releasable(), reserve.eachPeriodReleasedAmount());
+        // release 1.05%
+        reserve.release();
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount());
+        assertEq(reserve.releasable(), 0);
+        assertEq(oshiToken.balanceOf(OWNER), reserve.eachPeriodReleasedAmount());
+        // 4 months later
+        vm.warp(block.timestamp + 30 days * 4);
+        assertEq(reserve.releasable(), reserve.eachPeriodReleasedAmount());
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount());
+        // release 1.05%
+        reserve.release();
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount() * 2);
+        assertEq(reserve.releasable(), 0);
+        assertEq(oshiToken.balanceOf(OWNER), reserve.eachPeriodReleasedAmount() * 2);
+        // 60 months later
+        vm.warp(block.timestamp + 30 days * 56);
+        assertEq(reserve.released(), reserve.eachPeriodReleasedAmount() * 2);
+        assertEq(reserve.releasable(), amount - reserve.eachPeriodReleasedAmount() * 2);
+        reserve.release();
+        assertEq(reserve.released(), amount);
+        assertEq(reserve.releasable(), 0);
+        assertEq(oshiToken.balanceOf(OWNER), amount);
+    }
 }
