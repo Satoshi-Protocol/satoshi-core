@@ -72,7 +72,6 @@ contract DeploySetupScript is Script {
     IFactory factory;
     ICommunityIssuance communityIssuance;
     IOSHIToken oshiToken;
-    IRewardManager rewardManager;
     IVestingManager vestingManager;
     /* implementation contracts addresses */
     ISortedTroves sortedTrovesImpl;
@@ -81,11 +80,13 @@ contract DeploySetupScript is Script {
     ILiquidationManager liquidationManagerImpl;
     IStabilityPool stabilityPoolImpl;
     ITroveManager troveManagerImpl;
+    IRewardManager rewardManagerImpl;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
     ILiquidationManager liquidationManagerProxy;
     IStabilityPool stabilityPoolProxy;
+    IRewardManager rewardManagerProxy;
     /* Beacon contract */
     UpgradeableBeacon sortedTrovesBeacon;
     UpgradeableBeacon troveManagerBeacon;
@@ -103,6 +104,7 @@ contract DeploySetupScript is Script {
     address cpStabilityPoolImplAddr;
     address cpSortedTrovesImplAddr;
     address cpTroveManagerImplAddr;
+    address cpRewardManagerImplAddr;
     // non-upgradeable contracts
     address cpGasPoolAddr;
     address cpSatoshiCoreAddr;
@@ -110,13 +112,13 @@ contract DeploySetupScript is Script {
     address cpFactoryAddr;
     address cpCommunityIssuanceAddr;
     address cpOshiTokenAddr;
-    address cpRewardManagerAddr;
     address cpVestingManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
+    address cpRewardManagerProxyAddr;
     // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
@@ -142,6 +144,7 @@ contract DeploySetupScript is Script {
         cpStabilityPoolImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSortedTrovesImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpRewardManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         // non-upgradeable contracts
         cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -149,7 +152,6 @@ contract DeploySetupScript is Script {
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -158,7 +160,7 @@ contract DeploySetupScript is Script {
         cpStabilityPoolProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSortedTrovesBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
-
+        cpRewardManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         // Deploy implementation contracts
         priceFeedAggregatorImpl = new PriceFeedAggregator();
         borrowerOperationsImpl = new BorrowerOperations();
@@ -166,6 +168,7 @@ contract DeploySetupScript is Script {
         stabilityPoolImpl = new StabilityPool();
         sortedTrovesImpl = new SortedTroves();
         troveManagerImpl = new TroveManager();
+        rewardManagerImpl = new RewardManager();
 
         // Deploy non-upgradeable contracts
         // GasPool
@@ -173,8 +176,9 @@ contract DeploySetupScript is Script {
         assert(cpGasPoolAddr == address(gasPool));
 
         // SatoshiCore
-        satoshiCore =
-            new SatoshiCore(SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerAddr);
+        satoshiCore = new SatoshiCore(
+            SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerProxyAddr
+        );
         assert(cpSatoshiCoreAddr == address(satoshiCore));
 
         // DebtToken
@@ -202,7 +206,7 @@ contract DeploySetupScript is Script {
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
             ICommunityIssuance(cpCommunityIssuanceAddr),
-            IRewardManager(cpRewardManagerAddr),
+            IRewardManager(cpRewardManagerProxyAddr),
             GAS_COMPENSATION
         );
         assert(cpFactoryAddr == address(factory));
@@ -216,10 +220,6 @@ contract DeploySetupScript is Script {
         // OSHI Token
         oshiToken = new OSHIToken(cpCommunityIssuanceAddr, cpVestingManagerAddr);
         assert(cpOshiTokenAddr == address(oshiToken));
-
-        // RewardManager
-        rewardManager = new RewardManager(satoshiCore);
-        assert(cpRewardManagerAddr == address(rewardManager));
 
         // VestingManager
         vestingManager = new VestingManager(ISatoshiCore(cpSatoshiCoreAddr), cpOshiTokenAddr);
@@ -288,6 +288,12 @@ contract DeploySetupScript is Script {
         troveManagerBeacon = new UpgradeableBeacon(address(troveManagerImpl));
         assert(cpTroveManagerBeaconAddr == address(troveManagerBeacon));
 
+        // rewardManager
+        data = abi.encodeCall(IRewardManager.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
+        proxy = address(new ERC1967Proxy(address(rewardManagerImpl), data));
+        rewardManagerProxy = IRewardManager(proxy);
+        assert(proxy == cpRewardManagerProxyAddr);
+
         // MultiCollateralHintHelpers
         hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
 
@@ -321,13 +327,13 @@ contract DeploySetupScript is Script {
         console.log("stabilityPoolImpl:", address(stabilityPoolImpl));
         console.log("sortedTrovesImpl:", address(sortedTrovesImpl));
         console.log("troveManagerImpl:", address(troveManagerImpl));
+        console.log("rewardManagerImpl:", address(rewardManagerImpl));
         console.log("gasPool:", address(gasPool));
         console.log("satoshiCore:", address(satoshiCore));
         console.log("debtToken:", address(debtToken));
         console.log("factory:", address(factory));
         console.log("communityIssuance:", address(communityIssuance));
         console.log("oshiToken:", address(oshiToken));
-        console.log("rewardManager:", address(rewardManager));
         console.log("vestingManager:", address(vestingManager));
         console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
         console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
@@ -335,6 +341,7 @@ contract DeploySetupScript is Script {
         console.log("stabilityPoolProxy:", address(stabilityPoolProxy));
         console.log("sortedTrovesBeacon:", address(sortedTrovesBeacon));
         console.log("troveManagerBeacon:", address(troveManagerBeacon));
+        console.log("rewardManagerProxy:", address(rewardManagerProxy));
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiBORouter:", address(satoshiBORouter));
@@ -342,7 +349,7 @@ contract DeploySetupScript is Script {
     }
 
     function _setConfigByOwner(uint256 owner_private_key) internal {
-        _setRewardManager(owner_private_key, address(rewardManager));
+        _setRewardManager(owner_private_key, address(rewardManagerProxy));
         _setSPCommunityIssuanceAllocation(owner_private_key);
         _setAddress(owner_private_key, borrowerOperationsProxy, IWETH(WETH_ADDRESS), debtToken, oshiToken);
         _setClaimStartTime(owner_private_key, SP_CLAIM_START_TIME);
@@ -373,7 +380,7 @@ contract DeploySetupScript is Script {
         IOSHIToken _oshiToken
     ) internal {
         vm.startBroadcast(owner_private_key);
-        rewardManager.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
+        rewardManagerProxy.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
         vm.stopBroadcast();
     }
 

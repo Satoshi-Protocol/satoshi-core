@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
@@ -21,7 +22,7 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
  *        stake 3 months: 1x, 6 months: 2x, 9 months: 3x, 12 months: 4x
  *        The lock weight will not decay.
  */
-contract RewardManager is IRewardManager, SatoshiOwnable {
+contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for *;
 
     uint256 public constant DECIMAL_PRECISION = 1e27;
@@ -53,7 +54,18 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     mapping(address => mapping(uint256 => Stake[])) internal userStakes;
     mapping(address => StakeData) internal stakeData;
 
-    constructor(ISatoshiCore _satoshiCore) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(ISatoshiCore _satoshiCore) external initializer {
+        __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
     }
 

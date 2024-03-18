@@ -26,6 +26,7 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint128 public constant SUNSET_DURATION = 180 days;
     uint256 public constant OSHI_EMISSION_DURATION = 5 * 365 days; // 5 years
+    uint128 public constant MAX_REWARD_RATE = 63419583967529168; // 10_000_000e18 / (5 * 31536000)
 
     IDebtToken public debtToken;
     IFactory public factory;
@@ -125,7 +126,6 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         liquidationManager = _liquidationManager;
         P = DECIMAL_PRECISION;
         communityIssuance = _communityIssuance;
-        rewardRate = 63419583967529168; // oshi emission per sec
         lastUpdate = uint32(block.timestamp);
     }
 
@@ -177,6 +177,13 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         indexByCollateral[_newCollateral] = idx + 1;
         emit CollateralOverwritten(collateralTokens[idx], _newCollateral);
         collateralTokens[idx] = _newCollateral;
+    }
+
+    function setRewardRate(uint128 _newRewardRate) external onlyOwner {
+        require(_newRewardRate <= MAX_REWARD_RATE, "StabilityPool: Reward rate too high");
+        _triggerOSHIIssuance();
+        rewardRate = _newRewardRate;
+        emit RewardRateUpdated(_newRewardRate);
     }
 
     /**

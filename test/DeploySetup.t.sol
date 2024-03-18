@@ -12,6 +12,7 @@ import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.
 import {IFactory} from "../src/interfaces/core/IFactory.sol";
 import {IGasPool} from "../src/interfaces/core/IGasPool.sol";
 import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
+import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 import {PriceFeedAggregator} from "../src/core/PriceFeedAggregator.sol";
 import {GasPool} from "../src/core/GasPool.sol";
@@ -95,10 +96,6 @@ contract DeploySetupTest is Test, DeployBase {
         assert(oshiToken.communityIssuanceAddress() == cpCommunityIssuanceAddr);
         assert(oshiToken.vaultAddress() == cpVestingManagerAddr);
 
-        _deployRewardManager(DEPLOYER);
-        assert(cpRewardManagerAddr == address(rewardManager));
-        assert(rewardManager.owner() == OWNER);
-
         _deployVestingManager(DEPLOYER);
         assert(cpVestingManagerAddr == address(vestingManager));
         assert(vestingManager.owner() == OWNER);
@@ -174,6 +171,16 @@ contract DeploySetupTest is Test, DeployBase {
             ILiquidationManager(cpLiquidationManagerProxyAddr),
             ICommunityIssuance(cpCommunityIssuanceAddr)
         );
+
+        // Reward Manager
+        _deployRewardManagerProxy(DEPLOYER);
+        assert(rewardManagerProxy == IRewardManager(cpRewardManagerProxyAddr));
+        assert(rewardManagerProxy.owner() == OWNER);
+        assert(rewardManagerProxy.guardian() == GUARDIAN);
+
+        // test re-initialize fail
+        vm.expectRevert("Initializable: contract is already initialized");
+        rewardManagerProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr));
 
         /* Deploy Beacon contracts */
 

@@ -62,6 +62,10 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
+
+        vm.startPrank(OWNER);
+        stabilityPoolProxy.setRewardRate(stabilityPoolProxy.MAX_REWARD_RATE());
+        vm.stopPrank();
     }
 
     // utils
@@ -487,5 +491,25 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(stabilityPoolProxy.rewardRate(), 0);
         _claimOSHIReward(user1);
         assertEq(oshiToken.balanceOf(user1), vars.OSHIBefore);
+    }
+
+    function test_setRewardrate() public {
+        vm.prank(OWNER);
+        stabilityPoolProxy.setRewardRate(0);
+
+        _openTrove(user1, 1e18, 1000e18);
+        _provideToSP(user1, 1000e18);
+        // check no oshi reward in SP
+        assertEq(stabilityPoolProxy.claimableReward(user1), 0);
+
+        vm.startPrank(OWNER);
+        stabilityPoolProxy.setRewardRate(stabilityPoolProxy.MAX_REWARD_RATE());
+        vm.stopPrank();
+        assertEq(stabilityPoolProxy.rewardRate(), stabilityPoolProxy.MAX_REWARD_RATE());
+
+        vm.warp(block.timestamp + 10000);
+        // check oshi reward in SP
+        uint256 rewardRate = stabilityPoolProxy.rewardRate();
+        assertEq(stabilityPoolProxy.claimableReward(user1), 10000 * rewardRate);
     }
 }

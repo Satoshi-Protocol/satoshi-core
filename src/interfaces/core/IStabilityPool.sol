@@ -45,6 +45,7 @@ interface IStabilityPool is ISatoshiOwnable {
     event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
     event ClaimStartTimeSet(uint256 _startTime);
     event CollateralSunset(address indexed _collateralToken);
+    event RewardRateUpdated(uint128 _newRate);
 
     function initialize(
         ISatoshiCore _satoshiCore,
@@ -73,6 +74,8 @@ interface IStabilityPool is ISatoshiOwnable {
     function SCALE_FACTOR() external view returns (uint256);
 
     function SUNSET_DURATION() external view returns (uint128);
+
+    function MAX_REWARD_RATE() external view returns (uint128);
 
     function accountDeposits(address) external view returns (uint128 amount, uint128 timestamp);
 
@@ -117,4 +120,6 @@ interface IStabilityPool is ISatoshiOwnable {
     function isClaimStart() external view returns (bool);
 
     function rewardRate() external view returns (uint128);
+
+    function setRewardRate(uint128 _newRewardRate) external;
 }

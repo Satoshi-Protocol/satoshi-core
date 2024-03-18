@@ -115,6 +115,7 @@ abstract contract DeployBase is Test {
     IStabilityPool stabilityPoolImpl;
     ISortedTroves sortedTrovesImpl;
     ITroveManager troveManagerImpl;
+    IRewardManager rewardManagerImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
@@ -128,14 +129,13 @@ abstract contract DeployBase is Test {
     IBorrowerOperations borrowerOperationsProxy;
     ILiquidationManager liquidationManagerProxy;
     IStabilityPool stabilityPoolProxy;
+    IRewardManager rewardManagerProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
     /* DebetTokenTester contract */
     DebtTokenTester debtTokenTester;
     OSHITokenTester oshiTokenTester;
-    /* Reward Manager contract */
-    IRewardManager rewardManager;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -145,6 +145,7 @@ abstract contract DeployBase is Test {
     address cpStabilityPoolImplAddr;
     address cpSortedTrovesImplAddr;
     address cpTroveManagerImplAddr;
+    address cpRewardManagerImplAddr;
     // non-upgradeable contracts
     address cpGasPoolAddr;
     address cpSatoshiCoreAddr;
@@ -152,13 +153,13 @@ abstract contract DeployBase is Test {
     address cpFactoryAddr;
     address cpCommunityIssuanceAddr;
     address cpOshiTokenAddr;
-    address cpRewardManagerAddr;
     address cpVestingManagerAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
+    address cpRewardManagerProxyAddr;
     // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
@@ -220,6 +221,7 @@ abstract contract DeployBase is Test {
         cpLiquidationManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpStabilityPoolImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpRewardManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         // non-upgradeable contracts
         cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -227,13 +229,13 @@ abstract contract DeployBase is Test {
         cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpRewardManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpLiquidationManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpStabilityPoolProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpRewardManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         // Beacon contracts
         cpSortedTrovesBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -249,6 +251,7 @@ abstract contract DeployBase is Test {
         assert(stabilityPoolImpl == IStabilityPool(address(0)));
         assert(sortedTrovesImpl == ISortedTroves(address(0)));
         assert(troveManagerImpl == ITroveManager(address(0)));
+        assert(rewardManagerImpl == IRewardManager(address(0)));
 
         priceFeedAggregatorImpl = new PriceFeedAggregator();
         borrowerOperationsImpl = new BorrowerOperations();
@@ -256,6 +259,7 @@ abstract contract DeployBase is Test {
         stabilityPoolImpl = new StabilityPool();
         sortedTrovesImpl = new SortedTroves();
         troveManagerImpl = new TroveManager();
+        rewardManagerImpl = new RewardManager();
 
         vm.stopPrank();
     }
@@ -267,7 +271,6 @@ abstract contract DeployBase is Test {
         _deployFactory(deployer);
         _deployCommunityIssuance(deployer);
         _deployOSHIToken(deployer);
-        _deployRewardManager(deployer);
         _deployVestingManager(deployer);
     }
 
@@ -276,6 +279,7 @@ abstract contract DeployBase is Test {
         _deployBorrowerOperationsProxy(deployer);
         _deployLiquidationManagerProxy(deployer);
         _deployStabilityPoolProxy(deployer);
+        _deployRewardManagerProxy(deployer);
     }
 
     function _deployBeaconContracts(address deployer) internal {
@@ -343,7 +347,7 @@ abstract contract DeployBase is Test {
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
             ICommunityIssuance(cpCommunityIssuanceAddr),
-            IRewardManager(cpRewardManagerAddr),
+            IRewardManager(cpRewardManagerProxyAddr),
             GAS_COMPENSATION
         );
         vm.stopPrank();
@@ -362,12 +366,6 @@ abstract contract DeployBase is Test {
         vm.startPrank(deployer);
         assert(oshiToken == IOSHIToken(address(0))); // check if oshi token contract is not deployed
         oshiToken = new OSHIToken(cpCommunityIssuanceAddr, cpVestingManagerAddr);
-        vm.stopPrank();
-    }
-
-    function _deployRewardManager(address deployer) internal {
-        vm.prank(deployer);
-        rewardManager = new RewardManager(ISatoshiCore(cpSatoshiCoreAddr));
         vm.stopPrank();
     }
 
@@ -441,6 +439,15 @@ abstract contract DeployBase is Test {
             )
         );
         stabilityPoolProxy = IStabilityPool(address(new ERC1967Proxy(address(stabilityPoolImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployRewardManagerProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(rewardManagerImpl != IRewardManager(address(0))); // check if implementation contract is deployed
+        assert(rewardManagerProxy == IRewardManager(address(0))); // check if proxy contract is not deployed
+        bytes memory data = abi.encodeCall(IRewardManager.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
+        rewardManagerProxy = IRewardManager(address(new ERC1967Proxy(address(rewardManagerImpl), data)));
         vm.stopPrank();
     }
 
@@ -569,23 +576,24 @@ abstract contract DeployBase is Test {
         _recipients[0] = address(stabilityPoolProxy);
         uint256[] memory _amount = new uint256[](1);
         _amount[0] = SP_ALLOCATION;
-        _setRewardManager(owner, address(rewardManager));
+        _setRewardManager(owner, address(rewardManagerProxy));
         _setTMCommunityIssuanceAllocation(owner, troveManagerBeaconProxy);
         _setSPCommunityIssuanceAllocation(owner);
         _setAddress(owner, borrowerOperationsProxy, weth, debtToken, oshiToken);
         _registerTroveManager(owner, troveManagerBeaconProxy);
         _setClaimStartTime(owner, SP_CLAIM_START_TIME);
+        _setSPRewardRate(owner);
     }
 
     function _registerTroveManager(address owner, ITroveManager _troveManager) internal {
         vm.startPrank(owner);
-        rewardManager.registerTroveManager(_troveManager);
+        rewardManagerProxy.registerTroveManager(_troveManager);
         vm.stopPrank();
     }
 
-    function _setRewardManager(address owner, address _rewardManager) internal {
+    function _setRewardManager(address owner, address _rewardManagerProxy) internal {
         vm.startPrank(owner);
-        satoshiCore.setRewardManager(_rewardManager);
+        satoshiCore.setRewardManager(_rewardManagerProxy);
         vm.stopPrank();
     }
 
@@ -617,13 +625,19 @@ abstract contract DeployBase is Test {
         IOSHIToken _oshiToken
     ) internal {
         vm.startPrank(owner);
-        rewardManager.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
+        rewardManagerProxy.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
         vm.stopPrank();
     }
 
     function _setClaimStartTime(address owner, uint32 _claimStartTime) internal {
         vm.startPrank(owner);
         stabilityPoolProxy.setClaimStartTime(_claimStartTime);
+        vm.stopPrank();
+    }
+
+    function _setSPRewardRate(address owner) internal {
+        vm.startPrank(owner);
+        stabilityPoolProxy.setRewardRate(stabilityPoolProxy.MAX_REWARD_RATE());
         vm.stopPrank();
     }
 
@@ -658,7 +672,9 @@ abstract contract DeployBase is Test {
         );
         // for testing purpose, set the debt token to the tester contract
         vm.prank(satoshiCore.owner());
-        rewardManager.setAddresses(IBorrowerOperations(cpBorrowerOperationsProxyAddr), weth, debtTokenTester, oshiToken);
+        rewardManagerProxy.setAddresses(
+            IBorrowerOperations(cpBorrowerOperationsProxyAddr), weth, debtTokenTester, oshiToken
+        );
         vm.stopPrank();
     }
 

@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
 import {IWETH} from "../../helpers/interfaces/IWETH.sol";
 import {IDebtToken} from "./IDebtToken.sol";
 import {IOSHIToken} from "./IOSHIToken.sol";
@@ -51,6 +52,7 @@ interface IRewardManager is ISatoshiOwnable {
         uint32[NUMBER_OF_LOCK_DURATIONS] nextUnlockIndex;
     }
 
+    function initialize(ISatoshiCore _satoshiCore) external;
     function stake(uint256 _amount, LockDuration _duration) external;
     function unstake(uint256 _amount) external;
     function claimReward() external;

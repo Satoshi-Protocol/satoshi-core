@@ -110,22 +110,22 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         amount = stabilityPoolProxy.claimReward(caller);
     }
 
-    function _stakeOSHIToRewardManager(address caller, uint256 amount, LockDuration lock) internal {
+    function _stakeOSHIToRewardManagerProxy(address caller, uint256 amount, LockDuration lock) internal {
         vm.startPrank(caller);
-        oshiToken.approve(address(rewardManager), amount);
-        rewardManager.stake(amount, lock);
+        oshiToken.approve(address(rewardManagerProxy), amount);
+        rewardManagerProxy.stake(amount, lock);
         vm.stopPrank();
     }
 
-    function _unstakeOSHIFromRewardManager(address caller, uint256 amount) internal {
+    function _unstakeOSHIFromRewardManagerProxy(address caller, uint256 amount) internal {
         vm.startPrank(caller);
-        rewardManager.unstake(amount);
+        rewardManagerProxy.unstake(amount);
         vm.stopPrank();
     }
 
-    function _claimsRewardManagerReward(address caller) internal {
+    function _claimsRewardManagerProxyReward(address caller) internal {
         vm.startPrank(caller);
-        rewardManager.claimReward();
+        rewardManagerProxy.claimReward();
         vm.stopPrank();
     }
 
@@ -210,9 +210,9 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _troveClaimOSHIReward(user1);
         uint256 expectedOSHIAmount = 20 * _1_MILLION;
         assertApproxEqAbs(oshiToken.balanceOf(user1), expectedOSHIAmount, 1e10);
-        assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
-        assertEq(rewardManager.getPendingSATGain(user1), 0);
-        assertEq(rewardManager.satForFeeReceiver(), 5e18);
+        assertEq(debtToken.balanceOf(address(rewardManagerProxy)), 5e18);
+        assertEq(rewardManagerProxy.getPendingSATGain(user1), 0);
+        assertEq(rewardManagerProxy.satForFeeReceiver(), 5e18);
     }
 
     function test_FeeReceiverReceiveCorrectAmount() public {
@@ -222,12 +222,12 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _troveClaimOSHIReward(user1);
         uint256 expectedOSHIAmount = 20 * _1_MILLION;
         assertApproxEqAbs(oshiToken.balanceOf(user1), expectedOSHIAmount, 1e10);
-        assertEq(debtToken.balanceOf(address(rewardManager)), 5e18);
-        assertEq(rewardManager.getPendingSATGain(user1), 0);
-        assertEq(rewardManager.satForFeeReceiver(), 5e18);
+        assertEq(debtToken.balanceOf(address(rewardManagerProxy)), 5e18);
+        assertEq(rewardManagerProxy.getPendingSATGain(user1), 0);
+        assertEq(rewardManagerProxy.satForFeeReceiver(), 5e18);
 
         vm.prank(OWNER);
-        rewardManager.claimFee();
+        rewardManagerProxy.claimFee();
         assertEq(debtToken.balanceOf(FEE_RECEIVER), 5e18);
     }
 
@@ -238,12 +238,12 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount, LockDuration.THREE);
         vm.warp(block.timestamp + 10 days);
         // no oshi to unstake
         vm.startPrank(user1);
         vm.expectRevert("RewardManager: No OSHI to withdraw");
-        rewardManager.unstake(OSHIAmount);
+        rewardManagerProxy.unstake(OSHIAmount);
     }
 
     function test_unstakeFromRMAfterUnlock() public {
@@ -253,17 +253,17 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount, LockDuration.THREE);
 
         // 3 months later, user1 can unstake OSHI
         vm.warp(block.timestamp + 90 days);
-        uint256 unlockedAmount = rewardManager.getAvailableUnstakeAmount(user1);
-        _unstakeOSHIFromRewardManager(user1, OSHIAmount);
-        assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
+        uint256 unlockedAmount = rewardManagerProxy.getAvailableUnstakeAmount(user1);
+        _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount);
+        assertEq(rewardManagerProxy.totalOSHIWeightedStaked(), 0);
         assertEq(oshiToken.balanceOf(user1), OSHIAmount);
         assertEq(OSHIAmount, unlockedAmount);
-        assertEq(rewardManager.getPendingSATGain(user1), 0);
-        assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
+        assertEq(rewardManagerProxy.getPendingSATGain(user1), 0);
+        assertEq(rewardManagerProxy.getPendingCollGain(user1)[0], 0);
     }
 
     function test_stakeAndUnstakePartial() public {
@@ -273,21 +273,21 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount / 2, LockDuration.THREE);
         vm.warp(block.timestamp + 1 days);
-        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount / 2, LockDuration.THREE);
 
         // 3 months later, user1 can unstake OSHI
         vm.warp(block.timestamp + 89 days);
-        uint256 unlockedAmount = rewardManager.getAvailableUnstakeAmount(user1);
-        _unstakeOSHIFromRewardManager(user1, OSHIAmount / 2 - 1);
+        uint256 unlockedAmount = rewardManagerProxy.getAvailableUnstakeAmount(user1);
+        _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount / 2 - 1);
         vm.warp(block.timestamp + 1 days);
-        _unstakeOSHIFromRewardManager(user1, OSHIAmount / 2 + 1);
-        assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
+        _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount / 2 + 1);
+        assertEq(rewardManagerProxy.totalOSHIWeightedStaked(), 0);
         assertEq(oshiToken.balanceOf(user1), OSHIAmount);
         assertEq(OSHIAmount / 2, unlockedAmount);
-        assertEq(rewardManager.getPendingSATGain(user1), 0);
-        assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
+        assertEq(rewardManagerProxy.getPendingSATGain(user1), 0);
+        assertEq(rewardManagerProxy.getPendingCollGain(user1)[0], 0);
     }
 
     function test_unstake12MonthFromRMAfterUnlock() public {
@@ -297,21 +297,21 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.THREE);
-        _stakeOSHIToRewardManager(user1, OSHIAmount / 2, LockDuration.TWELVE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount / 2, LockDuration.THREE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount / 2, LockDuration.TWELVE);
 
         // 3 months later, user1 can unstake OSHIAmount/2 OSHI
         vm.warp(block.timestamp + 90 days);
-        _unstakeOSHIFromRewardManager(user1, OSHIAmount);
+        _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount);
         assertEq(oshiToken.balanceOf(user1), OSHIAmount / 2);
 
         // 12 months later, user1 can unstake another OSHIAmount/2 OSHI
         vm.warp(block.timestamp + 360 days);
-        _unstakeOSHIFromRewardManager(user1, OSHIAmount);
-        assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
+        _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount);
+        assertEq(rewardManagerProxy.totalOSHIWeightedStaked(), 0);
         assertEq(oshiToken.balanceOf(user1), OSHIAmount);
-        assertEq(rewardManager.getPendingSATGain(user1), 0);
-        assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
+        assertEq(rewardManagerProxy.getPendingSATGain(user1), 0);
+        assertEq(rewardManagerProxy.getPendingCollGain(user1)[0], 0);
     }
 
     function test_StakeOSHIToRM() public {
@@ -323,8 +323,8 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim OSHI reward
         uint256 OSHIAmount = _troveClaimOSHIReward(user1);
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
-        assertEq(OSHIAmount, rewardManager.totalOSHIWeightedStaked());
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount, LockDuration.THREE);
+        assertEq(OSHIAmount, rewardManagerProxy.totalOSHIWeightedStaked());
         vm.warp(block.timestamp + 355 days);
         _updateRoundData(
             RoundData({
@@ -339,18 +339,18 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user1 claim sOSHI reward (protocol revenue)
         // uint256 interest = (vars.userDebtBefore[0]) * INTEREST_RATE_IN_BPS / 10000;
         uint256 expectedReward = (50567282792268718326 + 5e18) * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION;
-        uint256 user1PendingSATGain = rewardManager.getPendingSATGain(user1);
+        uint256 user1PendingSATGain = rewardManagerProxy.getPendingSATGain(user1);
         assertApproxEqAbs(expectedReward, user1PendingSATGain, 1e10);
-        _claimsRewardManagerReward(user1);
+        _claimsRewardManagerProxyReward(user1);
 
         // check pending reward is 0
-        assertEq(rewardManager.getPendingSATGain(user1), 0);
-        assertEq(rewardManager.getPendingCollGain(user1)[0], 0);
+        assertEq(rewardManagerProxy.getPendingSATGain(user1), 0);
+        assertEq(rewardManagerProxy.getPendingCollGain(user1)[0], 0);
         // check the state
         // user2 minting fee + user1 intererst
         assertEq(user1PendingSATGain, debtToken.balanceOf(user1) - 1000e18);
-        _unstakeOSHIFromRewardManager(user1, OSHIAmount);
-        assertEq(rewardManager.totalOSHIWeightedStaked(), 0);
+        _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount);
+        assertEq(rewardManagerProxy.totalOSHIWeightedStaked(), 0);
     }
 
     function test_getOSHIFromSP() public {
@@ -392,7 +392,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(OSHIAmount, vars.claimableTroveReward[0]);
 
         // user1 stake OSHI to reward manager
-        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.TWELVE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount, LockDuration.TWELVE);
 
         _updateRoundData(
             RoundData({
@@ -414,13 +414,13 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 expectedRedemptionAmount = redeemAmount * 1e18 / price;
         uint256 expectedToRM = expectedRedemptionAmount * redemptionRate / 1e18;
 
-        assertEq(collateralMock.balanceOf(address(rewardManager)), expectedToRM);
+        assertEq(collateralMock.balanceOf(address(rewardManagerProxy)), expectedToRM);
 
         // check pending coll gain
-        uint256 pendingCollGain = rewardManager.getPendingCollGain(user1)[0];
+        uint256 pendingCollGain = rewardManagerProxy.getPendingCollGain(user1)[0];
         assertApproxEqAbs(pendingCollGain, expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100);
 
-        uint256 pendingCollForFeeReceiver = rewardManager.collForFeeReceiver(0);
+        uint256 pendingCollForFeeReceiver = rewardManagerProxy.collForFeeReceiver(0);
         assertApproxEqAbs(
             pendingCollForFeeReceiver, expectedToRM - expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100
         );
@@ -435,21 +435,21 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _openTrove(user5, 1e18, 1000e18);
 
         // check fee receiver SAT gain in reward manager, no one stake in reward manager
-        assertEq(rewardManager.satForFeeReceiver(), 5e18 * 5);
+        assertEq(rewardManagerProxy.satForFeeReceiver(), 5e18 * 5);
 
         vm.prank(OWNER);
-        rewardManager.claimFee();
+        rewardManagerProxy.claimFee();
         assertEq(debtToken.balanceOf(FEE_RECEIVER), 5e18 * 5);
 
         // someone stake OSHI in Reward Manager
         vm.warp(block.timestamp + 30 days);
         uint256 OSHIAmount = _troveClaimOSHIReward(user1);
-        _stakeOSHIToRewardManager(user1, OSHIAmount, LockDuration.THREE);
+        _stakeOSHIToRewardManagerProxy(user1, OSHIAmount, LockDuration.THREE);
 
         vm.startPrank(FEE_RECEIVER);
-        debtToken.approve(address(rewardManager), 5e18 * 5);
-        rewardManager.increaseSATPerUintStaked(5e18 * 5);
+        debtToken.approve(address(rewardManagerProxy), 5e18 * 5);
+        rewardManagerProxy.increaseSATPerUintStaked(5e18 * 5);
         vm.stopPrank();
-        assert(rewardManager.F_SAT() > 0);
+        assert(rewardManagerProxy.F_SAT() > 0);
     }
 }
