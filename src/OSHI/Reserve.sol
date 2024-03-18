@@ -21,10 +21,9 @@ contract Reserve is SatoshiOwnable {
     uint64 public immutable period;
     uint64 private constant _duration = 60; // 60 months
     uint64 private constant _MONTH = 30 days;
-    uint256 internal constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
     uint256 private _released;
-    uint256 private _totalAmount;
-    uint256 private _eachPeriodReleasedAmount; // 2.1% every 6 months / 1.05% every 3 months
+    uint256 private immutable _totalAmount;
+    uint256 private immutable _eachPeriodReleasedAmount; // 2.1% every 6 months / 1.05% every 3 months
     IERC20 public immutable token; // OSHI token
 
     /**

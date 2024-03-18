@@ -37,7 +37,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     IWETH public weth;
 
     IBorrowerOperations public borrowerOperations;
-    ITroveManager[] public registeredTroveManagers;
+    mapping(address => bool) public isTroveManagerRegistered;
     mapping(address => uint256) public collTokenIndex;
 
     uint256 public totalOSHIWeightedStaked;
@@ -225,8 +225,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function _getPendingCollGain(address _user) internal view returns (uint256[] memory) {
-        uint256[] memory CollGain = new uint256[](collToken.length);
-        for (uint256 i; i < collToken.length; ++i) {
+        uint256 collTokenLength = collToken.length;
+        uint256[] memory CollGain = new uint256[](collTokenLength);
+        for (uint256 i; i < collTokenLength; ++i) {
             uint256 F_COLL_Snapshot = snapshots[_user].F_COLL_Snapshot[i];
             CollGain[i] = stakeData[_user].lockWeights * (F_COLL[i] - F_COLL_Snapshot) / DECIMAL_PRECISION;
         }
@@ -270,7 +271,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     // --- Admin Functions ---
     function registerTroveManager(ITroveManager _troveManager) external onlyOwner {
-        registeredTroveManagers.push(_troveManager);
+        isTroveManagerRegistered[address(_troveManager)] = true;
         IERC20 collateralToken = _troveManager.collateralToken();
         require(address(collateralToken) != address(0), "RewardManager: Invalid collateral token");
         collToken.push(collateralToken);
@@ -281,13 +282,8 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
     }
 
     function removeTroveManager(ITroveManager _troveManager) external onlyOwner {
-        for (uint256 i; i < registeredTroveManagers.length; ++i) {
-            if (registeredTroveManagers[i] == _troveManager) {
-                delete registeredTroveManagers[i];
-                emit TroveManagerRemoved(_troveManager);
-                break;
-            }
-        }
+        isTroveManagerRegistered[address(_troveManager)] = false;
+        emit TroveManagerRemoved(_troveManager);
     }
 
     function setAddresses(
@@ -320,7 +316,8 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
 
     // --- Internal Functions ---
     function _updateUserSnapshots(address _user) internal {
-        for (uint256 i; i < collToken.length; ++i) {
+        uint256 length = collToken.length;
+        for (uint256 i; i < length; ++i) {
             snapshots[_user].F_COLL_Snapshot[i] = F_COLL[i];
         }
         snapshots[_user].F_SAT_Snapshot = F_SAT;
@@ -360,15 +357,8 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         if (
             msg.sender == SATOSHI_CORE.owner() || msg.sender == address(borrowerOperations)
                 || msg.sender == address(debtToken) || msg.sender == SATOSHI_CORE.feeReceiver()
+                || isTroveManagerRegistered[msg.sender]
         ) isRegistered = true;
-        if (!isRegistered) {
-            for (uint256 i; i < registeredTroveManagers.length; ++i) {
-                if (msg.sender == address(registeredTroveManagers[i])) {
-                    isRegistered = true;
-                    break;
-                }
-            }
-        }
         require(isRegistered, "RewardManager: Caller is not Valid");
     }
 }
