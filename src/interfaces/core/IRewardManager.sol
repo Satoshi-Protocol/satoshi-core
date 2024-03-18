@@ -67,8 +67,6 @@ interface IRewardManager is ISatoshiOwnable {
         IDebtToken _debtToken,
         IOSHIToken _oshiToken
     ) external;
-    function transferToken(IERC20 token, address receiver, uint256 amount) external;
-    function setTokenApproval(IERC20 token, address spender, uint256 amount) external;
     function F_SAT() external view returns (uint256);
     function F_COLL(uint256) external view returns (uint256);
     function collForFeeReceiver(uint256) external view returns (uint256);

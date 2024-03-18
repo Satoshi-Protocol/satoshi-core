@@ -3,6 +3,7 @@
 pragma solidity 0.8.13;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 
 contract OSHIToken is IOSHIToken, ERC20 {
@@ -83,7 +84,7 @@ contract OSHIToken is IOSHIToken, ERC20 {
                 keccak256(abi.encode(permitTypeHash, owner, spender, amount, _nonces[owner]++, deadline))
             )
         );
-        address recoveredAddress = ecrecover(digest, v, r, s);
+        address recoveredAddress = ECDSA.recover(digest, v, r, s);
         require(recoveredAddress == owner, "OSHI: invalid signature");
         _approve(owner, spender, amount);
     }

@@ -305,14 +305,6 @@ contract RewardManager is IRewardManager, SatoshiOwnable {
         emit WETHSet(_weth);
     }
 
-    function transferToken(IERC20 token, address receiver, uint256 amount) external onlyOwner {
-        token.safeTransfer(receiver, amount);
-    }
-
-    function setTokenApproval(IERC20 token, address spender, uint256 amount) external onlyOwner {
-        token.safeApprove(spender, amount);
-    }
-
     function claimFee() external onlyOwner {
         if (satForFeeReceiver != 0) {
             debtToken.safeTransfer(SATOSHI_CORE.feeReceiver(), satForFeeReceiver);

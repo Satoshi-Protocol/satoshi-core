@@ -16,7 +16,7 @@ import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 
-contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
+contract OSHITokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;

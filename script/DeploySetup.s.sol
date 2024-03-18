@@ -208,7 +208,9 @@ contract DeploySetupScript is Script {
         assert(cpFactoryAddr == address(factory));
 
         // Community Issuance
-        communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
+        communityIssuance = new CommunityIssuance(
+            ISatoshiCore(cpSatoshiCoreAddr), IOSHIToken(cpOshiTokenAddr), IStabilityPool(cpStabilityPoolProxyAddr)
+        );
         assert(cpCommunityIssuanceAddr == address(communityIssuance));
 
         // OSHI Token
@@ -342,9 +344,7 @@ contract DeploySetupScript is Script {
     function _setConfigByOwner(uint256 owner_private_key) internal {
         _setRewardManager(owner_private_key, address(rewardManager));
         _setSPCommunityIssuanceAllocation(owner_private_key);
-        _setAddress(
-            owner_private_key, borrowerOperationsProxy, stabilityPoolProxy, IWETH(WETH_ADDRESS), debtToken, oshiToken
-        );
+        _setAddress(owner_private_key, borrowerOperationsProxy, IWETH(WETH_ADDRESS), debtToken, oshiToken);
         _setClaimStartTime(owner_private_key, SP_CLAIM_START_TIME);
     }
 
@@ -368,13 +368,11 @@ contract DeploySetupScript is Script {
     function _setAddress(
         uint256 owner_private_key,
         IBorrowerOperations _borrowerOperations,
-        IStabilityPool _stabilityPoolProxy,
         IWETH _weth,
         IDebtToken _debtToken,
         IOSHIToken _oshiToken
     ) internal {
         vm.startBroadcast(owner_private_key);
-        communityIssuance.setAddresses(_oshiToken, _stabilityPoolProxy);
         rewardManager.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
         vm.stopBroadcast();
     }

@@ -9,13 +9,18 @@ import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
 
 contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable {
-    IStabilityPool public stabilityPool;
-    IOSHIToken public OSHIToken;
+    IStabilityPool public immutable stabilityPool;
+    IOSHIToken public immutable OSHIToken;
 
     mapping(address => uint256) public allocated; // allocate to troveManagers and SP
 
-    constructor(ISatoshiCore _satoshiCore) {
+    constructor(ISatoshiCore _satoshiCore, IOSHIToken _oshiToken, IStabilityPool _stabilityPool) {
         __SatoshiOwnable_init(_satoshiCore);
+        OSHIToken = _oshiToken;
+        stabilityPool = _stabilityPool;
+
+        emit OSHITokenSet(_oshiToken);
+        emit StabilityPoolSet(_stabilityPool);
     }
 
     function setAllocated(address[] calldata _recipients, uint256[] calldata _amounts) external onlyOwner {
@@ -24,14 +29,6 @@ contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable {
             allocated[_recipients[i]] = _amounts[i];
             emit SetAllocation(_recipients[i], _amounts[i]);
         }
-    }
-
-    function setAddresses(IOSHIToken _oshiToken, IStabilityPool _stabilityPool) external onlyOwner {
-        OSHIToken = _oshiToken;
-        stabilityPool = _stabilityPool;
-
-        emit OSHITokenSet(_oshiToken);
-        emit StabilityPoolSet(_stabilityPool);
     }
 
     function transferAllocatedTokens(address receiver, uint256 amount) external {

@@ -352,7 +352,9 @@ abstract contract DeployBase is Test {
     function _deployCommunityIssuance(address deployer) internal {
         vm.startPrank(deployer);
         assert(communityIssuance == ICommunityIssuance(address(0))); // check if factory contract is not deployed
-        communityIssuance = new CommunityIssuance(ISatoshiCore(cpSatoshiCoreAddr));
+        communityIssuance = new CommunityIssuance(
+            ISatoshiCore(cpSatoshiCoreAddr), IOSHIToken(cpOshiTokenAddr), IStabilityPool(cpStabilityPoolProxyAddr)
+        );
         vm.stopPrank();
     }
 
@@ -570,7 +572,7 @@ abstract contract DeployBase is Test {
         _setRewardManager(owner, address(rewardManager));
         _setTMCommunityIssuanceAllocation(owner, troveManagerBeaconProxy);
         _setSPCommunityIssuanceAllocation(owner);
-        _setAddress(owner, borrowerOperationsProxy, stabilityPoolProxy, weth, debtToken, oshiToken);
+        _setAddress(owner, borrowerOperationsProxy, weth, debtToken, oshiToken);
         _registerTroveManager(owner, troveManagerBeaconProxy);
         _setClaimStartTime(owner, SP_CLAIM_START_TIME);
     }
@@ -610,13 +612,11 @@ abstract contract DeployBase is Test {
     function _setAddress(
         address owner,
         IBorrowerOperations _borrowerOperations,
-        IStabilityPool _stabilityPoolProxy,
         IWETH _weth,
         IDebtToken _debtToken,
         IOSHIToken _oshiToken
     ) internal {
         vm.startPrank(owner);
-        communityIssuance.setAddresses(_oshiToken, _stabilityPoolProxy);
         rewardManager.setAddresses(_borrowerOperations, _weth, _debtToken, _oshiToken);
         vm.stopPrank();
     }
