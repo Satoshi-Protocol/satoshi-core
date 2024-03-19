@@ -583,6 +583,7 @@ abstract contract DeployBase is Test {
         _registerTroveManager(owner, troveManagerBeaconProxy);
         _setClaimStartTime(owner, SP_CLAIM_START_TIME);
         _setSPRewardRate(owner);
+        _setTMRewardRate(owner, troveManagerBeaconProxy);
     }
 
     function _registerTroveManager(address owner, ITroveManager _troveManager) internal {
@@ -638,6 +639,15 @@ abstract contract DeployBase is Test {
     function _setSPRewardRate(address owner) internal {
         vm.startPrank(owner);
         stabilityPoolProxy.setRewardRate(stabilityPoolProxy.MAX_REWARD_RATE());
+        vm.stopPrank();
+    }
+
+    function _setTMRewardRate(address owner, ITroveManager troveManagerBeaconProxy) internal {
+        vm.startPrank(owner);
+        uint128[] memory numerator = new uint128[](1);
+        numerator[0] = 1;
+        factory.setRewardRate(numerator, 1);
+        assertEq(troveManagerBeaconProxy.rewardRate(), factory.maxRewardRate());
         vm.stopPrank();
     }
 

@@ -62,10 +62,6 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
-
-        vm.startPrank(OWNER);
-        stabilityPoolProxy.setRewardRate(stabilityPoolProxy.MAX_REWARD_RATE());
-        vm.stopPrank();
     }
 
     // utils

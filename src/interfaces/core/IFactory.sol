@@ -68,4 +68,6 @@ interface IFactory is ISatoshiOwnable {
     function rewardManager() external view returns (IRewardManager);
 
     function setRewardRate(uint128[] calldata _numerator, uint128 _denominator) external;
+
+    function maxRewardRate() external view returns (uint128);
 }

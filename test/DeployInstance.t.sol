@@ -62,5 +62,7 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
         assert(collateralToken == collateralMock);
 
         assert(troveManagerBeaconProxy.communityIssuance() == communityIssuance);
+
+        assertEq(troveManagerBeaconProxy.rewardRate(), 0);
     }
 }

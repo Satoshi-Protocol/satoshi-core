@@ -41,7 +41,7 @@ contract Factory is IFactory, SatoshiOwnable {
     IRewardManager public immutable rewardManager;
     ITroveManager[] public troveManagers;
 
-    uint128 constant maxRewardRate = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
+    uint128 public constant maxRewardRate = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
 
     constructor(
         ISatoshiCore _satoshiCore,
