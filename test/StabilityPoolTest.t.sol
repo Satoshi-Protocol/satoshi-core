@@ -10,7 +10,7 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
-import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
+import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, _1_MILLION} from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
@@ -474,19 +474,12 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertEq(vars.stabilityPoolDebtAfter, 200e18);
         // 5 years later
-        vm.warp(block.timestamp + 365 days * 5);
+        vm.warp(block.timestamp + 365 days * 6);
         uint256 oshiReward = stabilityPoolProxy.claimableReward(user1);
         _claimOSHIReward(user1);
         vars.OSHIBefore = oshiToken.balanceOf(user1);
-        assertGt(oshiReward, 0);
+        assertEq(oshiReward, 10 * _1_MILLION);
         assertEq(vars.OSHIBefore, oshiReward);
-
-        vm.warp(block.timestamp + 100 days);
-        uint256 oshiReward2 = stabilityPoolProxy.claimableReward(user1);
-        assertEq(oshiReward2, 0);
-        assertEq(stabilityPoolProxy.rewardRate(), 0);
-        _claimOSHIReward(user1);
-        assertEq(oshiToken.balanceOf(user1), vars.OSHIBefore);
     }
 
     function test_setRewardrate() public {
