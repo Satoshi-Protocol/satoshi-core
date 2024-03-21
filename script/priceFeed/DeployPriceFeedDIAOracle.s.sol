@@ -9,7 +9,8 @@ import {
     SATOSHI_CORE_ADDRESS,
     DIA_ORACLE_PRICE_FEED_SOURCE_ADDRESS,
     DIA_ORACLE_PRICE_FEED_DECIMALS,
-    DIA_ORACLE_PRICE_FEED_KEY
+    DIA_ORACLE_PRICE_FEED_KEY,
+    DIA_MAX_TIME_THRESHOLD
 } from "./DeployPriceFeedConfig.sol";
 
 contract DeployPriceFeedChainlinkScript is Script {
@@ -22,8 +23,9 @@ contract DeployPriceFeedChainlinkScript is Script {
 
         IDIAOracleV2 source = IDIAOracleV2(DIA_ORACLE_PRICE_FEED_SOURCE_ADDRESS);
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
-        priceFeedDIAOracle =
-            new PriceFeedDIAOracle(source, DIA_ORACLE_PRICE_FEED_DECIMALS, DIA_ORACLE_PRICE_FEED_KEY, satoshiCore);
+        priceFeedDIAOracle = new PriceFeedDIAOracle(
+            source, DIA_ORACLE_PRICE_FEED_DECIMALS, DIA_ORACLE_PRICE_FEED_KEY, satoshiCore, DIA_MAX_TIME_THRESHOLD
+        );
         assert(priceFeedDIAOracle.fetchPrice() > 0);
         console.log("PriceFeedDIAOracle deployed at:", address(priceFeedDIAOracle));
 

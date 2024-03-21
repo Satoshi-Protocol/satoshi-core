@@ -12,4 +12,9 @@ interface ICommunityIssuance is ISatoshiOwnable {
 
     function transferAllocatedTokens(address receiver, uint256 amount) external;
     function setAllocated(address[] calldata _recipients, uint256[] calldata _amounts) external;
+    function collectAllocatedTokens(uint256 amount) external;
+    function allocated(address) external view returns (uint256);
+    function collected(address) external view returns (uint256);
+    function stabilityPool() external view returns (IStabilityPool);
+    function OSHIToken() external view returns (IOSHIToken);
 }

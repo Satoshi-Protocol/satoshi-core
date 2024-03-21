@@ -657,25 +657,21 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
     // --- OSHI issuance functions ---
     function _triggerOSHIIssuance() internal {
-        _updateG(_OSHIIssuance());
-        if (block.timestamp >= SATOSHI_CORE.startTime() + OSHI_EMISSION_DURATION && rewardRate != 0) {
-            rewardRate = 0;
-        }
+        uint256 OSHIIssuance = _OSHIIssuance();
+        communityIssuance.collectAllocatedTokens(OSHIIssuance);
+        _updateG(OSHIIssuance);
         lastUpdate = uint32(block.timestamp);
     }
 
     function _OSHIIssuance() internal view returns (uint256) {
-        // check OSHI issuance is finished
-        uint256 emissionEndTime = SATOSHI_CORE.startTime() + OSHI_EMISSION_DURATION;
-        if (block.timestamp > emissionEndTime) {
-            if (lastUpdate > emissionEndTime) {
-                return 0;
-            } else {
-                return (emissionEndTime - lastUpdate) * rewardRate;
-            }
-        }
         uint256 duration = block.timestamp - lastUpdate;
-        return duration * rewardRate;
+        uint256 releasedToken = duration * rewardRate;
+        uint256 allocatedToken = communityIssuance.allocated(address(this));
+        // check the allocated token in community issuance
+        if (releasedToken > allocatedToken) {
+            releasedToken = allocatedToken;
+        }
+        return releasedToken;
     }
 
     function _updateG(uint256 OSHIIssuance) internal {

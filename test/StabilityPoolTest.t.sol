@@ -497,6 +497,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _provideToSP(user1, 1000e18);
         // check no oshi reward in SP
         assertEq(stabilityPoolProxy.claimableReward(user1), 0);
+        vm.warp(block.timestamp + 10000);
+        assertEq(stabilityPoolProxy.claimableReward(user1), 0);
 
         vm.startPrank(OWNER);
         stabilityPoolProxy.setRewardRate(stabilityPoolProxy.MAX_REWARD_RATE());

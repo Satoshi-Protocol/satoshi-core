@@ -100,6 +100,10 @@ contract DeploySetupTest is Test, DeployBase {
         assert(cpVestingManagerAddr == address(vestingManager));
         assert(vestingManager.owner() == OWNER);
 
+        _deploySatoshiLPFactory(DEPLOYER);
+        assert(cpSatoshiLPFactoryAddr == address(satoshiLPFactory));
+        assert(satoshiLPFactory.owner() == OWNER);
+
         /* Deploy UUPS proxy contracts */
 
         // PriceFeedAggregator

@@ -13,6 +13,7 @@ contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable {
     IOSHIToken public immutable OSHIToken;
 
     mapping(address => uint256) public allocated; // allocate to troveManagers and SP
+    mapping(address => uint256) public collected;
 
     constructor(ISatoshiCore _satoshiCore, IOSHIToken _oshiToken, IStabilityPool _stabilityPool) {
         __SatoshiOwnable_init(_satoshiCore);
@@ -33,9 +34,17 @@ contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable {
 
     function transferAllocatedTokens(address receiver, uint256 amount) external {
         if (amount > 0) {
+            require(collected[msg.sender] >= amount, "Community Issuance: Insufficient balance");
+            collected[msg.sender] -= amount;
+            OSHIToken.transfer(receiver, amount);
+        }
+    }
+
+    function collectAllocatedTokens(uint256 amount) external {
+        if (amount > 0) {
             require(allocated[msg.sender] >= amount, "Community Issuance: Insufficient balance");
             allocated[msg.sender] -= amount;
-            OSHIToken.transfer(receiver, amount);
+            collected[msg.sender] += amount;
         }
     }
 }

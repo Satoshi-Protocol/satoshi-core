@@ -22,6 +22,8 @@ import {DebtToken} from "../../src/core/DebtToken.sol";
 import {OSHIToken} from "../../src/OSHI/OSHIToken.sol";
 import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
 import {OSHITokenTester} from "../../test/OSHITokenTester.sol";
+import {SLPTokenTester} from "../../test/SLPTokenTester.sol";
+import {MockUniswapV2ERC20} from "../../test/MockUniswapV2ERC20.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
 import {CommunityIssuance} from "../../src/OSHI/CommunityIssuance.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
@@ -30,6 +32,7 @@ import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {ReferralManager} from "../../src/helpers/ReferralManager.sol";
 import {VestingManager} from "../../src/OSHI/VestingManager.sol";
+import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -48,6 +51,7 @@ import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IReferralManager} from "../../src/helpers/interfaces/IReferralManager.sol";
 import {IVestingManager} from "../../src/interfaces/OSHI/IVestingManager.sol";
+import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -124,6 +128,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuance;
     IOSHIToken oshiToken;
     IVestingManager vestingManager;
+    ISatoshiLPFactory satoshiLPFactory;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
@@ -136,6 +141,7 @@ abstract contract DeployBase is Test {
     /* DebetTokenTester contract */
     DebtTokenTester debtTokenTester;
     OSHITokenTester oshiTokenTester;
+    SLPTokenTester slpTokenTester;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -154,6 +160,7 @@ abstract contract DeployBase is Test {
     address cpCommunityIssuanceAddr;
     address cpOshiTokenAddr;
     address cpVestingManagerAddr;
+    address cpSatoshiLPFactoryAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
@@ -230,6 +237,7 @@ abstract contract DeployBase is Test {
         cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiLPFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -272,6 +280,7 @@ abstract contract DeployBase is Test {
         _deployCommunityIssuance(deployer);
         _deployOSHIToken(deployer);
         _deployVestingManager(deployer);
+        _deploySatoshiLPFactory(deployer);
     }
 
     function _deployUUPSUpgradeableContracts(address deployer) internal {
@@ -373,6 +382,14 @@ abstract contract DeployBase is Test {
         vm.startPrank(deployer);
         assert(vestingManager == IVestingManager(address(0))); // check if vesting manager contract is not deployed
         vestingManager = new VestingManager(ISatoshiCore(cpSatoshiCoreAddr), cpOshiTokenAddr);
+        vm.stopPrank();
+    }
+
+    function _deploySatoshiLPFactory(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(satoshiLPFactory == ISatoshiLPFactory(address(0))); // check if satoshi LP factory contract is not deployed
+        satoshiLPFactory =
+            new SatoshiLPFactory(ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceAddr));
         vm.stopPrank();
     }
 
@@ -691,6 +708,24 @@ abstract contract DeployBase is Test {
     function _deployOSHITokenTester(address vault) internal {
         vm.startPrank(DEPLOYER);
         oshiTokenTester = new OSHITokenTester(address(communityIssuance), vault);
+        vm.stopPrank();
+    }
+
+    function _deploySLPTokenTester(IERC20 lpToken) internal {
+        vm.startPrank(DEPLOYER);
+        slpTokenTester = new SLPTokenTester(satoshiCore, lpToken, communityIssuance);
+        vm.stopPrank();
+    }
+
+    function _deployMockUniV2Token() internal returns (address mockUniV2TokenAddr) {
+        vm.startPrank(DEPLOYER);
+        mockUniV2TokenAddr = address(new MockUniswapV2ERC20());
+        vm.stopPrank();
+    }
+
+    function _deploySLPToken(IERC20 lpToken) internal returns (address slpTokenAddr) {
+        vm.startPrank(OWNER);
+        slpTokenAddr = satoshiLPFactory.createSLP("SLP", "SLP", lpToken);
         vm.stopPrank();
     }
 }

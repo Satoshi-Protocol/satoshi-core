@@ -16,13 +16,19 @@ contract PriceFeedDIAOracle is IPriceFeed, SatoshiOwnable {
     string internal _key;
     uint256 public maxTimeThreshold;
 
-    constructor(IDIAOracleV2 source_, uint8 decimals_, string memory key_, ISatoshiCore _satoshiCore) {
+    constructor(
+        IDIAOracleV2 source_,
+        uint8 decimals_,
+        string memory key_,
+        ISatoshiCore _satoshiCore,
+        uint256 _maxTimeThreshold
+    ) {
         __SatoshiOwnable_init(_satoshiCore);
         _source = source_;
         _decimals = decimals_;
         _key = key_;
-        maxTimeThreshold = 86400;
-        emit MaxTimeThresholdUpdated(86400);
+        maxTimeThreshold = _maxTimeThreshold;
+        emit MaxTimeThresholdUpdated(_maxTimeThreshold);
     }
 
     function fetchPrice() external returns (uint256) {

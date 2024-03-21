@@ -1208,21 +1208,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function _updateRewardIntegral(uint256 supply) internal returns (uint256) {
         require(lastUpdate <= block.timestamp, "Invalid last update");
-        uint256 emissionEndTime = SATOSHI_CORE.startTime() + OSHI_EMISSION_DURATION;
         uint256 integral = rewardIntegral; // global integral
-        if (block.timestamp > emissionEndTime) {
-            if (lastUpdate > emissionEndTime) {
-                lastUpdate = block.timestamp;
-            } else {
-                // lastUpdate <= emissionEndTime
-                uint256 duration = emissionEndTime - lastUpdate;
-                integral = _computeIntegral(duration, supply);
-            }
-            if (rewardRate != 0) rewardRate = 0;
-        } else {
-            uint256 duration = block.timestamp - lastUpdate;
-            integral = _computeIntegral(duration, supply);
-        }
+        uint256 duration = block.timestamp - lastUpdate;
+        integral = _computeIntegral(duration, supply);
 
         return integral;
     }
@@ -1232,7 +1220,14 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         if (duration > 0) {
             lastUpdate = block.timestamp;
             if (supply > 0) {
-                integral += (duration * rewardRate * 1e18) / supply;
+                uint256 releasedToken = duration * rewardRate;
+                uint256 allocatedToken = communityIssuance.allocated(address(this));
+                // check the allocated token in community issuance
+                if (releasedToken > allocatedToken) {
+                    releasedToken = allocatedToken;
+                }
+                communityIssuance.collectAllocatedTokens(releasedToken);
+                integral += releasedToken * 1e18 / supply;
                 rewardIntegral = integral;
             }
         }
@@ -1270,7 +1265,13 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         if (duration > 0) {
             uint256 supply = totalActiveDebt;
             if (supply > 0) {
-                integral += (duration * rewardRate * 1e18) / supply;
+                uint256 releasedToken = duration * rewardRate;
+                uint256 allocatedToken = communityIssuance.allocated(address(this));
+                // check the allocated token in community issuance
+                if (releasedToken > allocatedToken) {
+                    releasedToken = allocatedToken;
+                }
+                integral += releasedToken * 1e18 / supply;
             }
         }
         uint256 integralFor = rewardIntegralFor[account];
