@@ -25,4 +25,4 @@ uint256 constant TM_ALLOCATION = 20 * _1_MILLION; //  20,000,000 OSHI (20% of to
 uint128 constant REWARD_RATE = 0; // 126839167935058336 (20_000_000e18 / (5 * 31536000))
 
 //TODO: Replace with the actual timestamp
-uint32 constant TM_CLAIM_START_TIME = 1710244800;
+uint32 constant TM_CLAIM_START_TIME = 4294967295; // max uint32
