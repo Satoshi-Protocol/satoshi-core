@@ -113,4 +113,26 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(oshiToken.balanceOf(user1), expectedOSHIReward);
         vm.stopPrank();
     }
+
+    function test_transferSLP() public {
+        lpToken.mint(user1, 100);
+        vm.startPrank(user1);
+        lpToken.approve(address(slpToken), 100);
+        slpToken.deposit(100);
+        assertEq(slpToken.balanceOf(user1), 100);
+
+        vm.warp(block.timestamp + 10000);
+        uint256 expectedOSHIReward = 10000 * slpToken.rewardRate();
+        slpToken.transfer(user2, 50);
+        assertEq(slpToken.balanceOf(user1), 50);
+        assertEq(slpToken.balanceOf(user2), 50);
+        assertEq(slpToken.claimableReward(user1), expectedOSHIReward);
+        assertEq(slpToken.claimableReward(user2), 0);
+        slpToken.claimReward();
+        assertEq(oshiToken.balanceOf(user1), expectedOSHIReward);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 10000);
+        assertEq(slpToken.claimableReward(user1), slpToken.claimableReward(user2));
+    }
 }
