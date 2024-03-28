@@ -91,7 +91,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // tx execution
         satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            user,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
@@ -117,9 +116,12 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
+       
+        vm.startPrank(user);
+        deal(user, vars.collAmt);
+
         satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            user,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
@@ -130,8 +132,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
         vars.withdrawDebtAmt = 10000e18;
         vars.totalNetDebtAmt = vars.debtAmt + vars.withdrawDebtAmt;
-
-        vm.startPrank(user);
 
         // state before
         uint256 totalPointsBefore = referralManager.getTotalPoints();
@@ -153,7 +153,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
         // tx execution
         satoshiBORouter.withdrawDebt(
-            troveManagerBeaconProxy, user, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint
+            troveManagerBeaconProxy, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint
         );
 
         // state after
@@ -169,13 +169,15 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
     function testAdjustTroveReferral_AddCollAndWithdrawDebt() public {
         LocalVars memory vars;
+        
         // pre open trove
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
+        vm.startPrank(user);
+        deal(user, vars.collAmt);
         satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            user,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
@@ -189,9 +191,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.totalCollAmt = vars.collAmt + vars.addCollAmt;
         vars.totalNetDebtAmt = vars.debtAmt + vars.withdrawDebtAmt;
 
-        vm.startPrank(user);
         deal(user, vars.addCollAmt);
-
         // state before
         uint256 totalPointsBefore = referralManager.getTotalPoints();
         uint256 referrerPointsBefore = referralManager.getPoints(referrer);
@@ -214,7 +214,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // tx execution
         satoshiBORouter.adjustTrove{value: vars.addCollAmt}(
             troveManagerBeaconProxy,
-            user,
             vars.maxFeePercentage,
             vars.addCollAmt,
             0, /* collWithdrawalAmt */
@@ -241,9 +240,12 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
+
+        vm.startPrank(user);
+        deal(user, vars.collAmt);
+
         satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            user,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
@@ -256,8 +258,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.withdrawDebtAmt = 2000e18;
         vars.totalCollAmt = vars.collAmt - vars.withdrawCollAmt;
         vars.totalNetDebtAmt = vars.debtAmt + vars.withdrawDebtAmt;
-
-        vm.startPrank(user);
 
         // state before
         uint256 totalPointsBefore = referralManager.getTotalPoints();
@@ -281,7 +281,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // tx execution
         satoshiBORouter.adjustTrove(
             troveManagerBeaconProxy,
-            user,
             vars.maxFeePercentage,
             0, /* collAdditionAmt */
             vars.withdrawCollAmt,
@@ -336,7 +335,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // tx execution
         satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            user,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
@@ -365,7 +363,6 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.maxFeePercentage = 0.05e18; // 5%
         satoshiBORouter.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
-            addr,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,

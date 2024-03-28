@@ -21,7 +21,7 @@ contract InvestorVesting is Ownable {
     uint256 private _tokenVestingAtM6;
     uint64 private immutable _start;
     uint64 private constant _duration = 30 days * 24;
-    uint64 private constant _FOUR_MONTHS = 30 days * 4;
+    uint64 private constant _THREE_MONTHS = 30 days * 3;
     uint64 private constant _SIX_MONTHS = 30 days * 6;
     uint256 private constant _TEN_PERCENT = 10;
     IERC20 public immutable token; // OSHI token
@@ -96,7 +96,7 @@ contract InvestorVesting is Ownable {
      */
     function releasable() public view returns (uint256) {
         uint256 amount = releasableAfterM6();
-        if (block.timestamp >= start() + _FOUR_MONTHS) {
+        if (block.timestamp >= start() + _THREE_MONTHS) {
             amount += unreleasedAtM4();
         }
         return amount;
@@ -127,7 +127,7 @@ contract InvestorVesting is Ownable {
     }
 
     function releaseAtM4() public {
-        require(block.timestamp >= start() + _FOUR_MONTHS, "InvestorVesting: Month 4 not reached");
+        require(block.timestamp >= start() + _THREE_MONTHS, "InvestorVesting: Month 4 not reached");
         require(_tokenVestingAtM4 > 0, "InvestorVesting: No tokens to release");
         uint256 amount = _tokenVestingAtM4;
         _tokenVestingAtM4 = 0;

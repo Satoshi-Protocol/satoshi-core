@@ -238,6 +238,5 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // 365 days later
         uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(address(rewardManagerProxy)), 5e18);
         require(delta == 0, "delta != 0");
-        // assert(delta == 0);
     }
 }

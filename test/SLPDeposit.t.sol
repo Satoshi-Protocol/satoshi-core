@@ -134,5 +134,26 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vm.warp(block.timestamp + 10000);
         assertEq(slpToken.claimableReward(user1), slpToken.claimableReward(user2));
+        expectedOSHIReward = 10000 * slpToken.rewardRate() / 2;
+        assertEq(slpToken.claimableReward(user1), expectedOSHIReward);
+        assertEq(slpToken.claimableReward(user2), expectedOSHIReward);
+    }
+
+    function test_withdrawMoreThanBalance() public {
+        lpToken.mint(user1, 100);
+        vm.startPrank(user1);
+        lpToken.approve(address(slpToken), 100);
+        slpToken.deposit(100);
+        assertEq(slpToken.balanceOf(user1), 100);
+        vm.expectRevert("SatoshiLPToken: insufficient balance");
+        slpToken.withdraw(101);
+        vm.stopPrank();
+    }
+
+    function test_withdrawMoreThanBalance1() public {
+        vm.startPrank(user1);
+        vm.expectRevert("SatoshiLPToken: insufficient balance");
+        slpToken.withdraw(1);
+        vm.stopPrank();
     }
 }

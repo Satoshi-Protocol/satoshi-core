@@ -503,4 +503,18 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 rewardRate = stabilityPoolProxy.rewardRate();
         assertEq(stabilityPoolProxy.claimableReward(user1), 10000 * rewardRate);
     }
+
+    function test_normalAfteremptySP() public {
+        // StabilityPoolVars memory vars;
+        // whale opens trove
+        _openTrove(user1, 10000e18, 185000e18);
+        // 1 tove opened
+        _openTrove(user2, 1e18, 20000e18);
+        // user3 opens trove
+        _openTrove(user3, 1e18, 20000e18);
+
+        // provide to SP
+        _provideToSP(user1, 50000e18);
+        _provideToSP(user2, 10000e18);
+    }
 }

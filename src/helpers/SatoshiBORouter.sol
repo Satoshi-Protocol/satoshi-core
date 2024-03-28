@@ -45,7 +45,6 @@ contract SatoshiBORouter is ISatoshiBORouter {
     // to approve this contract to call openTrove
     function openTrove(
         ITroveManager troveManager,
-        address account,
         uint256 _maxFeePercentage,
         uint256 _collAmount,
         uint256 _debtAmount,
@@ -60,18 +59,17 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
 
         borrowerOperationsProxy.openTrove(
-            troveManager, account, _maxFeePercentage, _collAmount, _debtAmount, _upperHint, _lowerHint
+            troveManager, msg.sender, _maxFeePercentage, _collAmount, _debtAmount, _upperHint, _lowerHint
         );
 
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
-        _afterWithdrawDebt(account, _referrer, userDebtAmount, troveManager);
+        _afterWithdrawDebt(msg.sender, _referrer, userDebtAmount, troveManager);
     }
 
     function addColl(
         ITroveManager troveManager,
-        address account,
         uint256 _collAmount,
         address _upperHint,
         address _lowerHint
@@ -80,12 +78,11 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
         _beforeAddColl(collateralToken, _collAmount);
 
-        borrowerOperationsProxy.addColl(troveManager, account, _collAmount, _upperHint, _lowerHint);
+        borrowerOperationsProxy.addColl(troveManager, msg.sender, _collAmount, _upperHint, _lowerHint);
     }
 
     function withdrawColl(
         ITroveManager troveManager,
-        address account,
         uint256 _collWithdrawal,
         address _upperHint,
         address _lowerHint
@@ -93,7 +90,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
 
-        borrowerOperationsProxy.withdrawColl(troveManager, account, _collWithdrawal, _upperHint, _lowerHint);
+        borrowerOperationsProxy.withdrawColl(troveManager, msg.sender, _collWithdrawal, _upperHint, _lowerHint);
 
         uint256 collTokenBalanceAfter = collateralToken.balanceOf(address(this));
         uint256 userCollAmount = collTokenBalanceAfter - collTokenBalanceBefore;
@@ -103,7 +100,6 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
     function withdrawDebt(
         ITroveManager troveManager,
-        address account,
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
         address _upperHint,
@@ -111,31 +107,29 @@ contract SatoshiBORouter is ISatoshiBORouter {
     ) external {
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
         borrowerOperationsProxy.withdrawDebt(
-            troveManager, account, _maxFeePercentage, _debtAmount, _upperHint, _lowerHint
+            troveManager, msg.sender, _maxFeePercentage, _debtAmount, _upperHint, _lowerHint
         );
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
 
-        address _referrer = referralManager.getReferrer(account);
-        _afterWithdrawDebt(account, _referrer, userDebtAmount, troveManager);
+        address _referrer = referralManager.getReferrer(msg.sender);
+        _afterWithdrawDebt(msg.sender, _referrer, userDebtAmount, troveManager);
     }
 
     function repayDebt(
         ITroveManager troveManager,
-        address account,
         uint256 _debtAmount,
         address _upperHint,
         address _lowerHint
     ) external {
         _beforeRepayDebt(_debtAmount);
 
-        borrowerOperationsProxy.repayDebt(troveManager, account, _debtAmount, _upperHint, _lowerHint);
+        borrowerOperationsProxy.repayDebt(troveManager, msg.sender, _debtAmount, _upperHint, _lowerHint);
     }
 
     function adjustTrove(
         ITroveManager troveManager,
-        address account,
         uint256 _maxFeePercentage,
         uint256 _collDeposit,
         uint256 _collWithdrawal,
@@ -160,7 +154,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
         borrowerOperationsProxy.adjustTrove(
             troveManager,
-            account,
+            msg.sender,
             _maxFeePercentage,
             _collDeposit,
             _collWithdrawal,
@@ -180,7 +174,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
                 debtTokenBalanceAfter - debtTokenBalanceBefore == _debtChange, "SatoshiBORouter: Debt amount mismatch"
             );
 
-            _afterWithdrawDebt(account, referralManager.getReferrer(account), _debtChange, troveManager);
+            _afterWithdrawDebt(msg.sender, referralManager.getReferrer(msg.sender), _debtChange, troveManager);
         }
     }
 

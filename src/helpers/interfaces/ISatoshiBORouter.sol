@@ -24,7 +24,6 @@ interface ISatoshiBORouter {
 
     function openTrove(
         ITroveManager troveManager,
-        address account,
         uint256 _maxFeePercentage,
         uint256 _collAmount,
         uint256 _debtAmount,
@@ -35,7 +34,6 @@ interface ISatoshiBORouter {
 
     function addColl(
         ITroveManager troveManager,
-        address account,
         uint256 _collAmount,
         address _upperHint,
         address _lowerHint
@@ -43,7 +41,6 @@ interface ISatoshiBORouter {
 
     function withdrawColl(
         ITroveManager troveManager,
-        address account,
         uint256 _collWithdrawal,
         address _upperHint,
         address _lowerHint
@@ -51,7 +48,6 @@ interface ISatoshiBORouter {
 
     function withdrawDebt(
         ITroveManager troveManager,
-        address account,
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
         address _upperHint,
@@ -60,7 +56,6 @@ interface ISatoshiBORouter {
 
     function repayDebt(
         ITroveManager troveManager,
-        address account,
         uint256 _debtAmount,
         address _upperHint,
         address _lowerHint
@@ -68,7 +63,6 @@ interface ISatoshiBORouter {
 
     function adjustTrove(
         ITroveManager troveManager,
-        address account,
         uint256 _maxFeePercentage,
         uint256 _collDeposit,
         uint256 _collWithdrawal,
