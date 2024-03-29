@@ -725,7 +725,7 @@ abstract contract DeployBase is Test {
 
     function _deploySLPToken(IERC20 lpToken) internal returns (address slpTokenAddr) {
         vm.startPrank(OWNER);
-        slpTokenAddr = satoshiLPFactory.createSLP("SLP", "SLP", lpToken);
+        slpTokenAddr = satoshiLPFactory.createSLP("SLP", "SLP", lpToken, 100);
         vm.stopPrank();
     }
 }

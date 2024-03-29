@@ -116,7 +116,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD
         vars.maxFeePercentage = 0.05e18; // 5%
-       
+
         vm.startPrank(user);
         deal(user, vars.collAmt);
 
@@ -169,7 +169,7 @@ contract ReferralManagerTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
     function testAdjustTroveReferral_AddCollAndWithdrawDebt() public {
         LocalVars memory vars;
-        
+
         // pre open trove
         vars.collAmt = 1e18; // price defined in `TestConfig.roundData`
         vars.debtAmt = 10000e18; // 10000 USD

@@ -168,8 +168,8 @@ contract VestingManager is Test, DeployBase, TroveBase, TestConfig, Events {
         // check release amount
         assertEq(vesting.released(), 0);
         assertEq(vesting.releasable(), 0);
-        // 4 months later, release 10%
-        vm.warp(block.timestamp + 30 days * 4);
+        // 3 months later, release 10%
+        vm.warp(block.timestamp + 30 days * 3);
         assertEq(vesting.released(), 0);
         assertEq(vesting.releasable(), ReleaseAtM4);
         // user2 release the 10% token
@@ -179,7 +179,7 @@ contract VestingManager is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(vesting.releasable(), 0);
         assertEq(oshiToken.balanceOf(user2), ReleaseAtM4);
         // 7 months later
-        vm.warp(block.timestamp + 30 days * 3);
+        vm.warp(block.timestamp + 30 days * 4);
         assertEq(vesting.releasable(), ReleaseAtM6 / duration);
         // user2 release the token
         vm.prank(user2);
@@ -188,7 +188,7 @@ contract VestingManager is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(vesting.releasable(), 0);
         assertEq(oshiToken.balanceOf(user2), ReleaseAtM4 + ReleaseAtM6 / duration);
         // 24 months later
-        vm.warp(block.timestamp + 30 days * 23);
+        vm.warp(block.timestamp + 30 days * 24);
         assertEq(vesting.releasable(), ReleaseAtM6 - ReleaseAtM6 / duration);
         vesting.release();
         assertEq(vesting.released(), amount);

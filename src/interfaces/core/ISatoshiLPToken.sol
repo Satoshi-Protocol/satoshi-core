@@ -19,4 +19,7 @@ interface ISatoshiLPToken is IERC20 {
     function rewardRate() external view returns (uint256);
     function lastUpdate() external view returns (uint32);
     function rewardIntegralFor(address account) external view returns (uint256);
+    function claimStartTime() external view returns (uint32);
+    function setClaimStartTime(uint32 _claimStartTime) external;
+    function isClaimStart() external view returns (bool);
 }

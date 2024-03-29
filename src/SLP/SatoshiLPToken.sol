@@ -22,17 +22,21 @@ contract SatoshiLPToken is SatoshiOwnable, ERC20, ISatoshiLPToken {
     mapping(address => uint256) public rewardIntegralFor;
     mapping(address => uint256) private storedPendingReward;
 
+    uint32 public claimStartTime;
+
     constructor(
         ISatoshiCore _satoshiCore,
         string memory _name,
         string memory _symbol,
         IERC20 _lpToken,
-        ICommunityIssuance _communityIssuance
+        ICommunityIssuance _communityIssuance,
+        uint32 _claimStartTime
     ) ERC20(_name, _symbol) {
         __SatoshiOwnable_init(_satoshiCore);
         lpToken = _lpToken;
         communityIssuance = _communityIssuance;
         lastUpdate = uint32(block.timestamp);
+        claimStartTime = _claimStartTime;
     }
 
     function setRewardRate(uint256 _rewardRate) external onlyOwner {
@@ -67,6 +71,7 @@ contract SatoshiLPToken is SatoshiOwnable, ERC20, ISatoshiLPToken {
     }
 
     function claimReward() external returns (uint256) {
+        require(isClaimStart(), "SatoshiLPToken: Claim not started");
         uint256 amount = _claimReward(msg.sender);
         if (amount > 0) {
             communityIssuance.transferAllocatedTokens(msg.sender, amount);
@@ -158,5 +163,15 @@ contract SatoshiLPToken is SatoshiOwnable, ERC20, ISatoshiLPToken {
             }
         }
         return integral;
+    }
+
+    // set the time when the OSHI claim starts
+    function setClaimStartTime(uint32 _claimStartTime) external onlyOwner {
+        claimStartTime = _claimStartTime;
+    }
+
+    // check the start time
+    function isClaimStart() public view returns (bool) {
+        return claimStartTime <= uint32(block.timestamp);
     }
 }

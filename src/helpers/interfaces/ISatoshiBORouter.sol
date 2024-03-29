@@ -32,19 +32,12 @@ interface ISatoshiBORouter {
         address _referrer
     ) external payable;
 
-    function addColl(
-        ITroveManager troveManager,
-        uint256 _collAmount,
-        address _upperHint,
-        address _lowerHint
-    ) external payable;
+    function addColl(ITroveManager troveManager, uint256 _collAmount, address _upperHint, address _lowerHint)
+        external
+        payable;
 
-    function withdrawColl(
-        ITroveManager troveManager,
-        uint256 _collWithdrawal,
-        address _upperHint,
-        address _lowerHint
-    ) external;
+    function withdrawColl(ITroveManager troveManager, uint256 _collWithdrawal, address _upperHint, address _lowerHint)
+        external;
 
     function withdrawDebt(
         ITroveManager troveManager,
@@ -54,12 +47,8 @@ interface ISatoshiBORouter {
         address _lowerHint
     ) external;
 
-    function repayDebt(
-        ITroveManager troveManager,
-        uint256 _debtAmount,
-        address _upperHint,
-        address _lowerHint
-    ) external;
+    function repayDebt(ITroveManager troveManager, uint256 _debtAmount, address _upperHint, address _lowerHint)
+        external;
 
     function adjustTrove(
         ITroveManager troveManager,

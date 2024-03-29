@@ -267,9 +267,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiBORouter.withdrawColl(
-            troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint
-        );
+        satoshiBORouter.withdrawColl(troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint);
 
         // state after
         vars.userBalanceAfter = user.balance;

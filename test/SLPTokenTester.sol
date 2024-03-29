@@ -6,7 +6,7 @@ import "../src/interfaces/core/ICommunityIssuance.sol";
 
 contract SLPTokenTester is SatoshiLPToken {
     constructor(ISatoshiCore _satoshiCore, IERC20 _lpToken, ICommunityIssuance _communityIssuance)
-        SatoshiLPToken(_satoshiCore, "SLP", "SLP", _lpToken, _communityIssuance)
+        SatoshiLPToken(_satoshiCore, "SLP", "SLP", _lpToken, _communityIssuance, 0)
     {}
 
     function unprotectedMint(address _account, uint256 _amount) external {

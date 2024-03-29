@@ -85,6 +85,8 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_claimRewardFromSLP() public {
         lpToken.mint(user1, 100);
         vm.startPrank(user1);
+        vm.expectRevert("SatoshiLPToken: Claim not started");
+        slpToken.claimReward();
         lpToken.approve(address(slpToken), 100);
         slpToken.deposit(100);
         assertEq(slpToken.claimableReward(user1), 0);

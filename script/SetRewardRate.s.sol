@@ -33,7 +33,7 @@ contract DeploySetupScript is Script {
         // set SP reward rate
         stabilityPool.setRewardRate(SP_REWARD_RATE);
         require(stabilityPool.rewardRate() == SP_REWARD_RATE, "SP Reward rate not set correctly");
-        
+
         // set trove reward rate
         uint128[] memory numerator = new uint128[](1);
         numerator[0] = 1;
@@ -45,9 +45,11 @@ contract DeploySetupScript is Script {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = TM_ALLOCATION;
         communityIssuance.setAllocated(_recipients, _amounts);
-        require(communityIssuance.allocated(troveManagerAddr) == TM_ALLOCATION, "Community Issuance allocation not set correctly");
+        require(
+            communityIssuance.allocated(troveManagerAddr) == TM_ALLOCATION,
+            "Community Issuance allocation not set correctly"
+        );
 
         vm.stopBroadcast();
     }
-
 }

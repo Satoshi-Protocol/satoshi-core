@@ -17,8 +17,12 @@ contract SatoshiLPFactory is SatoshiOwnable, ISatoshiLPFactory {
         communityIssuance = _communityIssuance;
     }
 
-    function createSLP(string memory name, string memory symbol, IERC20 lpToken) external onlyOwner returns (address) {
-        SatoshiLPToken slp = new SatoshiLPToken(SATOSHI_CORE, name, symbol, lpToken, communityIssuance);
+    function createSLP(string memory name, string memory symbol, IERC20 lpToken, uint32 claimStartTime)
+        external
+        onlyOwner
+        returns (address)
+    {
+        SatoshiLPToken slp = new SatoshiLPToken(SATOSHI_CORE, name, symbol, lpToken, communityIssuance, claimStartTime);
         satoshiLPTokens.push(address(slp));
         return address(slp);
     }

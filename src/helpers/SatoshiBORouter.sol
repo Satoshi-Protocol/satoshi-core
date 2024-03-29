@@ -68,12 +68,10 @@ contract SatoshiBORouter is ISatoshiBORouter {
         _afterWithdrawDebt(msg.sender, _referrer, userDebtAmount, troveManager);
     }
 
-    function addColl(
-        ITroveManager troveManager,
-        uint256 _collAmount,
-        address _upperHint,
-        address _lowerHint
-    ) external payable {
+    function addColl(ITroveManager troveManager, uint256 _collAmount, address _upperHint, address _lowerHint)
+        external
+        payable
+    {
         IERC20 collateralToken = troveManager.collateralToken();
 
         _beforeAddColl(collateralToken, _collAmount);
@@ -81,12 +79,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
         borrowerOperationsProxy.addColl(troveManager, msg.sender, _collAmount, _upperHint, _lowerHint);
     }
 
-    function withdrawColl(
-        ITroveManager troveManager,
-        uint256 _collWithdrawal,
-        address _upperHint,
-        address _lowerHint
-    ) external {
+    function withdrawColl(ITroveManager troveManager, uint256 _collWithdrawal, address _upperHint, address _lowerHint)
+        external
+    {
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
 
@@ -117,12 +112,9 @@ contract SatoshiBORouter is ISatoshiBORouter {
         _afterWithdrawDebt(msg.sender, _referrer, userDebtAmount, troveManager);
     }
 
-    function repayDebt(
-        ITroveManager troveManager,
-        uint256 _debtAmount,
-        address _upperHint,
-        address _lowerHint
-    ) external {
+    function repayDebt(ITroveManager troveManager, uint256 _debtAmount, address _upperHint, address _lowerHint)
+        external
+    {
         _beforeRepayDebt(_debtAmount);
 
         borrowerOperationsProxy.repayDebt(troveManager, msg.sender, _debtAmount, _upperHint, _lowerHint);
