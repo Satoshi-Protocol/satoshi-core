@@ -13,8 +13,8 @@ import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
 
-contract DeployBORouter is Script {
-    uint256 internal DEPLOYER_PRIVATE_KEY;
+contract DeploySatoshiBORouterScript is Script {
+    uint256 internal DEPLOYMENT_PRIVATE_KEY;
     ISatoshiBORouter satoshiBORouter;
     IReferralManager referralManager;
     IDebtToken debtToken = IDebtToken(0xF2692468666E459D87052f68aE474E36C1a34fbB);
@@ -22,11 +22,11 @@ contract DeployBORouter is Script {
     address constant WETH_ADDRESS = 0xB5136FEba197f5fF4B765E5b50c74db717796dcD;
 
     function setUp() public {
-        DEPLOYER_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
+        DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
     }
 
     function run() public {
-        vm.startBroadcast(DEPLOYER_PRIVATE_KEY);
+        vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
         satoshiBORouter = new SatoshiBORouter(debtToken, borrowerOperationsProxy, referralManager, IWETH(WETH_ADDRESS));
 
