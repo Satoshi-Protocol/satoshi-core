@@ -15,3 +15,6 @@ uint8 constant DIA_ORACLE_PRICE_FEED_DECIMALS = 8;
 string constant DIA_ORACLE_PRICE_FEED_KEY = "BTC/USD";
 
 uint256 constant DIA_MAX_TIME_THRESHOLD = 86400;
+
+/* WSTBTC Integration Config */
+address constant WSTBTC_ADDRESS = 0x2967E7Bb9DaA5711Ac332cAF874BD47ef99B3820;
