@@ -2,17 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
-import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
-import {IFactory} from "../src/interfaces/core/IFactory.sol";
-import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol";
-import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
-import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
-import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
-import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
-import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
-import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
-import {TroveManager} from "../src/core/TroveManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 
