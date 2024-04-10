@@ -87,11 +87,18 @@ contract DeployInstanceScript is Script {
         ITroveManager troveManagerBeaconProxy = factory.troveManagers(troveManagerCount - 1);
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
 
+        // get the first trove manager
+        ITroveManager troveManagerBeaconProxyBTC = factory.troveManagers(0);
+
         // set reward manager settings
         rewardManager.registerTroveManager(troveManagerBeaconProxy);
 
         // set community issuance allocation & addresses
         _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy), params.OSHIAllocation);
+        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxyBTC), params.OSHIAllocation);
+
+        require(communityIssuance.allocated(address(troveManagerBeaconProxy)) == params.OSHIAllocation);
+        require(communityIssuance.allocated(address(troveManagerBeaconProxyBTC)) == params.OSHIAllocation);
 
         console.log("SortedTrovesBeaconProxy: address:", address(sortedTrovesBeaconProxy));
         console.log("TroveManagerBeaconProxy: address:", address(troveManagerBeaconProxy));

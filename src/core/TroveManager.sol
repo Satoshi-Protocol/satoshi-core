@@ -63,7 +63,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     // Maximum interest rate must be lower than the minimum LST staking yield
     // so that over time the actual TCR becomes greater than the calculated TCR.
-    uint256 public constant MAX_INTEREST_RATE_IN_BPS = 500; // 5%
+    uint256 public constant MAX_INTEREST_RATE_IN_BPS = 10000; // 100%
     uint256 public constant SUNSETTING_INTEREST_RATE = (INTEREST_PRECISION * 5000) / (10000 * SECONDS_IN_YEAR); //50%
 
     // During bootsrap period redemptions are not allowed
