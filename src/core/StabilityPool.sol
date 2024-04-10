@@ -409,10 +409,13 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
      */
     function getDepositorCollateralGain(address _depositor) external view returns (uint256[] memory collateralGains) {
         collateralGains = new uint256[](collateralTokens.length);
+        uint80[256] storage depositorGains = collateralGainsByDepositor[_depositor];
+        for (uint256 i = 0; i < collateralGains.length; i++) {
+            collateralGains[i] = depositorGains[i];
+        }
 
         uint256 P_Snapshot = depositSnapshots[_depositor].P;
         if (P_Snapshot == 0) return collateralGains;
-        uint80[256] storage depositorGains = collateralGainsByDepositor[_depositor];
         uint256 initialDeposit = accountDeposits[_depositor].amount;
         uint128 epochSnapshot = depositSnapshots[_depositor].epoch;
         uint128 scaleSnapshot = depositSnapshots[_depositor].scale;
@@ -421,7 +424,6 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         uint256[256] storage depSums = depositSums[_depositor];
 
         for (uint256 i = 0; i < collateralGains.length; i++) {
-            collateralGains[i] = depositorGains[i];
             if (sums[i] == 0) continue; // Collateral was overwritten or not gains
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;

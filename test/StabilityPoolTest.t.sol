@@ -517,4 +517,92 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _provideToSP(user1, 50000e18);
         _provideToSP(user2, 10000e18);
     }
+
+    function test_liquidateAndWithdrawFromSP() public {
+        StabilityPoolVars memory vars;
+        // whale opens trove
+        _openTrove(user1, 10000e18, 185000e18);
+        // 1 tove opened
+        _openTrove(user2, 1e18, 20000e18);
+        // user3 opens trove
+        _openTrove(user3, 1e18, 20000e18);
+
+        // provide to SP
+        _provideToSP(user1, 50000e18);
+        _provideToSP(user2, 10000e18);
+
+        _recordUserStateBeforeToVar(vars);
+
+        // price drops: user2's and user3's Troves fall below MCR, whale doesn't (normal mode)
+        _updateRoundData(
+            RoundData({
+                answer: 20500_00_000_000, // 10000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 2
+            })
+        );
+
+        // liquidate user2
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
+
+        uint256 collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user1)[0];
+
+        vm.warp(block.timestamp + 1);
+        _withdrawFromSP(user1, 1e18);
+
+        uint256 collGainAfter = stabilityPoolProxy.getDepositorCollateralGain(user1)[0];
+
+        // check the coll gain will not affected by the withdraw SAT
+        assertEq(collGainBefore, collGainAfter);
+
+        _claimCollateralGains(user1);
+
+        assertEq(collGainAfter, collateralMock.balanceOf(user1));
+    }
+
+    function test_liquidateAndWithdrawFromSPAll() public {
+        StabilityPoolVars memory vars;
+        // whale opens trove
+        _openTrove(user1, 10000e18, 185000e18);
+        // 1 tove opened
+        _openTrove(user2, 1e18, 20000e18);
+        // user3 opens trove
+        _openTrove(user3, 1e18, 20000e18);
+
+        // provide to SP
+        _provideToSP(user1, 50000e18);
+        _provideToSP(user2, 10000e18);
+
+        _recordUserStateBeforeToVar(vars);
+
+        // price drops: user2's and user3's Troves fall below MCR, whale doesn't (normal mode)
+        _updateRoundData(
+            RoundData({
+                answer: 20500_00_000_000, // 10000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 2
+            })
+        );
+
+        // liquidate user2
+        liquidationManagerProxy.liquidate(troveManagerBeaconProxy, user2);
+
+        uint256 collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user1)[0];
+
+        vm.warp(block.timestamp + 1);
+
+        uint256 compoundedDebtBefore = stabilityPoolProxy.getCompoundedDebtDeposit(user1);
+        _withdrawFromSP(user1, compoundedDebtBefore);
+        uint256 collGainAfter = stabilityPoolProxy.getDepositorCollateralGain(user1)[0];
+
+        assertEq(collGainBefore, collGainAfter);
+
+        assertEq(collateralMock.balanceOf(user1), 0);
+
+        _claimCollateralGains(user1);
+
+        assertEq(collGainBefore, collateralMock.balanceOf(user1));
+    }
 }
