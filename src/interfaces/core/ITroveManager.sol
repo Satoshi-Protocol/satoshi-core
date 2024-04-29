@@ -93,6 +93,7 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     );
     event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
     event ClaimStartTimeSet(uint32 _startTime);
+    event InterestCollected(address _troveManager, uint256 _amount);
 
     function initialize(
         ISatoshiCore _satoshiCore,

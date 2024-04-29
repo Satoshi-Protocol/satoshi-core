@@ -293,6 +293,8 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         debtToken.safeIncreaseAllowance(rewardManager, interestPayableCached);
         IRewardManager(rewardManager).increaseSATPerUintStaked(interestPayableCached);
         interestPayable = 0;
+
+        emit InterestCollected(address(this), interestPayableCached);
     }
 
     // --- Getters ---
