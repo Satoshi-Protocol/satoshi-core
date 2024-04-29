@@ -28,6 +28,7 @@ contract UpgradeTroveManagerScript is Script {
     ITroveManager troveManagerBeaconProxy = ITroveManager(0x0598Ef47508Ec11a503670Ac3B642AAE8EAEdEFA);
     IBeacon troveManagerBeacon = IBeacon(0x445c7a1a5ad3bE01E915Dbbf8E6c142c4FB07f99);
     address constant WETH_ADDRESS = 0xB5136FEba197f5fF4B765E5b50c74db717796dcD;
+    address _borrower = 0x381ECcaa34B11f9d83511877c27150CC38D71499;
 
     function setUp() public {
         DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
@@ -38,12 +39,16 @@ contract UpgradeTroveManagerScript is Script {
 
         ITroveManager newTroveManagerImpl = new TroveManager();
 
+        console.log("current TroveManager Impl is deployed at", address(troveManagerBeacon.implementation()));
         // upgrade to new trove manager implementation
         troveManagerBeacon.upgradeTo(address(newTroveManagerImpl));
         require(troveManagerBeacon.implementation() == address(newTroveManagerImpl), "implementation is not matched");
 
-        // check the max interest rate
-        require(troveManagerBeaconProxy.MAX_INTEREST_RATE_IN_BPS() == 10000, "interst rate is not 10000");
+        (uint256 coll, uint256 debt) = troveManagerBeaconProxy.getTroveCollAndDebt(_borrower);
+        require(coll == 20500000000000000, "coll is not greater than 0");
+        require(debt > 163387271805345521453, "debt is not greater than 0");
+        console.log("coll", coll);
+        console.log("debt", debt);
 
         console.log("new TroveManager Impl is deployed at", address(newTroveManagerImpl));
 

@@ -28,7 +28,7 @@
 - liquidationManagerImpl: 0x4Ff076cB48568A7eCBD31Ed94ea9Dafb7a26FC88
 - stabilityPoolImpl: 0x65c657d5555A9424Db17Ad7f976ba4dcB8e50c05
 - sortedTrovesImpl: 0xfd492737c3C34307315E1da1B395cA8479FcEd79
-- troveManagerImpl: 0xC914AAcEaDbf1868302b4bfbA2a5B80D29385A7F
+- troveManagerImpl: 0x05fccd0649a831f012ebf1af72d712b5665e9db5
 - rewardManagerImpl: 0x03ca0C7ce1BeC001b9B28e206db409973e93Da85
 
 ### BTC
