@@ -25,7 +25,7 @@
 ### Implementation
 - priceFeedAggregatorImpl: 0xD115c487D68aD5DE28e8A7EC405f8FFE177EDFfF
 - borrowerOperationsImpl: 0x083f920F85e7CcdC499E997B8BE3a719750Bc21B
-- liquidationManagerImpl: 0x4Ff076cB48568A7eCBD31Ed94ea9Dafb7a26FC88
+- liquidationManagerImpl: 0xefaa1B3Ea7CEdb838f3d257Af0796FE4BC2994f6
 - stabilityPoolImpl: 0x65c657d5555A9424Db17Ad7f976ba4dcB8e50c05
 - sortedTrovesImpl: 0xfd492737c3C34307315E1da1B395cA8479FcEd79
 - troveManagerImpl: 0xab5496FF8e01415aCFBd5eCDc601Bf08aA12eF5D

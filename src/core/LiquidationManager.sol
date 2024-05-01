@@ -182,7 +182,8 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
             totals.totalCollGasCompensation
         );
 
-        emit Liquidation(
+        emit LiquidationTroves(
+            address(troveManager),
             totals.totalDebtInSequence,
             totals.totalCollInSequence - totals.totalCollGasCompensation - totals.totalCollSurplus,
             totals.totalCollGasCompensation,
@@ -296,7 +297,8 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
             totals.totalCollGasCompensation
         );
 
-        emit Liquidation(
+        emit LiquidationTroves(
+            address(troveManager),
             totals.totalDebtInSequence,
             totals.totalCollInSequence - totals.totalCollGasCompensation - totals.totalCollSurplus,
             totals.totalCollGasCompensation,
