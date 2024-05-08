@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IOSHIToken} from "./IOSHIToken.sol";
 import {IStabilityPool} from "./IStabilityPool.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
 
 interface ICommunityIssuance is ISatoshiOwnable {
     event SetAllocation(address indexed receiver, uint256 amount);
@@ -17,4 +18,5 @@ interface ICommunityIssuance is ISatoshiOwnable {
     function collected(address) external view returns (uint256);
     function stabilityPool() external view returns (IStabilityPool);
     function OSHIToken() external view returns (IOSHIToken);
+    function initialize(ISatoshiCore _satoshiCore, IOSHIToken _oshiToken, IStabilityPool _stabilityPool) external;
 }

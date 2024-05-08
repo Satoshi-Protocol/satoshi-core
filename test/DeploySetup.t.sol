@@ -6,6 +6,7 @@ import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {IOSHIToken} from "../src/interfaces/core/IOSHIToken.sol";
 import {ILiquidationManager} from "../src/interfaces/core/ILiquidationManager.sol";
 import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 import {IPriceFeedAggregator} from "../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -22,7 +23,6 @@ import {LiquidationManager} from "../src/core/LiquidationManager.sol";
 import {StabilityPool} from "../src/core/StabilityPool.sol";
 import {Factory} from "../src/core/Factory.sol";
 import {DeployBase} from "./utils/DeployBase.t.sol";
-import {VestingManager} from "../src/OSHI/VestingManager.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -64,46 +64,6 @@ contract DeploySetupTest is Test, DeployBase {
         assert(satoshiCore.rewardManager() == REWARD_MANAGER);
         assert(satoshiCore.startTime() == block.timestamp);
 
-        // DebtToken
-        _deployDebtToken(DEPLOYER);
-        assert(cpDebtTokenAddr == address(debtToken));
-        assert(debtToken.stabilityPool() == IStabilityPool(cpStabilityPoolProxyAddr));
-        assert(debtToken.borrowerOperations() == IBorrowerOperations(cpBorrowerOperationsProxyAddr));
-        assert(debtToken.factory() == IFactory(cpFactoryAddr));
-        assert(debtToken.gasPool() == IGasPool(cpGasPoolAddr));
-        assert(debtToken.DEBT_GAS_COMPENSATION() == GAS_COMPENSATION);
-
-        // Factory
-        _deployFactory(DEPLOYER);
-        assert(cpFactoryAddr == address(factory));
-        assert(factory.owner() == OWNER);
-        assert(factory.guardian() == GUARDIAN);
-        assert(factory.debtToken() == IDebtToken(cpDebtTokenAddr));
-        assert(factory.stabilityPoolProxy() == IStabilityPool(cpStabilityPoolProxyAddr));
-        assert(factory.borrowerOperationsProxy() == IBorrowerOperations(cpBorrowerOperationsProxyAddr));
-        assert(factory.liquidationManagerProxy() == ILiquidationManager(cpLiquidationManagerProxyAddr));
-        assert(factory.sortedTrovesBeacon() == IBeacon(cpSortedTrovesBeaconAddr));
-        assert(factory.troveManagerBeacon() == IBeacon(cpTroveManagerBeaconAddr));
-        assert(factory.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceAddr));
-
-        // Community Issuance
-        _deployCommunityIssuance(DEPLOYER);
-        assert(cpCommunityIssuanceAddr == address(communityIssuance));
-        assert(communityIssuance.owner() == OWNER);
-
-        _deployOSHIToken(DEPLOYER);
-        assert(cpOshiTokenAddr == address(oshiToken));
-        assert(oshiToken.communityIssuanceAddress() == cpCommunityIssuanceAddr);
-        assert(oshiToken.vaultAddress() == cpVestingManagerAddr);
-
-        _deployVestingManager(DEPLOYER);
-        assert(cpVestingManagerAddr == address(vestingManager));
-        assert(vestingManager.owner() == OWNER);
-
-        _deploySatoshiLPFactory(DEPLOYER);
-        assert(cpSatoshiLPFactoryAddr == address(satoshiLPFactory));
-        assert(satoshiLPFactory.owner() == OWNER);
-
         /* Deploy UUPS proxy contracts */
 
         // PriceFeedAggregator
@@ -121,8 +81,8 @@ contract DeploySetupTest is Test, DeployBase {
         assert(borrowerOperationsProxy == IBorrowerOperations(cpBorrowerOperationsProxyAddr));
         assert(borrowerOperationsProxy.owner() == OWNER);
         assert(borrowerOperationsProxy.guardian() == GUARDIAN);
-        assert(borrowerOperationsProxy.debtToken() == IDebtToken(cpDebtTokenAddr));
-        assert(borrowerOperationsProxy.factory() == IFactory(cpFactoryAddr));
+        assert(borrowerOperationsProxy.debtToken() == IDebtToken(cpDebtTokenProxyAddr));
+        assert(borrowerOperationsProxy.factory() == IFactory(cpFactoryProxyAddr));
         assert(borrowerOperationsProxy.minNetDebt() == BO_MIN_NET_DEBT);
         assert(borrowerOperationsProxy.DEBT_GAS_COMPENSATION() == GAS_COMPENSATION);
 
@@ -130,8 +90,8 @@ contract DeploySetupTest is Test, DeployBase {
         vm.expectRevert("Initializable: contract is already initialized");
         borrowerOperationsProxy.initialize(
             ISatoshiCore(cpSatoshiCoreAddr),
-            IDebtToken(cpDebtTokenAddr),
-            IFactory(cpFactoryAddr),
+            IDebtToken(cpDebtTokenProxyAddr),
+            IFactory(cpFactoryProxyAddr),
             BO_MIN_NET_DEBT,
             GAS_COMPENSATION
         );
@@ -143,7 +103,7 @@ contract DeploySetupTest is Test, DeployBase {
         assert(liquidationManagerProxy.guardian() == GUARDIAN);
         assert(liquidationManagerProxy.stabilityPool() == IStabilityPool(cpStabilityPoolProxyAddr));
         assert(liquidationManagerProxy.borrowerOperations() == IBorrowerOperations(cpBorrowerOperationsProxyAddr));
-        assert(liquidationManagerProxy.factory() == IFactory(cpFactoryAddr));
+        assert(liquidationManagerProxy.factory() == IFactory(cpFactoryProxyAddr));
         assert(liquidationManagerProxy.DEBT_GAS_COMPENSATION() == GAS_COMPENSATION);
 
         // test re-initialize fail
@@ -152,7 +112,7 @@ contract DeploySetupTest is Test, DeployBase {
             ISatoshiCore(cpSatoshiCoreAddr),
             IStabilityPool(cpStabilityPoolProxyAddr),
             IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            IFactory(cpFactoryAddr),
+            IFactory(cpFactoryProxyAddr),
             GAS_COMPENSATION
         );
 
@@ -161,19 +121,19 @@ contract DeploySetupTest is Test, DeployBase {
         assert(stabilityPoolProxy == IStabilityPool(cpStabilityPoolProxyAddr));
         assert(stabilityPoolProxy.owner() == OWNER);
         assert(stabilityPoolProxy.guardian() == GUARDIAN);
-        assert(stabilityPoolProxy.debtToken() == IDebtToken(cpDebtTokenAddr));
-        assert(stabilityPoolProxy.factory() == IFactory(cpFactoryAddr));
+        assert(stabilityPoolProxy.debtToken() == IDebtToken(cpDebtTokenProxyAddr));
+        assert(stabilityPoolProxy.factory() == IFactory(cpFactoryProxyAddr));
         assert(stabilityPoolProxy.liquidationManager() == ILiquidationManager(cpLiquidationManagerProxyAddr));
-        assert(stabilityPoolProxy.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceAddr));
+        assert(stabilityPoolProxy.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceProxyAddr));
 
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
         stabilityPoolProxy.initialize(
             ISatoshiCore(cpSatoshiCoreAddr),
-            IDebtToken(cpDebtTokenAddr),
-            IFactory(cpFactoryAddr),
+            IDebtToken(cpDebtTokenProxyAddr),
+            IFactory(cpFactoryProxyAddr),
             ILiquidationManager(cpLiquidationManagerProxyAddr),
-            ICommunityIssuance(cpCommunityIssuanceAddr)
+            ICommunityIssuance(cpCommunityIssuanceProxyAddr)
         );
 
         // Reward Manager
@@ -185,6 +145,88 @@ contract DeploySetupTest is Test, DeployBase {
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
         rewardManagerProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr));
+
+        // DebtToken
+        _deployDebtTokenProxy(DEPLOYER);
+        assert(cpDebtTokenProxyAddr == address(debtTokenProxy));
+        assert(debtTokenProxy.stabilityPool() == IStabilityPool(cpStabilityPoolProxyAddr));
+        assert(debtTokenProxy.borrowerOperations() == IBorrowerOperations(cpBorrowerOperationsProxyAddr));
+        assert(debtTokenProxy.factory() == IFactory(cpFactoryProxyAddr));
+        assert(debtTokenProxy.gasPool() == IGasPool(cpGasPoolAddr));
+        assert(debtTokenProxy.DEBT_GAS_COMPENSATION() == GAS_COMPENSATION);
+
+        // test re-initialize fail
+        vm.expectRevert("Initializable: contract is already initialized");
+        debtTokenProxy.initialize(
+            ISatoshiCore(cpSatoshiCoreAddr),
+            DEBT_TOKEN_NAME,
+            DEBT_TOKEN_SYMBOL,
+            IStabilityPool(cpStabilityPoolProxyAddr),
+            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+            IFactory(cpFactoryProxyAddr),
+            IGasPool(cpGasPoolAddr),
+            GAS_COMPENSATION
+        );
+
+        // Factory
+        _deployFactoryProxy(DEPLOYER);
+        assert(cpFactoryProxyAddr == address(factoryProxy));
+        assert(factoryProxy.owner() == OWNER);
+        assert(factoryProxy.guardian() == GUARDIAN);
+        assert(factoryProxy.debtToken() == IDebtToken(cpDebtTokenProxyAddr));
+        assert(factoryProxy.stabilityPoolProxy() == IStabilityPool(cpStabilityPoolProxyAddr));
+        assert(factoryProxy.borrowerOperationsProxy() == IBorrowerOperations(cpBorrowerOperationsProxyAddr));
+        assert(factoryProxy.liquidationManagerProxy() == ILiquidationManager(cpLiquidationManagerProxyAddr));
+        assert(factoryProxy.sortedTrovesBeacon() == IBeacon(cpSortedTrovesBeaconAddr));
+        assert(factoryProxy.troveManagerBeacon() == IBeacon(cpTroveManagerBeaconAddr));
+        assert(factoryProxy.communityIssuance() == ICommunityIssuance(cpCommunityIssuanceProxyAddr));
+
+        // test re-initialize fail
+        vm.expectRevert("Initializable: contract is already initialized");
+        factoryProxy.initialize(
+            ISatoshiCore(cpSatoshiCoreAddr),
+            IDebtToken(cpDebtTokenProxyAddr),
+            IGasPool(cpGasPoolAddr),
+            IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
+            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+            ILiquidationManager(cpLiquidationManagerProxyAddr),
+            IStabilityPool(cpStabilityPoolProxyAddr),
+            IBeacon(cpSortedTrovesBeaconAddr),
+            IBeacon(cpTroveManagerBeaconAddr),
+            ICommunityIssuance(cpCommunityIssuanceProxyAddr),
+            IRewardManager(cpRewardManagerProxyAddr),
+            GAS_COMPENSATION
+        );
+        
+        // Community Issuance
+        _deployCommunityIssuanceProxy(DEPLOYER);
+        assert(cpCommunityIssuanceProxyAddr == address(communityIssuanceProxy));
+        assert(communityIssuanceProxy.owner() == OWNER);
+
+        // test re-initialize fail
+        vm.expectRevert("Initializable: contract is already initialized");
+        communityIssuanceProxy.initialize(
+            ISatoshiCore(cpSatoshiCoreAddr),
+            IOSHIToken(cpOshiTokenProxyAddr),
+            IStabilityPool(cpStabilityPoolProxyAddr)
+        );
+
+        _deployOSHITokenProxy(DEPLOYER);
+        assert(cpOshiTokenProxyAddr == address(oshiTokenProxy));
+        assert(oshiTokenProxy.communityIssuanceAddress() == cpCommunityIssuanceProxyAddr);
+        assert(oshiTokenProxy.vaultAddress() == FEE_RECEIVER);
+
+        // test re-initialize fail
+        vm.expectRevert("Initializable: contract is already initialized");
+        oshiTokenProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr), cpCommunityIssuanceProxyAddr, FEE_RECEIVER);
+
+        _deploySatoshiLPFactoryProxy(DEPLOYER);
+        assert(cpSatoshiLPFactoryProxyAddr == address(satoshiLPFactoryProxy));
+        assert(satoshiLPFactoryProxy.owner() == OWNER);
+
+        // test re-initialize fail
+        vm.expectRevert("Initializable: contract is already initialized");
+        satoshiLPFactoryProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr));
 
         /* Deploy Beacon contracts */
 

@@ -2,8 +2,10 @@
 pragma solidity 0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
@@ -17,7 +19,8 @@ import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
  *        Handle the native token and ERC20 for the borrower operations
  */
 contract SatoshiBORouter is ISatoshiBORouter {
-    using SafeERC20 for *;
+    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for *;
 
     IDebtToken public immutable debtToken;
     IBorrowerOperations public immutable borrowerOperationsProxy;

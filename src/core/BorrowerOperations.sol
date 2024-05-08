@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
@@ -29,7 +30,7 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  */
 contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, DelegatedOps, IBorrowerOperations {
     using SafeERC20 for IERC20;
-    using SafeERC20 for IDebtToken;
+    using SafeERC20Upgradeable for IDebtToken;
 
     IDebtToken public debtToken;
     IFactory public factory;

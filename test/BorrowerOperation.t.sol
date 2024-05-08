@@ -49,9 +49,9 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         collateralMock.approve(address(borrowerOperationsProxy), 1e18);
 
         // state before
-        vars.rewardManagerDebtAmtBefore = debtToken.balanceOf(satoshiCore.rewardManager());
-        vars.gasPoolDebtAmtBefore = debtToken.balanceOf(address(gasPool));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
+        vars.rewardManagerDebtAmtBefore = debtTokenProxy.balanceOf(satoshiCore.rewardManager());
+        vars.gasPoolDebtAmtBefore = debtTokenProxy.balanceOf(address(gasPool));
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
         vars.userCollAmtBefore = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
@@ -94,9 +94,9 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         );
 
         // state after
-        vars.rewardManagerDebtAmtAfter = debtToken.balanceOf(satoshiCore.rewardManager());
-        vars.gasPoolDebtAmtAfter = debtToken.balanceOf(address(gasPool));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
+        vars.rewardManagerDebtAmtAfter = debtTokenProxy.balanceOf(satoshiCore.rewardManager());
+        vars.gasPoolDebtAmtAfter = debtTokenProxy.balanceOf(address(gasPool));
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
         vars.userCollAmtAfter = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
@@ -288,8 +288,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         vm.startPrank(user1);
 
         // state before
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -328,8 +328,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         );
 
         // state after
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userDebtAmtAfter, vars.userDebtAmtBefore + vars.withdrawDebtAmt);
@@ -367,8 +367,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         vm.startPrank(user1);
 
         // state before
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -408,8 +408,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         );
 
         // state after
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userDebtAmtAfter, vars.userDebtAmtBefore - vars.repayDebtAmt);
@@ -450,8 +450,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state before
         vars.userCollAmtBefore = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -501,8 +501,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state after
         vars.userCollAmtAfter = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userCollAmtAfter, vars.userCollAmtBefore - vars.addCollAmt);
@@ -545,8 +545,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state before
         vars.userCollAmtBefore = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -596,8 +596,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state after
         vars.userCollAmtAfter = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userCollAmtAfter, vars.userCollAmtBefore - vars.addCollAmt);
@@ -641,8 +641,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state before
         vars.userCollAmtBefore = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -692,8 +692,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state after
         vars.userCollAmtAfter = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userCollAmtAfter, vars.userCollAmtBefore + vars.withdrawCollAmt);
@@ -734,8 +734,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state before
         vars.userCollAmtBefore = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -785,8 +785,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         // state after
         vars.userCollAmtAfter = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userCollAmtAfter, vars.userCollAmtBefore + vars.withdrawCollAmt);
@@ -824,10 +824,10 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         //  mock user debt token balance
         vars.borrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(vars.debtAmt);
         vars.repayDebtAmt = vars.debtAmt + vars.borrowingFee;
-        deal(address(debtToken), user1, vars.repayDebtAmt);
+        deal(address(debtTokenProxy), user1, vars.repayDebtAmt);
 
         // state before
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
         vars.userCollAmtBefore = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 
@@ -844,8 +844,8 @@ contract BorrowerOperationTest is Test, DeployBase, TroveBase, TestConfig, Event
         borrowerOperationsProxy.closeTrove(troveManagerBeaconProxy, user1);
 
         // state after
-        vars.userDebtAmtAfter = debtToken.balanceOf(user1);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
         vars.userCollAmtAfter = collateralMock.balanceOf(user1);
         vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
 

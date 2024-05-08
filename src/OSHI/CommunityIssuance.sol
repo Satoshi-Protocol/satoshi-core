@@ -1,21 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IOSHIToken} from "../interfaces/core/IOSHIToken.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
 
-contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable {
-    IStabilityPool public immutable stabilityPool;
-    IOSHIToken public immutable OSHIToken;
+contract CommunityIssuance is ICommunityIssuance, SatoshiOwnable, UUPSUpgradeable {
+    IStabilityPool public stabilityPool;
+    IOSHIToken public OSHIToken;
 
     mapping(address => uint256) public allocated; // allocate to troveManagers and SP
     mapping(address => uint256) public collected;
 
-    constructor(ISatoshiCore _satoshiCore, IOSHIToken _oshiToken, IStabilityPool _stabilityPool) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(ISatoshiCore _satoshiCore, IOSHIToken _oshiToken, IStabilityPool _stabilityPool)
+        external
+        initializer
+    {
+        __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
         OSHIToken = _oshiToken;
         stabilityPool = _stabilityPool;

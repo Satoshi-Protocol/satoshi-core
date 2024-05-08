@@ -4,6 +4,9 @@ pragma solidity 0.8.13;
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";

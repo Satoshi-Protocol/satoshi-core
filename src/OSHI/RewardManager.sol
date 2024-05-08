@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
@@ -23,7 +24,9 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
  *        The lock weight will not decay.
  */
 contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
-    using SafeERC20 for *;
+    using SafeERC20Upgradeable for IDebtToken;
+    using SafeERC20Upgradeable for IOSHIToken;
+    using SafeERC20 for IERC20;
 
     uint256 public constant DECIMAL_PRECISION = 1e27;
     uint256 public constant FEE_TO_STAKER_RATIO = 975;
@@ -32,7 +35,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
     uint256 internal constant DURATION_MULTIPLIER = 3; // 3 months = 1x, 6 months = 2x, 9 months = 3x, 12 months = 4x
     uint256 internal constant ONE_MONTH = 30 days;
 
-    IERC20 public debtToken;
+    IDebtToken public debtToken;
     IOSHIToken public oshiToken;
     IERC20[] public collToken;
     IWETH public weth;

@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IStabilityPool} from "../interfaces/core/IStabilityPool.sol";
@@ -20,52 +25,50 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *
  */
 
-contract DebtToken is IDebtToken, ERC20 {
+contract DebtToken is IDebtToken, SatoshiOwnable, UUPSUpgradeable, ERC20Upgradeable, ERC20PermitUpgradeable {
     string public constant version = "1";
 
     // --- ERC 3156 Data ---
     bytes32 private constant _RETURN_VALUE = keccak256("ERC3156FlashBorrower.onFlashLoan");
     uint256 public constant FLASH_LOAN_FEE = 9; // 1 = 0.0001%
 
-    // --- Data for EIP2612 ---
-
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant permitTypeHash = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
-    // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private constant _TYPE_HASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
-
-    // Cache the domain separator as an immutable value, but also store the chain id that it corresponds to, in order to
-    // invalidate the cached domain separator if the chain id changes.
-    bytes32 private immutable _CACHED_DOMAIN_SEPARATOR;
-    uint256 private immutable _CACHED_CHAIN_ID;
-
-    bytes32 private immutable _HASHED_NAME;
-    bytes32 private immutable _HASHED_VERSION;
-
-    mapping(address => uint256) private _nonces;
-
     // --- Addresses ---
-    ISatoshiCore private immutable satoshiCore;
-    IStabilityPool public immutable stabilityPool;
-    IBorrowerOperations public immutable borrowerOperations;
-    IFactory public immutable factory;
-    IGasPool public immutable gasPool;
+    ISatoshiCore private satoshiCore;
+    IStabilityPool public stabilityPool;
+    IBorrowerOperations public borrowerOperations;
+    IFactory public factory;
+    IGasPool public gasPool;
 
     mapping(ITroveManager => bool) public troveManager;
 
     // Amount of debt to be locked in gas pool on opening troves
-    uint256 public immutable DEBT_GAS_COMPENSATION;
+    uint256 public DEBT_GAS_COMPENSATION;
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(
+        ISatoshiCore _satoshiCore,
         string memory _name,
         string memory _symbol,
         IStabilityPool _stabilityPool,
         IBorrowerOperations _borrowerOperations,
-        ISatoshiCore _satoshiCore,
         IFactory _factory,
         IGasPool _gasPool,
         uint256 _gasCompensation
-    ) ERC20(_name, _symbol) {
+    ) external initializer {
+        __SatoshiOwnable_init(_satoshiCore);
+        __UUPSUpgradeable_init_unchained();
+        __ERC20_init(_name, _symbol);
+        __ERC20Permit_init(_name);
+
         stabilityPool = _stabilityPool;
         satoshiCore = _satoshiCore;
         borrowerOperations = _borrowerOperations;
@@ -73,14 +76,6 @@ contract DebtToken is IDebtToken, ERC20 {
         gasPool = _gasPool;
 
         DEBT_GAS_COMPENSATION = _gasCompensation;
-
-        bytes32 hashedName = keccak256(bytes(_name));
-        bytes32 hashedVersion = keccak256(bytes(version));
-
-        _HASHED_NAME = hashedName;
-        _HASHED_VERSION = hashedVersion;
-        _CACHED_CHAIN_ID = block.chainid;
-        _CACHED_DOMAIN_SEPARATOR = _buildDomainSeparator(_TYPE_HASH, hashedName, hashedVersion);
     }
 
     function enableTroveManager(ITroveManager _troveManager) external {
@@ -133,14 +128,14 @@ contract DebtToken is IDebtToken, ERC20 {
 
     // --- External functions ---
 
-    function transfer(address recipient, uint256 amount) public override(IDebtToken, ERC20) returns (bool) {
+    function transfer(address recipient, uint256 amount) public override(IDebtToken, ERC20Upgradeable) returns (bool) {
         _requireValidRecipient(recipient);
         return super.transfer(recipient, amount);
     }
 
     function transferFrom(address sender, address recipient, uint256 amount)
         public
-        override(IDebtToken, ERC20)
+        override(IDebtToken, ERC20Upgradeable)
         returns (bool)
     {
         _requireValidRecipient(recipient);
@@ -218,43 +213,6 @@ contract DebtToken is IDebtToken, ERC20 {
         _approve(address(this), rewardManager, fee);
         IRewardManager(rewardManager).increaseSATPerUintStaked(fee);
         return true;
-    }
-
-    // --- EIP 2612 Functionality ---
-
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == _CACHED_CHAIN_ID) {
-            return _CACHED_DOMAIN_SEPARATOR;
-        } else {
-            return _buildDomainSeparator(_TYPE_HASH, _HASHED_NAME, _HASHED_VERSION);
-        }
-    }
-
-    function permit(address owner, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external
-    {
-        require(deadline >= block.timestamp, "Debt: expired deadline");
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                domainSeparator(),
-                keccak256(abi.encode(permitTypeHash, owner, spender, amount, _nonces[owner]++, deadline))
-            )
-        );
-        address recoveredAddress = ECDSA.recover(digest, v, r, s);
-        require(recoveredAddress == owner, "Debt: invalid signature");
-        _approve(owner, spender, amount);
-    }
-
-    function nonces(address owner) external view returns (uint256) {
-        // FOR EIP 2612
-        return _nonces[owner];
-    }
-
-    // --- Internal operations ---
-
-    function _buildDomainSeparator(bytes32 typeHash, bytes32 name_, bytes32 version_) private view returns (bytes32) {
-        return keccak256(abi.encode(typeHash, name_, version_, block.chainid, address(this)));
     }
 
     // --- 'require' functions ---

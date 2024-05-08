@@ -44,7 +44,11 @@ interface ILiquidationManager is ISatoshiOwnable, ISatoshiBase {
         uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _debtGasCompensation
     );
     event LiquidationTroves(
-        address indexed _troveManager, uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _debtGasCompensation
+        address indexed _troveManager,
+        uint256 _liquidatedDebt,
+        uint256 _liquidatedColl,
+        uint256 _collGasCompensation,
+        uint256 _debtGasCompensation
     );
     event TroveLiquidated(address indexed _borrower, uint256 _debt, uint256 _coll, uint8 _operation);
 

@@ -70,4 +70,19 @@ interface IFactory is ISatoshiOwnable {
     function setRewardRate(uint128[] calldata _numerator, uint128 _denominator) external;
 
     function maxRewardRate() external view returns (uint128);
+
+    function initialize(
+        ISatoshiCore _satoshiCore,
+        IDebtToken _debtToken,
+        IGasPool _gasPool,
+        IPriceFeedAggregator _priceFeedAggregatorProxy,
+        IBorrowerOperations _borrowerOperationsProxy,
+        ILiquidationManager _liquidationManagerProxy,
+        IStabilityPool _stabilityPoolProxy,
+        IBeacon _sortedTrovesBeacon,
+        IBeacon _troveManagerBeacon,
+        ICommunityIssuance _communityIssuance,
+        IRewardManager _rewardManager,
+        uint256 _gasCompensation
+    ) external;
 }

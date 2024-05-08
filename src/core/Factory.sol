@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -26,24 +27,34 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/Factory.sol
  *
  */
-contract Factory is IFactory, SatoshiOwnable {
-    ISatoshiCore public immutable satoshiCore;
-    IDebtToken public immutable debtToken;
-    IGasPool public immutable gasPool;
-    IPriceFeedAggregator public immutable priceFeedAggregatorProxy;
-    IBorrowerOperations public immutable borrowerOperationsProxy;
-    ILiquidationManager public immutable liquidationManagerProxy;
-    IStabilityPool public immutable stabilityPoolProxy;
-    IBeacon public immutable sortedTrovesBeacon;
-    IBeacon public immutable troveManagerBeacon;
-    uint256 public immutable gasCompensation;
-    ICommunityIssuance public immutable communityIssuance;
-    IRewardManager public immutable rewardManager;
+contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
+    ISatoshiCore public satoshiCore;
+    IDebtToken public debtToken;
+    IGasPool public gasPool;
+    IPriceFeedAggregator public priceFeedAggregatorProxy;
+    IBorrowerOperations public borrowerOperationsProxy;
+    ILiquidationManager public liquidationManagerProxy;
+    IStabilityPool public stabilityPoolProxy;
+    IBeacon public sortedTrovesBeacon;
+    IBeacon public troveManagerBeacon;
+    uint256 public gasCompensation;
+    ICommunityIssuance public communityIssuance;
+    IRewardManager public rewardManager;
     ITroveManager[] public troveManagers;
 
     uint128 public constant maxRewardRate = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
+    function initialize(
         ISatoshiCore _satoshiCore,
         IDebtToken _debtToken,
         IGasPool _gasPool,
@@ -56,7 +67,8 @@ contract Factory is IFactory, SatoshiOwnable {
         ICommunityIssuance _communityIssuance,
         IRewardManager _rewardManager,
         uint256 _gasCompensation
-    ) {
+    ) external initializer {
+        __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
         satoshiCore = _satoshiCore;
         debtToken = _debtToken;

@@ -411,9 +411,9 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // try to withdraw from SP
         vm.warp(block.timestamp + 1);
-        assertEq(debtToken.balanceOf(user2), 0);
+        assertEq(debtTokenProxy.balanceOf(user2), 0);
         _withdrawFromSP(user2, 1e18);
-        assertEq(debtToken.balanceOf(user2), 0);
+        assertEq(debtTokenProxy.balanceOf(user2), 0);
     }
 
     function test_2lquidateAndProvide() public {
@@ -477,7 +477,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.warp(block.timestamp + 365 days * 6);
         uint256 oshiReward = stabilityPoolProxy.claimableReward(user1);
         _claimOSHIReward(user1);
-        vars.OSHIBefore = oshiToken.balanceOf(user1);
+        vars.OSHIBefore = oshiTokenProxy.balanceOf(user1);
         assertEq(oshiReward, 10 * _1_MILLION);
         assertEq(vars.OSHIBefore, oshiReward);
     }

@@ -96,11 +96,11 @@ contract FactoryTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function test_setRewardrate() public {
-        uint128 maxRewardRate = factory.maxRewardRate();
+        uint128 maxRewardRate = factoryProxy.maxRewardRate();
         vm.prank(OWNER);
         uint128[] memory numerator = new uint128[](1);
         numerator[0] = 1;
-        factory.setRewardRate(numerator, 2);
+        factoryProxy.setRewardRate(numerator, 2);
         uint128 rewardRateAfter = troveManagerBeaconProxy.rewardRate();
         assertEq(rewardRateAfter, maxRewardRate / 2);
     }
@@ -110,16 +110,16 @@ contract FactoryTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vm.prank(OWNER);
         numerator[0] = 0;
-        factory.setRewardRate(numerator, 1);
+        factoryProxy.setRewardRate(numerator, 1);
         _openTrove(user1, 1e18, 1000e18);
         assertEq(troveManagerBeaconProxy.claimableReward(user1), 0);
         vm.warp(block.timestamp + 10000);
         assertEq(troveManagerBeaconProxy.claimableReward(user1), 0);
 
-        uint128 maxRewardRate = factory.maxRewardRate();
+        uint128 maxRewardRate = factoryProxy.maxRewardRate();
         vm.startPrank(OWNER);
         numerator[0] = 1;
-        factory.setRewardRate(numerator, 1);
+        factoryProxy.setRewardRate(numerator, 1);
         uint128 rewardRateAfter = troveManagerBeaconProxy.rewardRate();
         assertEq(rewardRateAfter, maxRewardRate);
         vm.stopPrank();

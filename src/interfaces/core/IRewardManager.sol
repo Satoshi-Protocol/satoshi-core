@@ -73,7 +73,7 @@ interface IRewardManager is ISatoshiOwnable {
     function F_COLL(uint256) external view returns (uint256);
     function collForFeeReceiver(uint256) external view returns (uint256);
     function satForFeeReceiver() external view returns (uint256);
-    function debtToken() external view returns (IERC20);
+    function debtToken() external view returns (IDebtToken);
     function oshiToken() external view returns (IOSHIToken);
     function collToken(uint256) external view returns (IERC20);
     function weth() external view returns (IWETH);

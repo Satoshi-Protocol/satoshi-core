@@ -8,7 +8,7 @@ address constant SATOSHI_CORE_FEE_RECEIVER = 0x7af1d463627FC62decdEA0826A306eE76
 uint256 constant BO_MIN_NET_DEBT = 10e18; // 10 SAT
 uint256 constant GAS_COMPENSATION = 2e18; // 2 SAT
 
-string constant DEBT_TOKEN_NAME = "Statoshi Stablecoin";
+string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
 address constant WETH_ADDRESS = 0xB5136FEba197f5fF4B765E5b50c74db717796dcD;

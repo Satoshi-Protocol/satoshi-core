@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import {ICommunityIssuance} from "./ICommunityIssuance.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ISatoshiLPToken is IERC20 {

@@ -35,19 +35,19 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
         assert(IPriceFeed(priceFeedAddr).guardian() == GUARDIAN);
         assert(IPriceFeed(priceFeedAddr).SATOSHI_CORE() == satoshiCore);
 
-        uint256 troveManagerCountBefore = factory.troveManagerCount();
+        uint256 troveManagerCountBefore = factoryProxy.troveManagerCount();
 
         _setPriceFeedToPriceFeedAggregatorProxy(OWNER, collateralMock, IPriceFeed(priceFeedAddr));
         _deployNewInstance(OWNER, collateralMock, IPriceFeed(priceFeedAddr), deploymentParams);
 
-        uint256 troveManagerCountAfter = factory.troveManagerCount();
+        uint256 troveManagerCountAfter = factoryProxy.troveManagerCount();
 
         assert(troveManagerCountAfter == troveManagerCountBefore + 1);
 
         uint256 stabilityPoolIndexByCollateral = stabilityPoolProxy.indexByCollateral(collateralMock);
         assert(stabilityPoolProxy.collateralTokens(stabilityPoolIndexByCollateral - 1) == collateralMock); // index - 1
 
-        ITroveManager troveManagerBeaconProxy = factory.troveManagers(troveManagerCountAfter - 1);
+        ITroveManager troveManagerBeaconProxy = factoryProxy.troveManagers(troveManagerCountAfter - 1);
         ISortedTroves sortedTrovesBeaconProxy = troveManagerBeaconProxy.sortedTroves();
         assert(sortedTrovesBeaconProxy.troveManager() == troveManagerBeaconProxy);
 
@@ -56,12 +56,12 @@ contract DeployInstanceTest is Test, DeployBase, TestConfig {
         assert(troveManagerBeaconProxy.sunsetting() == false);
         assert(troveManagerBeaconProxy.lastActiveIndexUpdate() != 0);
 
-        assert(debtToken.troveManager(troveManagerBeaconProxy) == true);
+        assert(debtTokenProxy.troveManager(troveManagerBeaconProxy) == true);
 
         (IERC20 collateralToken,) = borrowerOperationsProxy.troveManagersData(troveManagerBeaconProxy);
         assert(collateralToken == collateralMock);
 
-        assert(troveManagerBeaconProxy.communityIssuance() == communityIssuance);
+        assert(troveManagerBeaconProxy.communityIssuance() == communityIssuanceProxy);
 
         assertEq(troveManagerBeaconProxy.rewardRate(), 0);
     }

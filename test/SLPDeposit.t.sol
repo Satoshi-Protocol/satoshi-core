@@ -61,7 +61,7 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         receipient[0] = address(slpToken);
         uint256[] memory amount = new uint256[](1);
         amount[0] = 15e24;
-        communityIssuance.setAllocated(receipient, amount);
+        communityIssuanceProxy.setAllocated(receipient, amount);
         // set reward rate
         slpToken.setRewardRate(95129375951293760); // 15e24 / (5 * 31536000)
         assertEq(slpToken.rewardRate(), 95129375951293760);
@@ -96,7 +96,7 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(slpToken.claimableReward(user1), expectedOSHIReward);
         slpToken.claimReward();
         assertEq(slpToken.claimableReward(user1), 0);
-        assertEq(oshiToken.balanceOf(user1), expectedOSHIReward);
+        assertEq(oshiTokenProxy.balanceOf(user1), expectedOSHIReward);
         vm.stopPrank();
     }
 
@@ -112,7 +112,7 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(slpToken.claimableReward(user1), expectedOSHIReward);
         slpToken.claimReward();
         assertEq(slpToken.claimableReward(user1), 0);
-        assertEq(oshiToken.balanceOf(user1), expectedOSHIReward);
+        assertEq(oshiTokenProxy.balanceOf(user1), expectedOSHIReward);
         vm.stopPrank();
     }
 
@@ -131,7 +131,7 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(slpToken.claimableReward(user1), expectedOSHIReward);
         assertEq(slpToken.claimableReward(user2), 0);
         slpToken.claimReward();
-        assertEq(oshiToken.balanceOf(user1), expectedOSHIReward);
+        assertEq(oshiTokenProxy.balanceOf(user1), expectedOSHIReward);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 10000);

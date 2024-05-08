@@ -115,9 +115,9 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_AccrueInterst2yCorrect() public {
         // open a trove
         _openTrove(user1, 1e18, 10000e18);
-        _transfer(user1, address(debtToken), user2, 60e18);
-        _transfer(user1, address(debtToken), user3, 60e18);
-        _transfer(user1, address(debtToken), user4, 60e18);
+        _transfer(user1, address(debtTokenProxy), user2, 60e18);
+        _transfer(user1, address(debtTokenProxy), user3, 60e18);
+        _transfer(user1, address(debtTokenProxy), user4, 60e18);
         (uint256 user1CollBefore, uint256 user1DebtBefore) = troveManagerBeaconProxy.getTroveCollAndDebt(user1);
 
         vm.warp(block.timestamp + 365 days);
@@ -228,7 +228,7 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 expectedMintingFee = 5e18 + 0.25e18;
         uint256 expectedDebt = 1010e18 * INTEREST_RATE_IN_BPS / 10000;
         uint256 delta = SatoshiMath._getAbsoluteDifference(
-            debtToken.balanceOf(address(rewardManagerProxy)), expectedMintingFee + expectedDebt
+            debtTokenProxy.balanceOf(address(rewardManagerProxy)), expectedMintingFee + expectedDebt
         );
         assert(delta < 1000);
     }
@@ -236,7 +236,7 @@ contract FeeTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_OneTimeBorrowFee1() public {
         _openTrove(user1, 1e18, 1000e18);
         // 365 days later
-        uint256 delta = SatoshiMath._getAbsoluteDifference(debtToken.balanceOf(address(rewardManagerProxy)), 5e18);
+        uint256 delta = SatoshiMath._getAbsoluteDifference(debtTokenProxy.balanceOf(address(rewardManagerProxy)), 5e18);
         require(delta == 0, "delta != 0");
     }
 }

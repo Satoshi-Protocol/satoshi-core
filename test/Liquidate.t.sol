@@ -161,7 +161,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation / 2);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation / 2);
-        assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
+        assertEq(debtTokenProxy.balanceOf(user4), vars.debtGasCompensation);
     }
 
     function test_LiquidateSPNotEnoughInNormalMode() public {
@@ -216,7 +216,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation / 2);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation / 2);
-        assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
+        assertEq(debtTokenProxy.balanceOf(user4), vars.debtGasCompensation);
 
         // check redistribute the remaining debt to all Troves
         assertTrue(SatoshiMath._approximatelyEqual(debt1, user1ExpectedDebt, 1000));
@@ -271,7 +271,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation / 2);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation / 2);
-        assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
+        assertEq(debtTokenProxy.balanceOf(user4), vars.debtGasCompensation);
     }
 
     function test_liquidateTroves_LessThan100InRecoveryMode() public {
@@ -315,7 +315,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation / 2);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation / 2);
-        assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
+        assertEq(debtTokenProxy.balanceOf(user4), vars.debtGasCompensation);
     }
 
     function test_liquidateTroves_2ICRLessThan100InRecoveryMode() public {
@@ -358,7 +358,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user5 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user5), vars.collGasCompensation);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation);
-        assertEq(debtToken.balanceOf(user5), vars.debtGasCompensation * 2);
+        assertEq(debtTokenProxy.balanceOf(user5), vars.debtGasCompensation * 2);
 
         _recordUserStateAfterToVar(vars);
 
@@ -415,7 +415,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user5 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user5), vars.collGasCompensation / 2);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation / 2);
-        assertEq(debtToken.balanceOf(user5), vars.debtGasCompensation);
+        assertEq(debtTokenProxy.balanceOf(user5), vars.debtGasCompensation);
 
         // liquidate user2
         // redistibute the collateral and debt
@@ -476,7 +476,7 @@ contract LiquidateTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // check user4 gets the reward for liquidation
         assertEq(collateralMock.balanceOf(user4), vars.collGasCompensation / 2);
         assertEq(collateralMock.balanceOf(satoshiCore.rewardManager()), vars.collGasCompensation / 2);
-        assertEq(debtToken.balanceOf(user4), vars.debtGasCompensation);
+        assertEq(debtTokenProxy.balanceOf(user4), vars.debtGasCompensation);
     }
 
     // MCR <= ICR < 150%, nothing to liquidate

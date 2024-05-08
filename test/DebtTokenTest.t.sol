@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITroveManager.sol";
@@ -15,13 +15,17 @@ import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 import {FlashloanTester} from "./FlashloanTester.sol";
+import {DebtToken} from "../src/core/DebtToken.sol";
 
 contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
+    bytes32 private immutable _PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;
+    DebtToken debtToken;
     address user1;
     address user2;
     address user3;
@@ -45,13 +49,13 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
-        // deploy debt token tester
-        _deployDebtTokenTester();
-
-        // mint some tokens
-        debtTokenTester.unprotectedMint(user1, 150);
-        debtTokenTester.unprotectedMint(user2, 100);
-        debtTokenTester.unprotectedMint(user3, 50);
+        debtToken = DebtToken(address(debtTokenProxy));
+        
+        vm.startPrank(address(debtToken.borrowerOperations()));
+        debtToken.mint(user1, 150);
+        debtToken.mint(user2, 100);
+        debtToken.mint(user3, 50);
+        vm.stopPrank();
     }
 
     // utils
@@ -91,35 +95,49 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
+    function getDigest(address owner, address spender, uint256 amount, uint256 nonce, uint256 deadline)
+        public
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                uint16(0x1901),
+                debtToken.DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(_PERMIT_TYPEHASH, owner, spender, amount, nonce, deadline))
+            )
+        );
+    }
+
     function testGetsBalanceOfUser() public {
-        assertEq(debtTokenTester.balanceOf(user1), 150);
-        assertEq(debtTokenTester.balanceOf(user2), 100);
-        assertEq(debtTokenTester.balanceOf(user3), 50);
+        assertEq(debtToken.balanceOf(user1), 150);
+        assertEq(debtToken.balanceOf(user2), 100);
+        assertEq(debtToken.balanceOf(user3), 50);
     }
 
     function testGetsTotalSupply() public {
-        assertEq(debtTokenTester.totalSupply(), 300);
+        assertEq(debtToken.totalSupply(), 300);
     }
 
     function testTokenName() public {
-        assertEq(debtTokenTester.name(), "TEST_TOKEN_NAME");
+        assertEq(debtToken.name(), "TEST_TOKEN_NAME");
     }
 
     function testSymbol() public {
-        assertEq(debtTokenTester.symbol(), "TEST_TOKEN_SYMBOL");
+        assertEq(debtToken.symbol(), "TEST_TOKEN_SYMBOL");
     }
 
     function testDecimals() public {
-        assertEq(debtTokenTester.decimals(), 18);
+        assertEq(debtToken.decimals(), 18);
     }
 
     function testAllowance() public {
         vm.startPrank(user1);
-        debtTokenTester.approve(user2, 100);
+        debtToken.approve(user2, 100);
         vm.stopPrank();
 
-        uint256 allowance1 = debtTokenTester.allowance(user1, user2);
-        uint256 allowance2 = debtTokenTester.allowance(user1, user3);
+        uint256 allowance1 = debtToken.allowance(user1, user2);
+        uint256 allowance2 = debtToken.allowance(user1, user3);
 
         assertEq(allowance1, 100);
         assertEq(allowance2, 0);
@@ -127,97 +145,99 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     function testTransfer() public {
         vm.prank(user1);
-        debtTokenTester.transfer(user2, 50);
-        assertEq(debtTokenTester.balanceOf(user1), 100);
-        assertEq(debtTokenTester.balanceOf(user2), 150);
+        debtToken.transfer(user2, 50);
+        assertEq(debtToken.balanceOf(user1), 100);
+        assertEq(debtToken.balanceOf(user2), 150);
     }
 
     function testTransferFrom() public {
-        assertEq(debtTokenTester.allowance(user1, user2), 0);
+        assertEq(debtToken.allowance(user1, user2), 0);
 
         vm.prank(user1);
-        debtTokenTester.approve(user2, 50);
-        assertEq(debtTokenTester.allowance(user1, user2), 50);
+        debtToken.approve(user2, 50);
+        assertEq(debtToken.allowance(user1, user2), 50);
 
         vm.prank(user2);
-        assertTrue(debtTokenTester.transferFrom(user1, user3, 50));
-        assertEq(debtTokenTester.balanceOf(user3), 100);
-        assertEq(debtTokenTester.balanceOf(user1), 150 - 50);
+        assertTrue(debtToken.transferFrom(user1, user3, 50));
+        assertEq(debtToken.balanceOf(user3), 100);
+        assertEq(debtToken.balanceOf(user1), 150 - 50);
 
         vm.expectRevert();
-        debtTokenTester.transferFrom(user1, user3, 50);
+        debtToken.transferFrom(user1, user3, 50);
     }
 
     function testMint() public {
-        vm.prank(address(debtTokenTester.borrowerOperations()));
-        debtTokenTester.mint(user1, 50);
-        assertEq(debtTokenTester.balanceOf(user1), 200);
+        vm.prank(address(debtToken.borrowerOperations()));
+        debtToken.mint(user1, 50);
+        assertEq(debtToken.balanceOf(user1), 200);
     }
 
     function testFailMintToZero() public {
-        vm.prank(address(debtTokenTester.borrowerOperations()));
-        debtTokenTester.mint(address(0), 1e18);
+        vm.prank(address(debtToken.borrowerOperations()));
+        debtToken.mint(address(0), 1e18);
     }
 
     function testFailBurnFromZero() public {
-        vm.prank(address(debtTokenTester.borrowerOperations()));
-        debtTokenTester.burn(address(0), 1e18);
+        vm.prank(address(debtToken.borrowerOperations()));
+        debtToken.burn(address(0), 1e18);
     }
 
     function testFailBurnInsufficientBalance() public {
         vm.prank(user1);
-        debtTokenTester.burn(user1, 3e18);
+        debtToken.burn(user1, 3e18);
     }
 
     function testFailApproveToZeroAddress() public {
-        debtTokenTester.approve(address(0), 1e18);
+        debtToken.approve(address(0), 1e18);
     }
 
     function testFailTransferToZeroAddress() public {
         testMint();
         vm.prank(user1);
-        debtTokenTester.transfer(address(0), 10);
+        debtToken.transfer(address(0), 10);
     }
 
     function testFailTransferInsufficientBalance() public {
         testMint();
         vm.prank(user1);
-        debtTokenTester.transfer(user2, 3e18);
+        debtToken.transfer(user2, 3e18);
     }
 
     function testFailTransferFromInsufficientApprove() public {
         testMint();
         vm.prank(user1);
-        debtTokenTester.approve(address(this), 10);
-        debtTokenTester.transferFrom(user1, user2, 20);
+        debtToken.approve(address(this), 10);
+        debtToken.transferFrom(user1, user2, 20);
     }
 
     function testPermit() public {
         uint256 ownerPrivateKey = 0xA11CE;
         address owner = vm.addr(ownerPrivateKey);
-        debtTokenTester.unprotectedMint(owner, 100);
+        vm.prank(address(debtToken.borrowerOperations()));
+        debtToken.mint(owner, 1000);
 
-        uint256 nonce = debtTokenTester.nonces(owner);
+        uint256 nonce = debtToken.nonces(owner);
         uint256 deadline = block.timestamp + 1000;
-        uint256 amount = 100;
+        uint256 amount = 1000;
 
-        bytes32 digest = debtTokenTester.getDigest(owner, user2, amount, nonce, deadline);
+        bytes32 digest = getDigest(owner, user2, amount, nonce, deadline);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
 
-        debtTokenTester.permit(owner, user2, amount, deadline, v, r, s);
+        debtToken.permit(owner, user2, amount, deadline, v, r, s);
 
-        assertEq(debtTokenTester.allowance(owner, user2), amount);
+        assertEq(debtToken.allowance(owner, user2), amount);
     }
 
     function testFlashloan() public {
-        uint256 totalSupplyBefore = debtTokenTester.totalSupply();
+        uint256 totalSupplyBefore = debtToken.totalSupply();
         uint256 amount = 10000e18;
-        FlashloanTester flashloanTester = new FlashloanTester(debtTokenTester);
+        FlashloanTester flashloanTester = new FlashloanTester(debtToken);
         // mint fee to tester
-        debtTokenTester.unprotectedMint(address(flashloanTester), 9e18);
-        flashloanTester.flashBorrow(address(debtTokenTester), amount);
-        assertEq(debtTokenTester.allowance(address(this), address(flashloanTester)), 0);
-        assertEq(debtTokenTester.balanceOf(satoshiCore.rewardManager()), 9e18);
-        assertEq(debtTokenTester.totalSupply() - 9e18, totalSupplyBefore);
+        vm.prank(address(debtToken.borrowerOperations()));
+        debtToken.mint(address(flashloanTester), 9e18);
+        flashloanTester.flashBorrow(address(debtToken), amount);
+        assertEq(debtToken.allowance(address(this), address(flashloanTester)), 0);
+        assertEq(debtToken.balanceOf(satoshiCore.rewardManager()), 9e18);
+        assertEq(debtToken.totalSupply() - 9e18, totalSupplyBefore);
     }
 }

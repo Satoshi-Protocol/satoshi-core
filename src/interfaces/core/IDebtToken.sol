@@ -2,14 +2,15 @@
 pragma solidity 0.8.13;
 
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {ITroveManager} from "./ITroveManager.sol";
 import {IGasPool} from "./IGasPool.sol";
 import {IStabilityPool} from "./IStabilityPool.sol";
 import {IBorrowerOperations} from "./IBorrowerOperations.sol";
 import {IFactory} from "./IFactory.sol";
+import {ISatoshiCore} from "./ISatoshiCore.sol";
 
-interface IDebtToken is IERC20 {
+interface IDebtToken is IERC20Upgradeable {
     function burn(address _account, uint256 _amount) external;
 
     function burnWithGasCompensation(address _account, uint256 _amount) external returns (bool);
@@ -23,9 +24,6 @@ interface IDebtToken is IERC20 {
     function mint(address _account, uint256 _amount) external;
 
     function mintWithGasCompensation(address _account, uint256 _amount) external returns (bool);
-
-    function permit(address owner, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external;
 
     function returnFromPool(address _poolAddress, address _receiver, uint256 _amount) external;
 
@@ -41,8 +39,6 @@ interface IDebtToken is IERC20 {
 
     function borrowerOperations() external view returns (IBorrowerOperations);
 
-    function domainSeparator() external view returns (bytes32);
-
     function factory() external view returns (IFactory);
 
     function flashFee(address token, uint256 amount) external view returns (uint256);
@@ -51,13 +47,18 @@ interface IDebtToken is IERC20 {
 
     function maxFlashLoan(address token) external view returns (uint256);
 
-    function nonces(address owner) external view returns (uint256);
-
-    function permitTypeHash() external view returns (bytes32);
-
     function stabilityPool() external view returns (IStabilityPool);
 
     function troveManager(ITroveManager) external view returns (bool);
 
-    function version() external view returns (string memory);
+    function initialize(
+        ISatoshiCore _satoshiCore,
+        string memory _name,
+        string memory _symbol,
+        IStabilityPool _stabilityPool,
+        IBorrowerOperations _borrowerOperations,
+        IFactory _factory,
+        IGasPool _gasPool,
+        uint256 _gasCompensation
+    ) external;
 }

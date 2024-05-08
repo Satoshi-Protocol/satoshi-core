@@ -20,8 +20,6 @@ import {GasPool} from "../../src/core/GasPool.sol";
 import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {DebtToken} from "../../src/core/DebtToken.sol";
 import {OSHIToken} from "../../src/OSHI/OSHIToken.sol";
-import {DebtTokenTester} from "../../test/DebtTokenTester.sol";
-import {OSHITokenTester} from "../../test/OSHITokenTester.sol";
 import {SLPTokenTester} from "../../test/SLPTokenTester.sol";
 import {MockUniswapV2ERC20} from "../../test/MockUniswapV2ERC20.sol";
 import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
@@ -31,7 +29,6 @@ import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChai
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {ReferralManager} from "../../src/helpers/ReferralManager.sol";
-import {VestingManager} from "../../src/OSHI/VestingManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
@@ -50,7 +47,6 @@ import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IReferralManager} from "../../src/helpers/interfaces/IReferralManager.sol";
-import {IVestingManager} from "../../src/interfaces/OSHI/IVestingManager.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
 import {
     DEPLOYER,
@@ -120,27 +116,29 @@ abstract contract DeployBase is Test {
     ISortedTroves sortedTrovesImpl;
     ITroveManager troveManagerImpl;
     IRewardManager rewardManagerImpl;
+    IDebtToken debtTokenImpl;
+    IFactory factoryImpl;
+    ICommunityIssuance communityIssuanceImpl;
+    IOSHIToken oshiTokenImpl;
+    ISatoshiLPFactory satoshiLPFactoryImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
-    IDebtToken debtToken;
-    IFactory factory;
-    ICommunityIssuance communityIssuance;
-    IOSHIToken oshiToken;
-    IVestingManager vestingManager;
-    ISatoshiLPFactory satoshiLPFactory;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
     ILiquidationManager liquidationManagerProxy;
     IStabilityPool stabilityPoolProxy;
     IRewardManager rewardManagerProxy;
+    IDebtToken debtTokenProxy;
+    IFactory factoryProxy;
+    ICommunityIssuance communityIssuanceProxy;
+    IOSHIToken oshiTokenProxy;
+    ISatoshiLPFactory satoshiLPFactoryProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
-    /* DebetTokenTester contract */
-    DebtTokenTester debtTokenTester;
-    OSHITokenTester oshiTokenTester;
+    /* DebtTokenTester contract */
     SLPTokenTester slpTokenTester;
 
     /* computed contracts for deployment */
@@ -152,21 +150,25 @@ abstract contract DeployBase is Test {
     address cpSortedTrovesImplAddr;
     address cpTroveManagerImplAddr;
     address cpRewardManagerImplAddr;
+    address cpDebtTokenImplAddr;
+    address cpFactoryImplAddr;
+    address cpCommunityIssuanceImplAddr;
+    address cpOshiTokenImplAddr;
+    address cpSatoshiLPFactoryImplAddr;
     // non-upgradeable contracts
     address cpGasPoolAddr;
     address cpSatoshiCoreAddr;
-    address cpDebtTokenAddr;
-    address cpFactoryAddr;
-    address cpCommunityIssuanceAddr;
-    address cpOshiTokenAddr;
-    address cpVestingManagerAddr;
-    address cpSatoshiLPFactoryAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
     address cpRewardManagerProxyAddr;
+    address cpDebtTokenProxyAddr;
+    address cpFactoryProxyAddr;
+    address cpCommunityIssuanceProxyAddr;
+    address cpOshiTokenProxyAddr;
+    address cpSatoshiLPFactoryProxyAddr;
     // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
@@ -229,21 +231,25 @@ abstract contract DeployBase is Test {
         cpStabilityPoolImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpRewardManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpDebtTokenImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpFactoryImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiLPFactoryImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         // non-upgradeable contracts
         cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpSatoshiLPFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // UUPS proxy contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpLiquidationManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpStabilityPoolProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpRewardManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpDebtTokenProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpFactoryProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiLPFactoryProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         // Beacon contracts
         cpSortedTrovesBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -260,6 +266,11 @@ abstract contract DeployBase is Test {
         assert(sortedTrovesImpl == ISortedTroves(address(0)));
         assert(troveManagerImpl == ITroveManager(address(0)));
         assert(rewardManagerImpl == IRewardManager(address(0)));
+        assert(debtTokenImpl == IDebtToken(address(0)));
+        assert(factoryImpl == IFactory(address(0)));
+        assert(communityIssuanceImpl == ICommunityIssuance(address(0)));
+        assert(oshiTokenImpl == IOSHIToken(address(0)));
+        assert(satoshiLPFactoryImpl == ISatoshiLPFactory(address(0)));
 
         priceFeedAggregatorImpl = new PriceFeedAggregator();
         borrowerOperationsImpl = new BorrowerOperations();
@@ -268,6 +279,11 @@ abstract contract DeployBase is Test {
         sortedTrovesImpl = new SortedTroves();
         troveManagerImpl = new TroveManager();
         rewardManagerImpl = new RewardManager();
+        debtTokenImpl = new DebtToken();
+        factoryImpl = new Factory();
+        communityIssuanceImpl = new CommunityIssuance();
+        oshiTokenImpl = new OSHIToken();
+        satoshiLPFactoryImpl = new SatoshiLPFactory();
 
         vm.stopPrank();
     }
@@ -275,12 +291,6 @@ abstract contract DeployBase is Test {
     function _deployNonUpgradeableContracts(address deployer) internal {
         _deployGasPool(deployer);
         _deploySatoshiCore(deployer);
-        _deployDebtToken(deployer);
-        _deployFactory(deployer);
-        _deployCommunityIssuance(deployer);
-        _deployOSHIToken(deployer);
-        _deployVestingManager(deployer);
-        _deploySatoshiLPFactory(deployer);
     }
 
     function _deployUUPSUpgradeableContracts(address deployer) internal {
@@ -289,6 +299,11 @@ abstract contract DeployBase is Test {
         _deployLiquidationManagerProxy(deployer);
         _deployStabilityPoolProxy(deployer);
         _deployRewardManagerProxy(deployer);
+        _deployDebtTokenProxy(deployer);
+        _deployFactoryProxy(deployer);
+        _deployCommunityIssuanceProxy(deployer);
+        _deployOSHITokenProxy(deployer);
+        _deploySatoshiLPFactoryProxy(deployer);
     }
 
     function _deployBeaconContracts(address deployer) internal {
@@ -326,73 +341,6 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _deployDebtToken(address deployer) internal {
-        vm.startPrank(deployer);
-        assert(debtToken == IDebtToken(address(0))); // check if debt token contract is not deployed
-        debtToken = new DebtToken(
-            DEBT_TOKEN_NAME,
-            DEBT_TOKEN_SYMBOL,
-            IStabilityPool(cpStabilityPoolProxyAddr),
-            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            ISatoshiCore(cpSatoshiCoreAddr),
-            IFactory(cpFactoryAddr),
-            IGasPool(cpGasPoolAddr),
-            GAS_COMPENSATION
-        );
-        vm.stopPrank();
-    }
-
-    function _deployFactory(address deployer) internal {
-        vm.startPrank(deployer);
-        assert(factory == IFactory(address(0))); // check if factory contract is not deployed
-        factory = new Factory(
-            ISatoshiCore(cpSatoshiCoreAddr),
-            IDebtToken(cpDebtTokenAddr),
-            IGasPool(cpGasPoolAddr),
-            IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
-            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            ILiquidationManager(cpLiquidationManagerProxyAddr),
-            IStabilityPool(cpStabilityPoolProxyAddr),
-            IBeacon(cpSortedTrovesBeaconAddr),
-            IBeacon(cpTroveManagerBeaconAddr),
-            ICommunityIssuance(cpCommunityIssuanceAddr),
-            IRewardManager(cpRewardManagerProxyAddr),
-            GAS_COMPENSATION
-        );
-        vm.stopPrank();
-    }
-
-    function _deployCommunityIssuance(address deployer) internal {
-        vm.startPrank(deployer);
-        assert(communityIssuance == ICommunityIssuance(address(0))); // check if factory contract is not deployed
-        communityIssuance = new CommunityIssuance(
-            ISatoshiCore(cpSatoshiCoreAddr), IOSHIToken(cpOshiTokenAddr), IStabilityPool(cpStabilityPoolProxyAddr)
-        );
-        vm.stopPrank();
-    }
-
-    function _deployOSHIToken(address deployer) internal {
-        vm.startPrank(deployer);
-        assert(oshiToken == IOSHIToken(address(0))); // check if oshi token contract is not deployed
-        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, cpVestingManagerAddr);
-        vm.stopPrank();
-    }
-
-    function _deployVestingManager(address deployer) internal {
-        vm.startPrank(deployer);
-        assert(vestingManager == IVestingManager(address(0))); // check if vesting manager contract is not deployed
-        vestingManager = new VestingManager(ISatoshiCore(cpSatoshiCoreAddr), cpOshiTokenAddr);
-        vm.stopPrank();
-    }
-
-    function _deploySatoshiLPFactory(address deployer) internal {
-        vm.startPrank(deployer);
-        assert(satoshiLPFactory == ISatoshiLPFactory(address(0))); // check if satoshi LP factory contract is not deployed
-        satoshiLPFactory =
-            new SatoshiLPFactory(ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceAddr));
-        vm.stopPrank();
-    }
-
     /* ============ Deploy UUPS Proxies ============ */
 
     function _deployPriceFeedAggregatorProxy(address deployer) internal {
@@ -413,8 +361,8 @@ abstract contract DeployBase is Test {
             IBorrowerOperations.initialize,
             (
                 ISatoshiCore(cpSatoshiCoreAddr),
-                IDebtToken(cpDebtTokenAddr),
-                IFactory(cpFactoryAddr),
+                IDebtToken(cpDebtTokenProxyAddr),
+                IFactory(cpFactoryProxyAddr),
                 BO_MIN_NET_DEBT,
                 GAS_COMPENSATION
             )
@@ -433,7 +381,7 @@ abstract contract DeployBase is Test {
                 ISatoshiCore(cpSatoshiCoreAddr),
                 IStabilityPool(cpStabilityPoolProxyAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-                IFactory(cpFactoryAddr),
+                IFactory(cpFactoryProxyAddr),
                 GAS_COMPENSATION
             )
         );
@@ -449,10 +397,10 @@ abstract contract DeployBase is Test {
             IStabilityPool.initialize,
             (
                 ISatoshiCore(cpSatoshiCoreAddr),
-                IDebtToken(cpDebtTokenAddr),
-                IFactory(cpFactoryAddr),
+                IDebtToken(cpDebtTokenProxyAddr),
+                IFactory(cpFactoryProxyAddr),
                 ILiquidationManager(cpLiquidationManagerProxyAddr),
-                ICommunityIssuance(cpCommunityIssuanceAddr)
+                ICommunityIssuance(cpCommunityIssuanceProxyAddr)
             )
         );
         stabilityPoolProxy = IStabilityPool(address(new ERC1967Proxy(address(stabilityPoolImpl), data)));
@@ -465,6 +413,91 @@ abstract contract DeployBase is Test {
         assert(rewardManagerProxy == IRewardManager(address(0))); // check if proxy contract is not deployed
         bytes memory data = abi.encodeCall(IRewardManager.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         rewardManagerProxy = IRewardManager(address(new ERC1967Proxy(address(rewardManagerImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployDebtTokenProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(debtTokenImpl != IDebtToken(address(0))); // check if debt token contract is not deployed
+        assert(debtTokenProxy == IDebtToken(address(0))); // check if debt token proxy contract is not deployed
+        bytes memory data = abi.encodeCall(
+            IDebtToken.initialize,
+            (
+                ISatoshiCore(cpSatoshiCoreAddr),
+                DEBT_TOKEN_NAME,
+                DEBT_TOKEN_SYMBOL,
+                IStabilityPool(cpStabilityPoolProxyAddr),
+                IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+                IFactory(cpFactoryProxyAddr),
+                IGasPool(cpGasPoolAddr),
+                GAS_COMPENSATION
+            )
+        );
+        debtTokenProxy = IDebtToken(address(new ERC1967Proxy(address(debtTokenImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployFactoryProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(factoryImpl != IFactory(address(0))); // check if factory contract is not deployed
+        assert(factoryProxy == IFactory(address(0))); // check if factory proxy contract is not deployed
+        bytes memory data = abi.encodeCall(
+            IFactory.initialize,
+            (
+                ISatoshiCore(cpSatoshiCoreAddr),
+                IDebtToken(cpDebtTokenProxyAddr),
+                IGasPool(cpGasPoolAddr),
+                IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
+                IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+                ILiquidationManager(cpLiquidationManagerProxyAddr),
+                IStabilityPool(cpStabilityPoolProxyAddr),
+                IBeacon(cpSortedTrovesBeaconAddr),
+                IBeacon(cpTroveManagerBeaconAddr),
+                ICommunityIssuance(cpCommunityIssuanceProxyAddr),
+                IRewardManager(cpRewardManagerProxyAddr),
+                GAS_COMPENSATION
+            )
+        );
+        factoryProxy = IFactory(address(new ERC1967Proxy(address(factoryImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployCommunityIssuanceProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(communityIssuanceImpl != ICommunityIssuance(address(0))); // check if community issuance contract is not deployed
+        assert(communityIssuanceProxy == ICommunityIssuance(address(0))); // check if community issuance proxy contract is not deployed
+        bytes memory data = abi.encodeCall(
+            ICommunityIssuance.initialize,
+            (
+                ISatoshiCore(cpSatoshiCoreAddr),
+                IOSHIToken(cpOshiTokenProxyAddr),
+                IStabilityPool(cpStabilityPoolProxyAddr)
+            )
+        );
+        communityIssuanceProxy = ICommunityIssuance(address(new ERC1967Proxy(address(communityIssuanceImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployOSHITokenProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(oshiTokenImpl != IOSHIToken(address(0))); // check if oshi token contract is not deployed
+        assert(oshiTokenProxy == IOSHIToken(address(0))); // check if oshi token proxy contract is not deployed
+        bytes memory data = abi.encodeCall(
+            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr), cpCommunityIssuanceProxyAddr, FEE_RECEIVER)
+        );
+        oshiTokenProxy = IOSHIToken(address(new ERC1967Proxy(address(oshiTokenImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deploySatoshiLPFactoryProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        assert(satoshiLPFactoryImpl != ISatoshiLPFactory(address(0))); // check if satoshi LP factory contract is not deployed
+        assert(satoshiLPFactoryProxy == ISatoshiLPFactory(address(0))); // check if satoshi LP factory proxy contract is not deployed
+        bytes memory data = abi.encodeCall(
+            ISatoshiLPFactory.initialize,
+            (ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr))
+        );
+        satoshiLPFactoryProxy = ISatoshiLPFactory(address(new ERC1967Proxy(address(satoshiLPFactoryImpl), data)));
         vm.stopPrank();
     }
 
@@ -533,12 +566,12 @@ abstract contract DeployBase is Test {
     ) internal returns (ISortedTroves, ITroveManager) {
         vm.startPrank(owner);
 
-        uint64 nonce = vm.getNonce(address(factory));
-        address cpSortedTrovesBeaconProxyAddr = vm.computeCreateAddress(address(factory), nonce);
-        address cpTroveManagerBeaconProxyAddr = vm.computeCreateAddress(address(factory), ++nonce);
+        uint64 nonce = vm.getNonce(address(factoryProxy));
+        address cpSortedTrovesBeaconProxyAddr = vm.computeCreateAddress(address(factoryProxy), nonce);
+        address cpTroveManagerBeaconProxyAddr = vm.computeCreateAddress(address(factoryProxy), ++nonce);
 
         // check NewDeployment event
-        vm.expectEmit(true, true, true, true, address(factory));
+        vm.expectEmit(true, true, true, true, address(factoryProxy));
         emit NewDeployment(
             collateral,
             priceFeed,
@@ -546,7 +579,7 @@ abstract contract DeployBase is Test {
             ISortedTroves(cpSortedTrovesBeaconProxyAddr)
         );
 
-        factory.deployNewInstance(collateral, priceFeed, deploymentParams);
+        factoryProxy.deployNewInstance(collateral, priceFeed, deploymentParams);
 
         vm.stopPrank();
 
@@ -574,12 +607,12 @@ abstract contract DeployBase is Test {
 
     function _deploySatoshiBORouter(address deployer, IReferralManager referralManager) internal returns (address) {
         vm.startPrank(deployer);
-        assert(debtToken != IDebtToken(address(0))); // check if debt token contract is deployed
+        assert(debtTokenProxy != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
         assert(referralManager != IReferralManager(address(0))); // check if referral manager contract is not zero address
         assert(weth != IWETH(address(0))); // check if WETH contract is deployed
         address satoshiBORouterAddr =
-            address(new SatoshiBORouter(debtToken, borrowerOperationsProxy, referralManager, weth));
+            address(new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, referralManager, weth));
         vm.stopPrank();
 
         return satoshiBORouterAddr;
@@ -596,7 +629,7 @@ abstract contract DeployBase is Test {
         _setRewardManager(owner, address(rewardManagerProxy));
         _setTMCommunityIssuanceAllocation(owner, troveManagerBeaconProxy);
         _setSPCommunityIssuanceAllocation(owner);
-        _setAddress(owner, borrowerOperationsProxy, weth, debtToken, oshiToken);
+        _setAddress(owner, borrowerOperationsProxy, weth, debtTokenProxy, oshiTokenProxy);
         _registerTroveManager(owner, troveManagerBeaconProxy);
         _setClaimStartTime(owner, SP_CLAIM_START_TIME);
         _setSPRewardRate(owner);
@@ -621,7 +654,7 @@ abstract contract DeployBase is Test {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = TM_ALLOCATION;
         vm.startPrank(owner);
-        communityIssuance.setAllocated(_recipients, _amounts);
+        communityIssuanceProxy.setAllocated(_recipients, _amounts);
         vm.stopPrank();
     }
 
@@ -631,7 +664,7 @@ abstract contract DeployBase is Test {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = SP_ALLOCATION;
         vm.startPrank(owner);
-        communityIssuance.setAllocated(_recipients, _amounts);
+        communityIssuanceProxy.setAllocated(_recipients, _amounts);
         vm.stopPrank();
     }
 
@@ -663,8 +696,8 @@ abstract contract DeployBase is Test {
         vm.startPrank(owner);
         uint128[] memory numerator = new uint128[](1);
         numerator[0] = 1;
-        factory.setRewardRate(numerator, 1);
-        assertEq(troveManagerBeaconProxy.rewardRate(), factory.maxRewardRate());
+        factoryProxy.setRewardRate(numerator, 1);
+        assertEq(troveManagerBeaconProxy.rewardRate(), factoryProxy.maxRewardRate());
         vm.stopPrank();
     }
 
@@ -685,35 +718,10 @@ abstract contract DeployBase is Test {
     }
 
     /* ============ Deploy DebtTokenTester Contracts ============ */
-    function _deployDebtTokenTester() internal {
-        vm.prank(DEPLOYER);
-        debtTokenTester = new DebtTokenTester(
-            DEBT_TOKEN_NAME,
-            DEBT_TOKEN_SYMBOL,
-            stabilityPoolProxy,
-            borrowerOperationsProxy,
-            satoshiCore,
-            factory,
-            gasPool,
-            GAS_COMPENSATION
-        );
-        // for testing purpose, set the debt token to the tester contract
-        vm.prank(satoshiCore.owner());
-        rewardManagerProxy.setAddresses(
-            IBorrowerOperations(cpBorrowerOperationsProxyAddr), weth, debtTokenTester, oshiToken
-        );
-        vm.stopPrank();
-    }
-
-    function _deployOSHITokenTester(address vault) internal {
-        vm.startPrank(DEPLOYER);
-        oshiTokenTester = new OSHITokenTester(address(communityIssuance), vault);
-        vm.stopPrank();
-    }
 
     function _deploySLPTokenTester(IERC20 lpToken) internal {
         vm.startPrank(DEPLOYER);
-        slpTokenTester = new SLPTokenTester(satoshiCore, lpToken, communityIssuance);
+        slpTokenTester = new SLPTokenTester(satoshiCore, lpToken, communityIssuanceProxy);
         vm.stopPrank();
     }
 
@@ -725,7 +733,7 @@ abstract contract DeployBase is Test {
 
     function _deploySLPToken(IERC20 lpToken) internal returns (address slpTokenAddr) {
         vm.startPrank(OWNER);
-        slpTokenAddr = satoshiLPFactory.createSLP("SLP", "SLP", lpToken, 100);
+        slpTokenAddr = satoshiLPFactoryProxy.createSLP("SLP", "SLP", lpToken, 100);
         vm.stopPrank();
     }
 }

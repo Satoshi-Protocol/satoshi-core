@@ -67,9 +67,9 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         deal(user, 1e18);
 
         // state before
-        vars.rewardManagerDebtAmtBefore = debtToken.balanceOf(satoshiCore.rewardManager());
-        vars.gasPoolDebtAmtBefore = debtToken.balanceOf(address(gasPool));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
+        vars.rewardManagerDebtAmtBefore = debtTokenProxy.balanceOf(satoshiCore.rewardManager());
+        vars.gasPoolDebtAmtBefore = debtTokenProxy.balanceOf(address(gasPool));
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
 
@@ -112,9 +112,9 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // state after
-        vars.rewardManagerDebtAmtAfter = debtToken.balanceOf(satoshiCore.rewardManager());
-        vars.gasPoolDebtAmtAfter = debtToken.balanceOf(address(gasPool));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
+        vars.rewardManagerDebtAmtAfter = debtTokenProxy.balanceOf(satoshiCore.rewardManager());
+        vars.gasPoolDebtAmtAfter = debtTokenProxy.balanceOf(address(gasPool));
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
 
@@ -306,8 +306,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vm.startPrank(user);
 
         // state before
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -346,8 +346,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // state after
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userDebtAmtAfter, vars.userDebtAmtBefore + vars.withdrawDebtAmt);
@@ -383,11 +383,11 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.totalNetDebtAmt = vars.debtAmt - vars.repayDebtAmt;
 
         vm.startPrank(user);
-        debtToken.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
 
         // state before
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -425,8 +425,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         satoshiBORouter.repayDebt(troveManagerBeaconProxy, vars.repayDebtAmt, vars.upperHint, vars.lowerHint);
 
         // state after
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userDebtAmtAfter, vars.userDebtAmtBefore - vars.repayDebtAmt);
@@ -462,13 +462,13 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
         vm.startPrank(user);
         deal(user, vars.addCollAmt);
-        debtToken.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
 
         // state before
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -517,8 +517,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // state after
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userBalanceAfter, vars.userBalanceBefore - vars.addCollAmt);
@@ -560,8 +560,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // state before
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -610,8 +610,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // state after
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userBalanceAfter, vars.userBalanceBefore - vars.addCollAmt);
@@ -651,13 +651,13 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.totalNetDebtAmt = vars.debtAmt - vars.repayDebtAmt;
 
         vm.startPrank(user);
-        debtToken.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
 
         // state before
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -706,8 +706,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // state after
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userBalanceAfter, vars.userBalanceBefore + vars.withdrawCollAmt);
@@ -748,8 +748,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // state before
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtBefore = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
 
         /* check events emitted correctly in tx */
         // check NodeRemoved event
@@ -798,8 +798,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // state after
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
 
         // check state
         assertEq(vars.userBalanceAfter, vars.userBalanceBefore + vars.withdrawCollAmt);
@@ -837,11 +837,11 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         //  mock user debt token balance
         vars.borrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(vars.debtAmt);
         vars.repayDebtAmt = vars.debtAmt + vars.borrowingFee;
-        deal(address(debtToken), user, vars.repayDebtAmt);
-        debtToken.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        deal(address(debtTokenProxy), user, vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
 
         // state before
-        vars.debtTokenTotalSupplyBefore = debtToken.totalSupply();
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
 
@@ -858,8 +858,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         satoshiBORouter.closeTrove(troveManagerBeaconProxy);
 
         // state after
-        vars.userDebtAmtAfter = debtToken.balanceOf(user);
-        vars.debtTokenTotalSupplyAfter = debtToken.totalSupply();
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
         vars.userBalanceAfter = user.balance;
         vars.troveManagerCollateralAmtAfter = weth.balanceOf(address(troveManagerBeaconProxy));
 

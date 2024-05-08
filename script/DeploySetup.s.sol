@@ -23,7 +23,6 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
-import {IVestingManager} from "../src/interfaces/OSHI/IVestingManager.sol";
 import {ISatoshiLPFactory} from "../src/interfaces/core/ISatoshiLPFactory.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
@@ -40,7 +39,6 @@ import {Factory} from "../src/core/Factory.sol";
 import {CommunityIssuance} from "../src/OSHI/CommunityIssuance.sol";
 import {RewardManager} from "../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../src/SLP/SatoshiLPFactory.sol";
-import {VestingManager} from "../src/OSHI/VestingManager.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
@@ -70,12 +68,6 @@ contract DeploySetupScript is Script {
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
-    IDebtToken debtToken;
-    IFactory factory;
-    ICommunityIssuance communityIssuance;
-    IOSHIToken oshiToken;
-    IVestingManager vestingManager;
-    ISatoshiLPFactory satoshiLPFactory;
     /* implementation contracts addresses */
     ISortedTroves sortedTrovesImpl;
     IPriceFeedAggregator priceFeedAggregatorImpl;
@@ -84,12 +76,22 @@ contract DeploySetupScript is Script {
     IStabilityPool stabilityPoolImpl;
     ITroveManager troveManagerImpl;
     IRewardManager rewardManagerImpl;
+    IDebtToken debtTokenImpl;
+    IFactory factoryImpl;
+    ICommunityIssuance communityIssuanceImpl;
+    IOSHIToken oshiTokenImpl;
+    ISatoshiLPFactory satoshiLPFactoryImpl;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
     ILiquidationManager liquidationManagerProxy;
     IStabilityPool stabilityPoolProxy;
     IRewardManager rewardManagerProxy;
+    IDebtToken debtTokenProxy;
+    IFactory factoryProxy;
+    ICommunityIssuance communityIssuanceProxy;
+    IOSHIToken oshiTokenProxy;
+    ISatoshiLPFactory satoshiLPFactoryProxy;
     /* Beacon contract */
     UpgradeableBeacon sortedTrovesBeacon;
     UpgradeableBeacon troveManagerBeacon;
@@ -108,21 +110,25 @@ contract DeploySetupScript is Script {
     address cpSortedTrovesImplAddr;
     address cpTroveManagerImplAddr;
     address cpRewardManagerImplAddr;
+    address cpDebtTokenImplAddr;
+    address cpFactoryImplAddr;
+    address cpCommunityIssuanceImplAddr;
+    address cpOshiTokenImplAddr;
+    address cpSatoshiLPFactoryImplAddr;
     // non-upgradeable contracts
     address cpGasPoolAddr;
     address cpSatoshiCoreAddr;
-    address cpDebtTokenAddr;
-    address cpFactoryAddr;
-    address cpCommunityIssuanceAddr;
-    address cpOshiTokenAddr;
-    address cpVestingManagerAddr;
-    address cpSatoshiLPFactoryAddr;
     // UUPS proxy contracts
     address cpPriceFeedAggregatorProxyAddr;
     address cpBorrowerOperationsProxyAddr;
     address cpLiquidationManagerProxyAddr;
     address cpStabilityPoolProxyAddr;
     address cpRewardManagerProxyAddr;
+    address cpDebtTokenProxyAddr;
+    address cpFactoryProxyAddr;
+    address cpCommunityIssuanceProxyAddr;
+    address cpOshiTokenProxyAddr;
+    address cpSatoshiLPFactoryProxyAddr;
     // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
@@ -149,15 +155,14 @@ contract DeploySetupScript is Script {
         cpSortedTrovesImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpRewardManagerImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpDebtTokenImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpFactoryImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenImplAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiLPFactoryImplAddr = vm.computeCreateAddress(deployer, ++nonce);
         // non-upgradeable contracts
         cpGasPoolAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSatoshiCoreAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpDebtTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpCommunityIssuanceAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpOshiTokenAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpVestingManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
-        cpSatoshiLPFactoryAddr = vm.computeCreateAddress(deployer, ++nonce);
         // upgradeable contracts
         cpPriceFeedAggregatorProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpBorrowerOperationsProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
@@ -166,6 +171,11 @@ contract DeploySetupScript is Script {
         cpSortedTrovesBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpTroveManagerBeaconAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpRewardManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpDebtTokenProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpFactoryProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpCommunityIssuanceProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpOshiTokenProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpSatoshiLPFactoryProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         // Deploy implementation contracts
         priceFeedAggregatorImpl = new PriceFeedAggregator();
         borrowerOperationsImpl = new BorrowerOperations();
@@ -174,6 +184,11 @@ contract DeploySetupScript is Script {
         sortedTrovesImpl = new SortedTroves();
         troveManagerImpl = new TroveManager();
         rewardManagerImpl = new RewardManager();
+        debtTokenImpl = new DebtToken();
+        factoryImpl = new Factory();
+        communityIssuanceImpl = new CommunityIssuance();
+        oshiTokenImpl = new OSHIToken();
+        satoshiLPFactoryImpl = new SatoshiLPFactory();
 
         // Deploy non-upgradeable contracts
         // GasPool
@@ -185,54 +200,6 @@ contract DeploySetupScript is Script {
             SATOSHI_CORE_OWNER, SATOSHI_CORE_GUARDIAN, SATOSHI_CORE_FEE_RECEIVER, cpRewardManagerProxyAddr
         );
         assert(cpSatoshiCoreAddr == address(satoshiCore));
-
-        // DebtToken
-        debtToken = new DebtToken(
-            DEBT_TOKEN_NAME,
-            DEBT_TOKEN_SYMBOL,
-            IStabilityPool(cpStabilityPoolProxyAddr),
-            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            ISatoshiCore(cpSatoshiCoreAddr),
-            IFactory(cpFactoryAddr),
-            IGasPool(cpGasPoolAddr),
-            GAS_COMPENSATION
-        );
-        assert(cpDebtTokenAddr == address(debtToken));
-
-        // Factory
-        factory = new Factory(
-            ISatoshiCore(cpSatoshiCoreAddr),
-            IDebtToken(cpDebtTokenAddr),
-            IGasPool(cpGasPoolAddr),
-            IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
-            IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-            ILiquidationManager(cpLiquidationManagerProxyAddr),
-            IStabilityPool(cpStabilityPoolProxyAddr),
-            IBeacon(cpSortedTrovesBeaconAddr),
-            IBeacon(cpTroveManagerBeaconAddr),
-            ICommunityIssuance(cpCommunityIssuanceAddr),
-            IRewardManager(cpRewardManagerProxyAddr),
-            GAS_COMPENSATION
-        );
-        assert(cpFactoryAddr == address(factory));
-
-        // Community Issuance
-        communityIssuance = new CommunityIssuance(
-            ISatoshiCore(cpSatoshiCoreAddr), IOSHIToken(cpOshiTokenAddr), IStabilityPool(cpStabilityPoolProxyAddr)
-        );
-        assert(cpCommunityIssuanceAddr == address(communityIssuance));
-
-        // OSHI Token
-        oshiToken = new OSHIToken(cpCommunityIssuanceAddr, cpVestingManagerAddr);
-        assert(cpOshiTokenAddr == address(oshiToken));
-
-        // VestingManager
-        vestingManager = new VestingManager(ISatoshiCore(cpSatoshiCoreAddr), cpOshiTokenAddr);
-        assert(cpVestingManagerAddr == address(vestingManager));
-
-        satoshiLPFactory =
-            new SatoshiLPFactory(ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceAddr));
-        assert(cpSatoshiLPFactoryAddr == address(satoshiLPFactory));
 
         // Deploy proxy contracts
         bytes memory data;
@@ -249,8 +216,8 @@ contract DeploySetupScript is Script {
             IBorrowerOperations.initialize,
             (
                 ISatoshiCore(cpSatoshiCoreAddr),
-                IDebtToken(cpDebtTokenAddr),
-                IFactory(cpFactoryAddr),
+                IDebtToken(cpDebtTokenProxyAddr),
+                IFactory(cpFactoryProxyAddr),
                 BO_MIN_NET_DEBT,
                 GAS_COMPENSATION
             )
@@ -266,7 +233,7 @@ contract DeploySetupScript is Script {
                 ISatoshiCore(cpSatoshiCoreAddr),
                 IStabilityPool(cpStabilityPoolProxyAddr),
                 IBorrowerOperations(cpBorrowerOperationsProxyAddr),
-                IFactory(cpFactoryAddr),
+                IFactory(cpFactoryProxyAddr),
                 GAS_COMPENSATION
             )
         );
@@ -279,10 +246,10 @@ contract DeploySetupScript is Script {
             IStabilityPool.initialize,
             (
                 ISatoshiCore(cpSatoshiCoreAddr),
-                IDebtToken(cpDebtTokenAddr),
-                IFactory(cpFactoryAddr),
+                IDebtToken(cpDebtTokenProxyAddr),
+                IFactory(cpFactoryProxyAddr),
                 ILiquidationManager(cpLiquidationManagerProxyAddr),
-                ICommunityIssuance(cpCommunityIssuanceAddr)
+                ICommunityIssuance(cpCommunityIssuanceProxyAddr)
             )
         );
         proxy = address(new ERC1967Proxy(address(stabilityPoolImpl), data));
@@ -303,6 +270,77 @@ contract DeploySetupScript is Script {
         rewardManagerProxy = IRewardManager(proxy);
         assert(proxy == cpRewardManagerProxyAddr);
 
+        // debtToken
+        data = abi.encodeCall(
+            IDebtToken.initialize,
+            (
+                ISatoshiCore(cpSatoshiCoreAddr),
+                DEBT_TOKEN_NAME,
+                DEBT_TOKEN_SYMBOL,
+                IStabilityPool(cpStabilityPoolProxyAddr),
+                IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+                IFactory(cpFactoryProxyAddr),
+                IGasPool(cpGasPoolAddr),
+                GAS_COMPENSATION
+            )
+        );
+        proxy = address(new ERC1967Proxy(address(debtTokenImpl), data));
+        debtTokenProxy = IDebtToken(proxy);
+        assert(proxy == cpDebtTokenProxyAddr);
+
+        // factory
+        data = abi.encodeCall(
+            IFactory.initialize,
+            (
+                ISatoshiCore(cpSatoshiCoreAddr),
+                IDebtToken(cpDebtTokenProxyAddr),
+                IGasPool(cpGasPoolAddr),
+                IPriceFeedAggregator(cpPriceFeedAggregatorProxyAddr),
+                IBorrowerOperations(cpBorrowerOperationsProxyAddr),
+                ILiquidationManager(cpLiquidationManagerProxyAddr),
+                IStabilityPool(cpStabilityPoolProxyAddr),
+                IBeacon(cpSortedTrovesBeaconAddr),
+                IBeacon(cpTroveManagerBeaconAddr),
+                ICommunityIssuance(cpCommunityIssuanceProxyAddr),
+                IRewardManager(cpRewardManagerProxyAddr),
+                GAS_COMPENSATION
+            )
+        );
+        proxy = address(new ERC1967Proxy(address(factoryImpl), data));
+        factoryProxy = IFactory(proxy);
+        assert(proxy == cpFactoryProxyAddr);
+        
+        // communityIssuance
+        data = abi.encodeCall(
+            ICommunityIssuance.initialize,
+            (
+                ISatoshiCore(cpSatoshiCoreAddr),
+                IOSHIToken(cpOshiTokenProxyAddr),
+                IStabilityPool(cpStabilityPoolProxyAddr)
+            )
+        );
+        proxy = address(new ERC1967Proxy(address(communityIssuanceImpl), data));
+        communityIssuanceProxy = ICommunityIssuance(proxy);
+        assert(proxy == cpCommunityIssuanceProxyAddr);
+
+        // oshiToken
+        data = abi.encodeCall(
+            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr), cpCommunityIssuanceProxyAddr, SATOSHI_CORE_OWNER)
+        );
+        proxy = address(new ERC1967Proxy(address(oshiTokenImpl), data));
+        oshiTokenProxy = IOSHIToken(proxy);
+        assert(proxy == cpOshiTokenProxyAddr);
+
+        // LP Factory
+        data = abi.encodeCall(
+            ISatoshiLPFactory.initialize,
+            (ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr))
+        );
+        proxy = address(new ERC1967Proxy(address(satoshiLPFactoryImpl), data));
+        satoshiLPFactoryProxy = ISatoshiLPFactory(proxy);
+        assert(proxy == cpSatoshiLPFactoryProxyAddr);
+
+
         // MultiCollateralHintHelpers
         hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
 
@@ -314,7 +352,7 @@ contract DeploySetupScript is Script {
         address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, nonce);
         address cpReferralManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
         satoshiBORouter = new SatoshiBORouter(
-            debtToken, borrowerOperationsProxy, IReferralManager(cpReferralManagerAddr), IWETH(WETH_ADDRESS)
+            debtTokenProxy, borrowerOperationsProxy, IReferralManager(cpReferralManagerAddr), IWETH(WETH_ADDRESS)
         );
         assert(cpSatoshiBORouterAddr == address(satoshiBORouter));
 
@@ -337,14 +375,13 @@ contract DeploySetupScript is Script {
         console.log("sortedTrovesImpl:", address(sortedTrovesImpl));
         console.log("troveManagerImpl:", address(troveManagerImpl));
         console.log("rewardManagerImpl:", address(rewardManagerImpl));
+        console.log("debtTokenImpl:", address(debtTokenImpl));
+        console.log("factoryImpl:", address(factoryImpl));
+        console.log("communityIssuanceImpl:", address(communityIssuanceImpl));
+        console.log("oshiTokenImpl:", address(oshiTokenImpl));
+        console.log("satoshiLPFactoryImpl:", address(satoshiLPFactoryImpl));
         console.log("gasPool:", address(gasPool));
         console.log("satoshiCore:", address(satoshiCore));
-        console.log("debtToken:", address(debtToken));
-        console.log("factory:", address(factory));
-        console.log("communityIssuance:", address(communityIssuance));
-        console.log("oshiToken:", address(oshiToken));
-        console.log("vestingManager:", address(vestingManager));
-        console.log("satoshiLPFactory:", address(satoshiLPFactory));
         console.log("priceFeedAggregatorProxy:", address(priceFeedAggregatorProxy));
         console.log("borrowerOperationsProxy:", address(borrowerOperationsProxy));
         console.log("liquidationManagerProxy:", address(liquidationManagerProxy));
@@ -352,6 +389,11 @@ contract DeploySetupScript is Script {
         console.log("sortedTrovesBeacon:", address(sortedTrovesBeacon));
         console.log("troveManagerBeacon:", address(troveManagerBeacon));
         console.log("rewardManagerProxy:", address(rewardManagerProxy));
+        console.log("debtTokenProxy:", address(debtTokenProxy));
+        console.log("factoryProxy:", address(factoryProxy));
+        console.log("communityIssuanceProxy:", address(communityIssuanceProxy));
+        console.log("oshiTokenProxy:", address(oshiTokenProxy));
+        console.log("satoshiLPFactoryProxy:", address(satoshiLPFactoryProxy));
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiBORouter:", address(satoshiBORouter));
@@ -361,7 +403,7 @@ contract DeploySetupScript is Script {
     function _setConfigByOwner(uint256 owner_private_key) internal {
         _setRewardManager(owner_private_key, address(rewardManagerProxy));
         _setSPCommunityIssuanceAllocation(owner_private_key);
-        _setAddress(owner_private_key, borrowerOperationsProxy, IWETH(WETH_ADDRESS), debtToken, oshiToken);
+        _setAddress(owner_private_key, borrowerOperationsProxy, IWETH(WETH_ADDRESS), debtTokenProxy, oshiTokenProxy);
         _setClaimStartTime(owner_private_key, SP_CLAIM_START_TIME);
     }
 
@@ -378,7 +420,7 @@ contract DeploySetupScript is Script {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = SP_ALLOCATION;
         vm.startBroadcast(owner_private_key);
-        communityIssuance.setAllocated(_recipients, _amounts);
+        communityIssuanceProxy.setAllocated(_recipients, _amounts);
         vm.stopBroadcast();
     }
 

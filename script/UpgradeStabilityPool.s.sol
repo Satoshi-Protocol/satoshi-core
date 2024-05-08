@@ -22,7 +22,7 @@ contract UpgradeStabilityPoolScript is Script {
         // upgrade to new stability pool implementation
         StabilityPool stabilityPoolProxy = StabilityPool(stabilityPoolProxyAddr);
         stabilityPoolProxy.upgradeTo(address(newStabilityPoolImpl));
-        
+
         console.log("new StabilityPool Impl is deployed at", address(newStabilityPoolImpl));
 
         vm.stopBroadcast();
