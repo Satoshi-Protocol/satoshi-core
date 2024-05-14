@@ -213,12 +213,10 @@ contract DeploySetupTest is Test, DeployBase {
 
         _deployOSHITokenProxy(DEPLOYER);
         assert(cpOshiTokenProxyAddr == address(oshiTokenProxy));
-        assert(oshiTokenProxy.communityIssuanceAddress() == cpCommunityIssuanceProxyAddr);
-        assert(oshiTokenProxy.vaultAddress() == FEE_RECEIVER);
 
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
-        oshiTokenProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr), cpCommunityIssuanceProxyAddr, FEE_RECEIVER);
+        oshiTokenProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr));
 
         _deploySatoshiLPFactoryProxy(DEPLOYER);
         assert(cpSatoshiLPFactoryProxyAddr == address(satoshiLPFactoryProxy));

@@ -325,7 +325,7 @@ contract DeploySetupScript is Script {
 
         // oshiToken
         data = abi.encodeCall(
-            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr), cpCommunityIssuanceProxyAddr, SATOSHI_CORE_OWNER)
+            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr))
         );
         proxy = address(new ERC1967Proxy(address(oshiTokenImpl), data));
         oshiTokenProxy = IOSHIToken(proxy);

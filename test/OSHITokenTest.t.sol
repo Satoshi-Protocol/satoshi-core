@@ -115,14 +115,10 @@ contract OSHITokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(oshiToken.balanceOf(user1), 150);
         assertEq(oshiToken.balanceOf(user2), 100);
         assertEq(oshiToken.balanceOf(user3), 50);
-        assertEq(oshiToken.balanceOf(FEE_RECEIVER), _1_MILLION * 55);
-        assertEq(oshiToken.totalSupply(), _1_MILLION * 100 + 300);
-        address communityIssuanceAddress = oshiToken.communityIssuanceAddress();
-        assertEq(oshiToken.balanceOf(communityIssuanceAddress), _1_MILLION * 45);
     }
 
     function testGetsTotalSupply() public {
-        assertEq(oshiToken.totalSupply(), 300 + _1_MILLION * 100);
+        assertEq(oshiToken.totalSupply(), 300);
     }
 
     function testTokenName() public {

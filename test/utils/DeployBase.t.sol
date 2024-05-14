@@ -483,7 +483,7 @@ abstract contract DeployBase is Test {
         assert(oshiTokenImpl != IOSHIToken(address(0))); // check if oshi token contract is not deployed
         assert(oshiTokenProxy == IOSHIToken(address(0))); // check if oshi token proxy contract is not deployed
         bytes memory data = abi.encodeCall(
-            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr), cpCommunityIssuanceProxyAddr, FEE_RECEIVER)
+            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr))
         );
         oshiTokenProxy = IOSHIToken(address(new ERC1967Proxy(address(oshiTokenImpl), data)));
         vm.stopPrank();

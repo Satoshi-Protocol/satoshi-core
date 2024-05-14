@@ -5,7 +5,7 @@ import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20
 import {ISatoshiCore} from "./ISatoshiCore.sol";
 
 interface IOSHIToken is IERC20Upgradeable {
-    function vaultAddress() external view returns (address);
-    function communityIssuanceAddress() external view returns (address);
-    function initialize(ISatoshiCore _satoshiCore, address _communityIssuanceAddress, address _vaultAddress) external;
+    function initialize(ISatoshiCore _satoshiCore) external;
+    function mint(address account, uint256 amount) external;
+    function burn(address account, uint256 amount) external;
 }

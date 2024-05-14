@@ -65,6 +65,11 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // set reward rate
         slpToken.setRewardRate(95129375951293760); // 15e24 / (5 * 31536000)
         assertEq(slpToken.rewardRate(), 95129375951293760);
+
+        // mint some tokens to vault and community issuance
+        oshiTokenProxy.mint(cpCommunityIssuanceProxyAddr, 45 * _1_MILLION);
+        oshiTokenProxy.mint(OWNER, 55 * _1_MILLION);
+
         vm.stopPrank();
     }
 

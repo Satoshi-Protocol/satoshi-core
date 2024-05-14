@@ -62,6 +62,12 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
+
+        // mint some tokens to vault and community issuance
+        vm.startPrank(OWNER);
+        oshiTokenProxy.mint(cpCommunityIssuanceProxyAddr, 45 * _1_MILLION);
+        oshiTokenProxy.mint(OWNER, 55 * _1_MILLION);
+        vm.stopPrank();
     }
 
     // utils
