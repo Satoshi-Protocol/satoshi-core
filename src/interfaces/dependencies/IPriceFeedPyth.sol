@@ -9,6 +9,7 @@ interface IPriceFeedPyth is ISatoshiOwnable {
     error InvalidPriceUInt128(uint128 price);
     error PriceTooOld();
     error InvalidMaxTimeThreshold();
+    error RefundFailed();
 
     // Events
     event MaxTimeThresholdUpdated(uint256 newMaxTimeThreshold);
@@ -16,7 +17,11 @@ interface IPriceFeedPyth is ISatoshiOwnable {
 
     function decimals() external view returns (uint8);
 
-    function fetchPrice(bytes[] calldata priceUpdateData) external returns (uint256);
+    function fetchPrice() external returns (uint256);
 
     function setPriceID(bytes32 priceID_) external;
+
+    function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external;
+
+    function updateFeeds(bytes[] calldata priceUpdateData) external payable;
 }
