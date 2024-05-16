@@ -9,7 +9,6 @@ import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITrov
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
-import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
@@ -24,7 +23,6 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;
     ISatoshiBORouter satoshiBORouter;
-    IReferralManager referralManager;
     address user;
 
     function setUp() public override {
@@ -45,11 +43,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // deploy helper contracts
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
-        uint64 nonce = vm.getNonce(DEPLOYER);
-        address cpSatoshiBORouterAddr = vm.computeCreateAddress(DEPLOYER, nonce);
-        address cpReferralManagerAddr = vm.computeCreateAddress(DEPLOYER, ++nonce);
-        satoshiBORouter = ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER, IReferralManager(cpReferralManagerAddr)));
-        referralManager = IReferralManager(_deployReferralManager(DEPLOYER, ISatoshiBORouter(cpSatoshiBORouterAddr)));
+        satoshiBORouter = ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER));
 
         // user set delegate approval for satoshiBORouter
         vm.startPrank(user);
@@ -108,7 +102,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.debtAmt,
             vars.upperHint,
             vars.lowerHint,
-            address(0)
+            new bytes[](0)
         );
 
         // state after
@@ -267,7 +261,9 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiBORouter.withdrawColl(troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint);
+        satoshiBORouter.withdrawColl(
+            troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint, new bytes[](0)
+        );
 
         // state after
         vars.userBalanceAfter = user.balance;
@@ -342,7 +338,12 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
         // tx execution
         satoshiBORouter.withdrawDebt(
-            troveManagerBeaconProxy, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint
+            troveManagerBeaconProxy,
+            vars.maxFeePercentage,
+            vars.withdrawDebtAmt,
+            vars.upperHint,
+            vars.lowerHint,
+            new bytes[](0)
         );
 
         // state after
@@ -511,7 +512,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.repayDebtAmt,
             false, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint
+            vars.lowerHint,
+            new bytes[](0)
         );
 
         // state after
@@ -604,7 +606,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint
+            vars.lowerHint,
+            new bytes[](0)
         );
 
         // state after
@@ -700,7 +703,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.repayDebtAmt,
             false, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint
+            vars.lowerHint,
+            new bytes[](0)
         );
 
         // state after
@@ -792,7 +796,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint
+            vars.lowerHint,
+            new bytes[](0)
         );
 
         // state after

@@ -50,7 +50,7 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
         debtToken = DebtToken(address(debtTokenProxy));
-        
+
         vm.startPrank(address(debtToken.borrowerOperations()));
         debtToken.mint(user1, 150);
         debtToken.mint(user2, 100);

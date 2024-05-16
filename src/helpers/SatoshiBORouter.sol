@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.19;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -11,7 +11,8 @@ import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
-import {IReferralManager} from "./interfaces/IReferralManager.sol";
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 
 /**
@@ -24,24 +25,19 @@ contract SatoshiBORouter is ISatoshiBORouter {
 
     IDebtToken public immutable debtToken;
     IBorrowerOperations public immutable borrowerOperationsProxy;
-    IReferralManager public immutable referralManager;
     IWETH public immutable weth;
+    IPyth public immutable pyth;
 
-    constructor(
-        IDebtToken _debtToken,
-        IBorrowerOperations _borrowerOperationsProxy,
-        IReferralManager _referralManager,
-        IWETH _weth
-    ) {
+    constructor(IDebtToken _debtToken, IBorrowerOperations _borrowerOperationsProxy, IWETH _weth, IPyth _pyth) {
         if (address(_debtToken) == address(0)) revert InvalidZeroAddress();
         if (address(_borrowerOperationsProxy) == address(0)) revert InvalidZeroAddress();
-        if (address(_referralManager) == address(0)) revert InvalidZeroAddress();
         if (address(_weth) == address(0)) revert InvalidZeroAddress();
+        if (address(_pyth) == address(0)) revert InvalidZeroAddress();
 
         debtToken = _debtToken;
         borrowerOperationsProxy = _borrowerOperationsProxy;
-        referralManager = _referralManager;
         weth = _weth;
+        pyth = _pyth;
     }
 
     // account should call borrowerOperationsProxy.setDelegateApproval first
@@ -53,9 +49,13 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 _debtAmount,
         address _upperHint,
         address _lowerHint,
-        address _referrer
+        bytes[] calldata priceUpdateData
     ) external payable {
         IERC20 collateralToken = troveManager.collateralToken();
+
+        _checkEnoughValue(collateralToken, _collAmount, priceUpdateData);
+
+        _updatePythPrice(priceUpdateData);
 
         _beforeAddColl(collateralToken, _collAmount);
 
@@ -68,7 +68,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
-        _afterWithdrawDebt(msg.sender, _referrer, userDebtAmount, troveManager);
+        _afterWithdrawDebt(userDebtAmount);
     }
 
     function addColl(ITroveManager troveManager, uint256 _collAmount, address _upperHint, address _lowerHint)
@@ -82,11 +82,19 @@ contract SatoshiBORouter is ISatoshiBORouter {
         borrowerOperationsProxy.addColl(troveManager, msg.sender, _collAmount, _upperHint, _lowerHint);
     }
 
-    function withdrawColl(ITroveManager troveManager, uint256 _collWithdrawal, address _upperHint, address _lowerHint)
-        external
-    {
+    function withdrawColl(
+        ITroveManager troveManager,
+        uint256 _collWithdrawal,
+        address _upperHint,
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
+    ) external payable {
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
+
+        _checkEnoughValue(collateralToken, 0, priceUpdateData);
+
+        _updatePythPrice(priceUpdateData);
 
         borrowerOperationsProxy.withdrawColl(troveManager, msg.sender, _collWithdrawal, _upperHint, _lowerHint);
 
@@ -101,9 +109,16 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 _maxFeePercentage,
         uint256 _debtAmount,
         address _upperHint,
-        address _lowerHint
-    ) external {
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
+    ) external payable {
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
+
+        IERC20 collateralToken = troveManager.collateralToken();
+        _checkEnoughValue(collateralToken, 0, priceUpdateData);
+
+        _updatePythPrice(priceUpdateData);
+
         borrowerOperationsProxy.withdrawDebt(
             troveManager, msg.sender, _maxFeePercentage, _debtAmount, _upperHint, _lowerHint
         );
@@ -111,8 +126,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
         require(userDebtAmount == _debtAmount, "SatoshiBORouter: Debt amount mismatch");
 
-        address _referrer = referralManager.getReferrer(msg.sender);
-        _afterWithdrawDebt(msg.sender, _referrer, userDebtAmount, troveManager);
+        _afterWithdrawDebt(userDebtAmount);
     }
 
     function repayDebt(ITroveManager troveManager, uint256 _debtAmount, address _upperHint, address _lowerHint)
@@ -131,11 +145,16 @@ contract SatoshiBORouter is ISatoshiBORouter {
         uint256 _debtChange,
         bool _isDebtIncrease,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
     ) external payable {
         if (_collDeposit != 0 && _collWithdrawal != 0) revert CannotWithdrawAndAddColl();
 
         IERC20 collateralToken = troveManager.collateralToken();
+
+        _checkEnoughValue(collateralToken, _collDeposit, priceUpdateData);
+
+        _updatePythPrice(priceUpdateData);
 
         // add collateral
         _beforeAddColl(collateralToken, _collDeposit);
@@ -169,7 +188,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
                 debtTokenBalanceAfter - debtTokenBalanceBefore == _debtChange, "SatoshiBORouter: Debt amount mismatch"
             );
 
-            _afterWithdrawDebt(msg.sender, referralManager.getReferrer(msg.sender), _debtChange, troveManager);
+            _afterWithdrawDebt(_debtChange);
         }
     }
 
@@ -193,7 +212,7 @@ contract SatoshiBORouter is ISatoshiBORouter {
         if (collAmount == 0) return;
 
         if (address(collateralToken) == address(weth)) {
-            if (msg.value != collAmount) revert MsgValueMismatch(msg.value, collAmount);
+            if (msg.value > collAmount) revert MsgValueMismatch(msg.value, collAmount);
 
             weth.deposit{value: collAmount}();
         } else {
@@ -222,15 +241,30 @@ contract SatoshiBORouter is ISatoshiBORouter {
         debtToken.safeTransferFrom(msg.sender, address(this), debtAmount);
     }
 
-    function _afterWithdrawDebt(address _borrower, address _referrer, uint256 debtAmount, ITroveManager troveManager)
-        private
-    {
+    function _afterWithdrawDebt(uint256 debtAmount) private {
         if (debtAmount == 0) return;
 
         debtToken.safeTransfer(msg.sender, debtAmount);
+    }
 
-        // execute referral
-        referralManager.executeReferral(_borrower, _referrer, debtAmount, troveManager);
+    function _updatePythPrice(bytes[] calldata priceUpdateData) internal {
+        // Update the prices to the latest available values and pay the required fee for it. The `priceUpdateData` data
+        // should be retrieved from our off-chain Price Service API using the `pyth-evm-js` package.
+        // See section "How Pyth Works on EVM Chains" below for more information.
+        uint256 fee = pyth.getUpdateFee(priceUpdateData);
+        pyth.updatePriceFeeds{value: fee}(priceUpdateData);
+    }
+
+    function _checkEnoughValue(IERC20 collateralToken, uint256 _collAmount, bytes[] calldata priceUpdateData)
+        internal
+    {
+        uint256 fee = pyth.getUpdateFee(priceUpdateData);
+
+        if (address(collateralToken) == address(weth)) {
+            if (msg.value < _collAmount + fee) revert InsufficientMsgValue(msg.value, _collAmount + fee);
+        } else {
+            if (msg.value < fee) revert InsufficientMsgValue(msg.value, fee);
+        }
     }
 
     receive() external payable {

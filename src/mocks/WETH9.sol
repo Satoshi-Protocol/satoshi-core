@@ -1,5 +1,5 @@
 // solhint-disable-next-line
-pragma solidity 0.8.13;
+pragma solidity 0.8.19;
 
 ///NOTE: Mutated v0.8.13 WETH9 contract to be used for testing
 contract WETH9 {

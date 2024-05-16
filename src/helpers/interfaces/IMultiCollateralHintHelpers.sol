@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.19;
 
 import {IBorrowerOperations} from "../../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../../interfaces/core/ITroveManager.sol";

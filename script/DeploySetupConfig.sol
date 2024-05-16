@@ -11,14 +11,13 @@ uint256 constant GAS_COMPENSATION = 2e18; // 2 SAT
 string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
-address constant WETH_ADDRESS = 0xB5136FEba197f5fF4B765E5b50c74db717796dcD;
+// @todo check this WNT address
+address constant WETH_ADDRESS = 0x2DcA0825F0d5E900c1522a9A2362237BbaAecbb4;
+// @todo this is core pyth testnet address
+address constant PYTH_ADDRESS = 0x8D254a21b3C86D32F7179855531CE99164721933;
 
 //TODO: Replace with the actual timestamp
 uint32 constant SP_CLAIM_START_TIME = 4294967295; // max uint32
 // OSHI token initial allocation
 uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
 uint256 constant SP_ALLOCATION = 10 * _1_MILLION; // 10,000,000 OSHI (10% of total supply)
-
-//TODO: Replace with the actual timestamp
-uint256 constant REFERRAL_START_TIMESTAMP = 1711029600; // Thu Mar 21 2024 14:00:00 GMT+0000
-uint256 constant REFERRAL_END_TIMESTAMP = 1717164000; // Fri May 31 2024 14:00:00 GMT+0000

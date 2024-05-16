@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.19;
 
 import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";

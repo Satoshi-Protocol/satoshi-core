@@ -197,7 +197,7 @@ contract DeploySetupTest is Test, DeployBase {
             IRewardManager(cpRewardManagerProxyAddr),
             GAS_COMPENSATION
         );
-        
+
         // Community Issuance
         _deployCommunityIssuanceProxy(DEPLOYER);
         assert(cpCommunityIssuanceProxyAddr == address(communityIssuanceProxy));
@@ -206,9 +206,7 @@ contract DeploySetupTest is Test, DeployBase {
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
         communityIssuanceProxy.initialize(
-            ISatoshiCore(cpSatoshiCoreAddr),
-            IOSHIToken(cpOshiTokenProxyAddr),
-            IStabilityPool(cpStabilityPoolProxyAddr)
+            ISatoshiCore(cpSatoshiCoreAddr), IOSHIToken(cpOshiTokenProxyAddr), IStabilityPool(cpStabilityPoolProxyAddr)
         );
 
         _deployOSHITokenProxy(DEPLOYER);
@@ -224,7 +222,9 @@ contract DeploySetupTest is Test, DeployBase {
 
         // test re-initialize fail
         vm.expectRevert("Initializable: contract is already initialized");
-        satoshiLPFactoryProxy.initialize(ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr));
+        satoshiLPFactoryProxy.initialize(
+            ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr)
+        );
 
         /* Deploy Beacon contracts */
 

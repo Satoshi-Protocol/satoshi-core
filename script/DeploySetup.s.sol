@@ -5,6 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
@@ -22,7 +23,6 @@ import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
 import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
-import {IReferralManager} from "../src/helpers/interfaces/IReferralManager.sol";
 import {ISatoshiLPFactory} from "../src/interfaces/core/ISatoshiLPFactory.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
@@ -42,7 +42,6 @@ import {SatoshiLPFactory} from "../src/SLP/SatoshiLPFactory.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
-import {ReferralManager} from "../src/helpers/ReferralManager.sol";
 import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
@@ -52,10 +51,9 @@ import {
     BO_MIN_NET_DEBT,
     GAS_COMPENSATION,
     WETH_ADDRESS,
+    PYTH_ADDRESS,
     SP_CLAIM_START_TIME,
-    SP_ALLOCATION,
-    REFERRAL_START_TIMESTAMP,
-    REFERRAL_END_TIMESTAMP
+    SP_ALLOCATION
 } from "./DeploySetupConfig.sol";
 
 contract DeploySetupScript is Script {
@@ -99,7 +97,6 @@ contract DeploySetupScript is Script {
     IMultiCollateralHintHelpers hintHelpers;
     IMultiTroveGetter multiTroveGetter;
     ISatoshiBORouter satoshiBORouter;
-    IReferralManager referralManager;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -309,7 +306,7 @@ contract DeploySetupScript is Script {
         proxy = address(new ERC1967Proxy(address(factoryImpl), data));
         factoryProxy = IFactory(proxy);
         assert(proxy == cpFactoryProxyAddr);
-        
+
         // communityIssuance
         data = abi.encodeCall(
             ICommunityIssuance.initialize,
@@ -324,9 +321,7 @@ contract DeploySetupScript is Script {
         assert(proxy == cpCommunityIssuanceProxyAddr);
 
         // oshiToken
-        data = abi.encodeCall(
-            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr))
-        );
+        data = abi.encodeCall(IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         proxy = address(new ERC1967Proxy(address(oshiTokenImpl), data));
         oshiTokenProxy = IOSHIToken(proxy);
         assert(proxy == cpOshiTokenProxyAddr);
@@ -340,7 +335,6 @@ contract DeploySetupScript is Script {
         satoshiLPFactoryProxy = ISatoshiLPFactory(proxy);
         assert(proxy == cpSatoshiLPFactoryProxyAddr);
 
-
         // MultiCollateralHintHelpers
         hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
 
@@ -350,17 +344,9 @@ contract DeploySetupScript is Script {
         // SatoshiBORouter
         nonce = vm.getNonce(deployer);
         address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, nonce);
-        address cpReferralManagerAddr = vm.computeCreateAddress(deployer, ++nonce);
-        satoshiBORouter = new SatoshiBORouter(
-            debtTokenProxy, borrowerOperationsProxy, IReferralManager(cpReferralManagerAddr), IWETH(WETH_ADDRESS)
-        );
+        satoshiBORouter =
+            new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, IWETH(WETH_ADDRESS), IPyth(PYTH_ADDRESS));
         assert(cpSatoshiBORouterAddr == address(satoshiBORouter));
-
-        // ReferralManager
-        referralManager = new ReferralManager(
-            ISatoshiBORouter(cpSatoshiBORouterAddr), REFERRAL_START_TIMESTAMP, REFERRAL_END_TIMESTAMP
-        );
-        assert(cpReferralManagerAddr == address(referralManager));
 
         vm.stopBroadcast();
 
@@ -397,7 +383,6 @@ contract DeploySetupScript is Script {
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiBORouter:", address(satoshiBORouter));
-        console.log("referralManager:", address(referralManager));
     }
 
     function _setConfigByOwner(uint256 owner_private_key) internal {

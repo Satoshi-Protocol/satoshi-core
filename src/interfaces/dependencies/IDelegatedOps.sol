@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.19;
 
 interface IDelegatedOps {
     event DelegateApprovalSet(address indexed caller, address indexed delegate, bool isApproved);

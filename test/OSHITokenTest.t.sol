@@ -50,7 +50,7 @@ contract OSHITokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
         oshiToken = OSHIToken(address(oshiTokenProxy));
-        
+
         vm.startPrank(OWNER);
         // mint some tokens
         oshiToken.mint(user1, 150);

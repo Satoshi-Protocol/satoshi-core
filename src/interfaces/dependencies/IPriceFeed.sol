@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.19;
 
 import {ISatoshiOwnable} from "./ISatoshiOwnable.sol";
 
@@ -12,6 +12,7 @@ interface IPriceFeed is ISatoshiOwnable {
 
     // Events
     event MaxTimeThresholdUpdated(uint256 newMaxTimeThreshold);
+    event PriceIDUpdated(bytes32 newPriceID);
 
     function fetchPrice() external returns (uint256);
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -7,6 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import {MockPyth} from "@pythnetwork/pyth-sdk-solidity/MockPyth.sol";
 import {MultiCollateralHintHelpers} from "../../src/helpers/MultiCollateralHintHelpers.sol";
 import {WETH9} from "../../src/mocks/WETH9.sol";
 import {SatoshiBORouter} from "../../src/helpers/SatoshiBORouter.sol";
@@ -28,7 +30,6 @@ import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
-import {ReferralManager} from "../../src/helpers/ReferralManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
@@ -46,7 +47,6 @@ import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.s
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.sol";
-import {IReferralManager} from "../../src/helpers/interfaces/IReferralManager.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
 import {
     DEPLOYER,
@@ -103,6 +103,7 @@ struct LocalVars {
 abstract contract DeployBase is Test {
     /* mock contracts for testing */
     IWETH weth;
+    IPyth pyth;
     IERC20 collateralMock;
     RoundData internal initRoundData;
     uint256 TM_ALLOCATION;
@@ -178,6 +179,8 @@ abstract contract DeployBase is Test {
     function setUp() public virtual {
         // deploy WETH
         weth = IWETH(_deployWETH(DEPLOYER));
+        // @todo deploy pyth
+        pyth = IPyth(_deployPyth(DEPLOYER));
         // deploy ERC20
         collateralMock = new ERC20("Collateral", "COLL");
         initRoundData = RoundData({
@@ -482,9 +485,7 @@ abstract contract DeployBase is Test {
         vm.startPrank(deployer);
         assert(oshiTokenImpl != IOSHIToken(address(0))); // check if oshi token contract is not deployed
         assert(oshiTokenProxy == IOSHIToken(address(0))); // check if oshi token proxy contract is not deployed
-        bytes memory data = abi.encodeCall(
-            IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr))
-        );
+        bytes memory data = abi.encodeCall(IOSHIToken.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         oshiTokenProxy = IOSHIToken(address(new ERC1967Proxy(address(oshiTokenImpl), data)));
         vm.stopPrank();
     }
@@ -605,14 +606,20 @@ abstract contract DeployBase is Test {
         return wethAddr;
     }
 
-    function _deploySatoshiBORouter(address deployer, IReferralManager referralManager) internal returns (address) {
+    function _deployPyth(address deployer) internal returns (address) {
+        vm.startPrank(deployer);
+        address pythAddr = address(new MockPyth(0, 0));
+        vm.stopPrank();
+
+        return pythAddr;
+    }
+
+    function _deploySatoshiBORouter(address deployer) internal returns (address) {
         vm.startPrank(deployer);
         assert(debtTokenProxy != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
-        assert(referralManager != IReferralManager(address(0))); // check if referral manager contract is not zero address
         assert(weth != IWETH(address(0))); // check if WETH contract is deployed
-        address satoshiBORouterAddr =
-            address(new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, referralManager, weth));
+        address satoshiBORouterAddr = address(new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, weth, pyth));
         vm.stopPrank();
 
         return satoshiBORouterAddr;
@@ -699,22 +706,6 @@ abstract contract DeployBase is Test {
         factoryProxy.setRewardRate(numerator, 1);
         assertEq(troveManagerBeaconProxy.rewardRate(), factoryProxy.maxRewardRate());
         vm.stopPrank();
-    }
-
-    /* ============ Deploy TokenTester Contracts ============ */
-    function _deployReferralManager(address deployer, ISatoshiBORouter satoshiBORouter) internal returns (address) {
-        vm.startPrank(deployer);
-        assert(satoshiBORouter != ISatoshiBORouter(address(0))); // check if satoshiBORouter contract is not zero address
-        uint256 startTimestamp = block.timestamp;
-        uint256 endTimestamp = startTimestamp + 30 days;
-        address referralManagerAddr = address(new ReferralManager(satoshiBORouter, startTimestamp, endTimestamp));
-        assert(IReferralManager(referralManagerAddr).satoshiBORouter() == satoshiBORouter);
-        assert(IReferralManager(referralManagerAddr).startTimestamp() == startTimestamp);
-        assert(IReferralManager(referralManagerAddr).endTimestamp() == endTimestamp);
-        assert(IReferralManager(referralManagerAddr).getTotalPoints() == 0);
-        vm.stopPrank();
-
-        return referralManagerAddr;
     }
 
     /* ============ Deploy DebtTokenTester Contracts ============ */

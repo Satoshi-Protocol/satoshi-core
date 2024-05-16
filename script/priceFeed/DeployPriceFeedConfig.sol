@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /* Satoshi Core Address */
-address constant SATOSHI_CORE_ADDRESS = 0x365b4915289f2b27dcA58BEBd2960ECDCC2AE3b6;
+address constant SATOSHI_CORE_ADDRESS = 0x664671632d5eCF673D75bE3dE07b06D2727f17c2;
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
@@ -18,3 +18,11 @@ uint256 constant DIA_MAX_TIME_THRESHOLD = 86400;
 
 /* WSTBTC Integration Config */
 address constant WSTBTC_ADDRESS = 0x2967E7Bb9DaA5711Ac332cAF874BD47ef99B3820;
+
+/* Pyth Orace Integration Config */
+// CORE/USD
+address constant PYTH_ORACLE_PRICE_FEED_SOURCE_ADDRESS = 0x8D254a21b3C86D32F7179855531CE99164721933;
+uint8 constant PYTH_ORACLE_PRICE_FEED_DECIMAL = 8;
+bytes32 constant PYTH_ORACLE_PRICEID = 0x9b4503710cc8c53f75c30e6e4fda1a7064680ef2e0ee97acd2e3a7c37b3c830c;
+
+uint256 constant PYTH_MAX_TIME_THRESHOLD = 1200;
