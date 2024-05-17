@@ -15,6 +15,8 @@ interface ISatoshiBORouter {
     error RefundFailed();
     error InsufficientMsgValue(uint256 msgValue, uint256 requiredValue);
 
+    event PythOracleSet(address collateralToken, address pythOracle);
+
     function debtToken() external view returns (IDebtToken);
 
     function borrowerOperationsProxy() external view returns (IBorrowerOperations);
@@ -68,4 +70,16 @@ interface ISatoshiBORouter {
     ) external payable;
 
     function closeTrove(ITroveManager troveManager) external;
+
+    function redeemCollateral(
+        ITroveManager troveManager,
+        uint256 _debtAmount,
+        address _firstRedemptionHint,
+        address _upperPartialRedemptionHint,
+        address _lowerPartialRedemptionHint,
+        uint256 _partialRedemptionHintNICR,
+        uint256 _maxIterations,
+        uint256 _maxFeePercentage,
+        bytes[] calldata priceUpdateData
+    ) external payable;
 }

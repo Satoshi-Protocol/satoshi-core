@@ -52,4 +52,8 @@ contract PriceFeedDIAOracle is IPriceFeed, SatoshiOwnable {
         maxTimeThreshold = _maxTimeThreshold;
         emit MaxTimeThresholdUpdated(_maxTimeThreshold);
     }
+
+    function source() external view returns (address) {
+        return address(_source);
+    }
 }

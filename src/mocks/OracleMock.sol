@@ -63,4 +63,12 @@ contract OracleMock is AggregatorV3Interface, Ownable {
         _roundData[_lastRoundId] = roundData;
         emit AnswerUpdated(roundData.answer, _lastRoundId, roundData.updatedAt);
     }
+
+    function getUpdateFee(bytes[] calldata) external pure returns (uint256) {
+        return 0;
+    }
+
+    function updatePriceFeeds(bytes[] calldata) external {
+        // do nothing
+    }
 }

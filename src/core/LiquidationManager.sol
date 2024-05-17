@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {SatoshiBase} from "../dependencies/SatoshiBase.sol";

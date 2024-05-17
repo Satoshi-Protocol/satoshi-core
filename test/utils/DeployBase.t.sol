@@ -619,7 +619,7 @@ abstract contract DeployBase is Test {
         assert(debtTokenProxy != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
         assert(weth != IWETH(address(0))); // check if WETH contract is deployed
-        address satoshiBORouterAddr = address(new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, weth, pyth));
+        address satoshiBORouterAddr = address(new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, weth));
         vm.stopPrank();
 
         return satoshiBORouterAddr;

@@ -13,7 +13,7 @@ import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
  */
 contract PriceFeedPythOracle is IPriceFeed, SatoshiOwnable {
     IPyth pyth;
-    bytes32 priceID;
+    bytes32 internal priceID;
     uint8 internal immutable _decimals;
     string internal _key;
     uint256 public maxTimeThreshold;
@@ -51,5 +51,9 @@ contract PriceFeedPythOracle is IPriceFeed, SatoshiOwnable {
     function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external onlyOwner {
         maxTimeThreshold = _maxTimeThreshold;
         emit MaxTimeThresholdUpdated(_maxTimeThreshold);
+    }
+
+    function source() external view returns (address) {
+        return address(pyth);
     }
 }

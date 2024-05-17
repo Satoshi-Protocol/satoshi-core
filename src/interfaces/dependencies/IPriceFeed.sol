@@ -21,4 +21,6 @@ interface IPriceFeed is ISatoshiOwnable {
     function maxTimeThreshold() external view returns (uint256);
 
     function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external;
+
+    function source() external view returns (address);
 }

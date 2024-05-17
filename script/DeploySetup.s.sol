@@ -345,7 +345,7 @@ contract DeploySetupScript is Script {
         nonce = vm.getNonce(deployer);
         address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, nonce);
         satoshiBORouter =
-            new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, IWETH(WETH_ADDRESS), IPyth(PYTH_ADDRESS));
+            new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
         assert(cpSatoshiBORouterAddr == address(satoshiBORouter));
 
         vm.stopBroadcast();
