@@ -11,7 +11,7 @@ import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {MockPyth} from "@pythnetwork/pyth-sdk-solidity/MockPyth.sol";
 import {MultiCollateralHintHelpers} from "../../src/helpers/MultiCollateralHintHelpers.sol";
 import {WETH9} from "../../src/mocks/WETH9.sol";
-import {SatoshiBORouter} from "../../src/helpers/SatoshiBORouter.sol";
+import {SatoshiPeriphery} from "../../src/helpers/SatoshiPeriphery.sol";
 import {SortedTroves} from "../../src/core/SortedTroves.sol";
 import {PriceFeedAggregator} from "../../src/core/PriceFeedAggregator.sol";
 import {BorrowerOperations} from "../../src/core/BorrowerOperations.sol";
@@ -46,7 +46,7 @@ import {IFactory} from "../../src/interfaces/core/IFactory.sol";
 import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
 import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
-import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.sol";
+import {ISatoshiPeriphery} from "../../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
 import {
     DEPLOYER,
@@ -614,15 +614,15 @@ abstract contract DeployBase is Test {
         return pythAddr;
     }
 
-    function _deploySatoshiBORouter(address deployer) internal returns (address) {
+    function _deploySatoshiPeriphery(address deployer) internal returns (address) {
         vm.startPrank(deployer);
         assert(debtTokenProxy != IDebtToken(address(0))); // check if debt token contract is deployed
         assert(borrowerOperationsProxy != IBorrowerOperations(address(0))); // check if borrower operations proxy contract is deployed
         assert(weth != IWETH(address(0))); // check if WETH contract is deployed
-        address satoshiBORouterAddr = address(new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, weth));
+        address satoshiPeripheryAddr = address(new SatoshiPeriphery(debtTokenProxy, borrowerOperationsProxy, weth));
         vm.stopPrank();
 
-        return satoshiBORouterAddr;
+        return satoshiPeripheryAddr;
     }
 
     /* ============ Set Config by Owner after Deployments ============ */

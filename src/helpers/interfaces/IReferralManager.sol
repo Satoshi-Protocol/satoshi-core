@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {ISatoshiBORouter} from "./ISatoshiBORouter.sol";
+import {ISatoshiPeriphery} from "./ISatoshiPeriphery.sol";
 import {ITroveManager} from "../../interfaces/core/ITroveManager.sol";
 
 interface IReferralManager {
-    function satoshiBORouter() external view returns (ISatoshiBORouter);
+    function satoshiPeriphery() external view returns (ISatoshiPeriphery);
 
     function startTimestamp() external view returns (uint256);
 

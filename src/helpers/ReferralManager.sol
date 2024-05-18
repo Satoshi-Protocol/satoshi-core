@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IReferralManager} from "./interfaces/IReferralManager.sol";
-import {ISatoshiBORouter} from "./interfaces/ISatoshiBORouter.sol";
+import {ISatoshiPeriphery} from "./interfaces/ISatoshiPeriphery.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 
 contract ReferralManager is IReferralManager, Ownable {
-    ISatoshiBORouter public immutable satoshiBORouter;
+    ISatoshiPeriphery public immutable satoshiPeriphery;
 
     uint256 public startTimestamp;
     uint256 public endTimestamp;
@@ -28,22 +28,22 @@ contract ReferralManager is IReferralManager, Ownable {
     error InvalidReferrer(address _referrer);
     error Unauthorized(address _caller);
 
-    modifier onlySatoshiBORouter() {
-        if (msg.sender != address(satoshiBORouter)) revert Unauthorized(msg.sender);
+    modifier onlySatoshiPeriphery() {
+        if (msg.sender != address(satoshiPeriphery)) revert Unauthorized(msg.sender);
         _;
     }
 
-    constructor(ISatoshiBORouter _satoshiBORouter, uint256 _startTimestamp, uint256 _endTimestamp) {
-        if (address(_satoshiBORouter) == address(0)) revert InvalidZeroAddress();
+    constructor(ISatoshiPeriphery _satoshiPeriphery, uint256 _startTimestamp, uint256 _endTimestamp) {
+        if (address(_satoshiPeriphery) == address(0)) revert InvalidZeroAddress();
 
-        satoshiBORouter = _satoshiBORouter;
+        satoshiPeriphery = _satoshiPeriphery;
         startTimestamp = _startTimestamp;
         endTimestamp = _endTimestamp;
     }
 
     function executeReferral(address _borrower, address _referrer, uint256 _points, ITroveManager troveManager)
         external
-        onlySatoshiBORouter
+        onlySatoshiPeriphery
     {
         // only execute referral if it's active
         if (!_isReferralActive()) return;

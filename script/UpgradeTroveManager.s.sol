@@ -9,8 +9,8 @@ import {ICommunityIssuance} from "../src/interfaces/core/ICommunityIssuance.sol"
 import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 import {IBorrowerOperations} from "../src/interfaces/core/IBorrowerOperations.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
-import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
-import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
+import {ISatoshiPeriphery} from "../src/helpers/interfaces/ISatoshiPeriphery.sol";
+import {SatoshiPeriphery} from "../src/helpers/SatoshiPeriphery.sol";
 import {TroveManager} from "../src/core/TroveManager.sol";
 
 interface IBeacon {
@@ -20,7 +20,7 @@ interface IBeacon {
 
 contract UpgradeTroveManagerScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
-    ISatoshiBORouter satoshiBORouter;
+    ISatoshiPeriphery satoshiPeriphery;
     IDebtToken debtToken = IDebtToken(0xF2692468666E459D87052f68aE474E36C1a34fbB);
     IBorrowerOperations borrowerOperationsProxy = IBorrowerOperations(0xaA1774e83127C741Fc7dA68550E6C17b3b2B5AcB);
     ITroveManager troveManagerBeaconProxy = ITroveManager(0x0598Ef47508Ec11a503670Ac3B642AAE8EAEdEFA);

@@ -22,7 +22,7 @@ import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
 import {IPriceFeed} from "../src/interfaces/dependencies/IPriceFeed.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
-import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
+import {ISatoshiPeriphery} from "../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../src/interfaces/core/ISatoshiLPFactory.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
@@ -41,7 +41,7 @@ import {RewardManager} from "../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../src/SLP/SatoshiLPFactory.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
-import {SatoshiBORouter} from "../src/helpers/SatoshiBORouter.sol";
+import {SatoshiPeriphery} from "../src/helpers/SatoshiPeriphery.sol";
 import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
@@ -96,7 +96,7 @@ contract DeploySetupScript is Script {
     /* Helpers contracts */
     IMultiCollateralHintHelpers hintHelpers;
     IMultiTroveGetter multiTroveGetter;
-    ISatoshiBORouter satoshiBORouter;
+    ISatoshiPeriphery satoshiPeriphery;
 
     /* computed contracts for deployment */
     // implementation contracts
@@ -341,12 +341,11 @@ contract DeploySetupScript is Script {
         // MultiTroveGetter
         multiTroveGetter = new MultiTroveGetter();
 
-        // SatoshiBORouter
+        // SatoshiPeriphery
         nonce = vm.getNonce(deployer);
-        address cpSatoshiBORouterAddr = vm.computeCreateAddress(deployer, nonce);
-        satoshiBORouter =
-            new SatoshiBORouter(debtTokenProxy, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
-        assert(cpSatoshiBORouterAddr == address(satoshiBORouter));
+        address cpSatoshiPeripheryAddr = vm.computeCreateAddress(deployer, nonce);
+        satoshiPeriphery = new SatoshiPeriphery(debtTokenProxy, borrowerOperationsProxy, IWETH(WETH_ADDRESS));
+        assert(cpSatoshiPeripheryAddr == address(satoshiPeriphery));
 
         vm.stopBroadcast();
 
@@ -382,7 +381,7 @@ contract DeploySetupScript is Script {
         console.log("satoshiLPFactoryProxy:", address(satoshiLPFactoryProxy));
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
-        console.log("satoshiBORouter:", address(satoshiBORouter));
+        console.log("satoshiPeriphery:", address(satoshiPeriphery));
     }
 
     function _setConfigByOwner(uint256 owner_private_key) internal {

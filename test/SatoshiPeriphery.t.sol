@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITroveManager.sol";
-import {ISatoshiBORouter} from "../src/helpers/interfaces/ISatoshiBORouter.sol";
+import {ISatoshiPeriphery} from "../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SatoshiMath} from "../src/dependencies/SatoshiMath.sol";
@@ -16,13 +16,13 @@ import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig} from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 
-contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events {
+contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;
-    ISatoshiBORouter satoshiBORouter;
+    ISatoshiPeriphery satoshiPeriphery;
     address user;
 
     function setUp() public override {
@@ -43,11 +43,11 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         // deploy helper contracts
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
-        satoshiBORouter = ISatoshiBORouter(_deploySatoshiBORouter(DEPLOYER));
+        satoshiPeriphery = ISatoshiPeriphery(_deploySatoshiPeriphery(DEPLOYER));
 
-        // user set delegate approval for satoshiBORouter
+        // user set delegate approval for satoshiPeriphery
         vm.startPrank(user);
-        borrowerOperationsProxy.setDelegateApproval(address(satoshiBORouter), true);
+        borrowerOperationsProxy.setDelegateApproval(address(satoshiPeriphery), true);
         vm.stopPrank();
     }
 
@@ -95,14 +95,13 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             hintHelpers, sortedTrovesBeaconProxy, troveManagerBeaconProxy, vars.collAmt, vars.debtAmt, GAS_COMPENSATION
         );
         // tx execution
-        satoshiBORouter.openTrove{value: vars.collAmt}(
+        satoshiPeriphery.openTrove{value: vars.collAmt}(
             troveManagerBeaconProxy,
             0.05e18, /* vars.maxFeePercentage 5% */
             vars.collAmt,
             vars.debtAmt,
             vars.upperHint,
-            vars.lowerHint,
-            new bytes[](0)
+            vars.lowerHint
         );
 
         // state after
@@ -185,7 +184,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiBORouter.addColl{value: vars.addCollAmt}(
+        satoshiPeriphery.addColl{value: vars.addCollAmt}(
             troveManagerBeaconProxy, vars.addCollAmt, vars.upperHint, vars.lowerHint
         );
 
@@ -261,8 +260,8 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiBORouter.withdrawColl(
-            troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint, new bytes[](0)
+        satoshiPeriphery.withdrawColl(
+            troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint
         );
 
         // state after
@@ -337,13 +336,12 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiBORouter.withdrawDebt(
+        satoshiPeriphery.withdrawDebt(
             troveManagerBeaconProxy,
             vars.maxFeePercentage,
             vars.withdrawDebtAmt,
             vars.upperHint,
-            vars.lowerHint,
-            new bytes[](0)
+            vars.lowerHint
         );
 
         // state after
@@ -384,7 +382,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.totalNetDebtAmt = vars.debtAmt - vars.repayDebtAmt;
 
         vm.startPrank(user);
-        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiPeriphery), vars.repayDebtAmt);
 
         // state before
         vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user);
@@ -423,7 +421,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // tx execution
-        satoshiBORouter.repayDebt(troveManagerBeaconProxy, vars.repayDebtAmt, vars.upperHint, vars.lowerHint);
+        satoshiPeriphery.repayDebt(troveManagerBeaconProxy, vars.repayDebtAmt, vars.upperHint, vars.lowerHint);
 
         // state after
         vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
@@ -463,7 +461,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
 
         vm.startPrank(user);
         deal(user, vars.addCollAmt);
-        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiPeriphery), vars.repayDebtAmt);
 
         // state before
         vars.userBalanceBefore = user.balance;
@@ -504,7 +502,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // tx execution
-        satoshiBORouter.adjustTrove{value: vars.addCollAmt}(
+        satoshiPeriphery.adjustTrove{value: vars.addCollAmt}(
             troveManagerBeaconProxy,
             0, /* vars.maxFeePercentage */
             vars.addCollAmt,
@@ -512,8 +510,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.repayDebtAmt,
             false, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            new bytes[](0)
+            vars.lowerHint
         );
 
         // state after
@@ -598,7 +595,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // tx execution
-        satoshiBORouter.adjustTrove{value: vars.addCollAmt}(
+        satoshiPeriphery.adjustTrove{value: vars.addCollAmt}(
             troveManagerBeaconProxy,
             vars.maxFeePercentage,
             vars.addCollAmt,
@@ -606,8 +603,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            new bytes[](0)
+            vars.lowerHint
         );
 
         // state after
@@ -654,7 +650,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.totalNetDebtAmt = vars.debtAmt - vars.repayDebtAmt;
 
         vm.startPrank(user);
-        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiPeriphery), vars.repayDebtAmt);
 
         // state before
         vars.userBalanceBefore = user.balance;
@@ -695,7 +691,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // tx execution
-        satoshiBORouter.adjustTrove(
+        satoshiPeriphery.adjustTrove(
             troveManagerBeaconProxy,
             0, /* vars.maxFeePercentage */
             0, /* collAdditionAmt */
@@ -703,8 +699,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.repayDebtAmt,
             false, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            new bytes[](0)
+            vars.lowerHint
         );
 
         // state after
@@ -788,7 +783,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         );
 
         // tx execution
-        satoshiBORouter.adjustTrove(
+        satoshiPeriphery.adjustTrove(
             troveManagerBeaconProxy,
             vars.maxFeePercentage,
             0, /* collAdditionAmt */
@@ -796,8 +791,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
             vars.withdrawDebtAmt,
             true, /* debtIncrease */
             vars.upperHint,
-            vars.lowerHint,
-            new bytes[](0)
+            vars.lowerHint
         );
 
         // state after
@@ -843,7 +837,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         vars.borrowingFee = troveManagerBeaconProxy.getBorrowingFeeWithDecay(vars.debtAmt);
         vars.repayDebtAmt = vars.debtAmt + vars.borrowingFee;
         deal(address(debtTokenProxy), user, vars.repayDebtAmt);
-        debtTokenProxy.approve(address(satoshiBORouter), vars.repayDebtAmt);
+        debtTokenProxy.approve(address(satoshiPeriphery), vars.repayDebtAmt);
 
         // state before
         vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
@@ -860,7 +854,7 @@ contract SatoshiBORouterTest is Test, DeployBase, TroveBase, TestConfig, Events 
         emit TroveUpdated(user, 0, 0, 0, TroveManagerOperation.close);
 
         // tx execution
-        satoshiBORouter.closeTrove(troveManagerBeaconProxy);
+        satoshiPeriphery.closeTrove(troveManagerBeaconProxy);
 
         // state after
         vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
