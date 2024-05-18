@@ -7,6 +7,7 @@ interface IPriceFeed is ISatoshiOwnable {
     // invalid price error for different types of price sources
     error InvalidPriceInt256(int256 price);
     error InvalidPriceUInt128(uint128 price);
+    error InvalidPriceInt224(int224 price);
     error PriceTooOld();
     error InvalidMaxTimeThreshold();
 
