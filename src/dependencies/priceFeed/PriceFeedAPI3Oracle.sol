@@ -34,6 +34,12 @@ contract PriceFeedAPI3Oracle is IPriceFeed, SatoshiOwnable {
         return uint256(uint224(price));
     }
 
+    function fetchPriceUnsafe() external view returns (uint256, uint256) {
+        (int224 price, uint32 lastUpdated) = _source.read();
+        if (price <= 0) revert InvalidPriceInt224(price);
+        return (uint256(uint224(price)), uint256(lastUpdated));
+    }
+
     function decimals() external view returns (uint8) {
         return _decimals;
     }

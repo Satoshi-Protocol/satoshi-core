@@ -17,6 +17,8 @@ interface IPriceFeed is ISatoshiOwnable {
 
     function fetchPrice() external returns (uint256);
 
+    function fetchPriceUnsafe() external returns (uint256, uint256);
+
     function decimals() external view returns (uint8);
 
     function maxTimeThreshold() external view returns (uint256);

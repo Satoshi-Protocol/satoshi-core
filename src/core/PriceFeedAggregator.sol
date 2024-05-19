@@ -76,4 +76,21 @@ contract PriceFeedAggregator is IPriceFeedAggregator, SatoshiOwnable, UUPSUpgrad
         }
         return scaledPrice;
     }
+
+    function fetchPriceUnsafe(IERC20 _token) external returns (uint256, uint256) {
+        OracleRecord memory oracle = oracleRecords[_token];
+
+        (uint256 rawPrice, uint256 updatedAt) = oracle.priceFeed.fetchPriceUnsafe();
+        uint8 decimals = oracle.decimals;
+
+        uint256 scaledPrice;
+        if (decimals == TARGET_DIGITS) {
+            scaledPrice = rawPrice;
+        } else if (decimals < TARGET_DIGITS) {
+            scaledPrice = rawPrice * (10 ** (TARGET_DIGITS - decimals));
+        } else {
+            scaledPrice = rawPrice / (10 ** (decimals - TARGET_DIGITS));
+        }
+        return (scaledPrice, updatedAt);
+    }
 }

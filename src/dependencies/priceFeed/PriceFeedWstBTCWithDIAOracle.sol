@@ -57,6 +57,14 @@ contract PriceFeedWstBTCWithDIAOracle is IPriceFeed, SatoshiOwnable {
         return wstBtcPrice;
     }
 
+    function fetchPriceUnsafe() external returns (uint256, uint256) {
+        (uint128 price, uint128 lastUpdated) = _source.getValue(_key);
+        if (price == 0) revert InvalidPriceUInt128(price);
+
+        uint256 wstBtcPrice = (uint256(price) * _wstBTC.stBtcPerToken()) / STBTC_PER_WSTBTC_BASE;
+        return (wstBtcPrice, lastUpdated);
+    }
+
     function decimals() external view returns (uint8) {
         return _decimals;
     }

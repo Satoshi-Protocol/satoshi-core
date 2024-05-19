@@ -40,6 +40,12 @@ contract PriceFeedDIAOracle is IPriceFeed, SatoshiOwnable {
         return uint256(price);
     }
 
+    function fetchPriceUnsafe() external returns (uint256, uint256) {
+        (uint128 price, uint128 lastUpdated) = _source.getValue(_key);
+        if (price == 0) revert InvalidPriceUInt128(price);
+        return (uint256(price), uint256(lastUpdated));
+    }
+
     function decimals() external view returns (uint8) {
         return _decimals;
     }

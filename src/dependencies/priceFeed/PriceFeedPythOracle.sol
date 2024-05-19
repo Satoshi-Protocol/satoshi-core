@@ -39,6 +39,17 @@ contract PriceFeedPythOracle is IPriceFeed, SatoshiOwnable {
         return price;
     }
 
+    function fetchPriceUnsafe() external view returns (uint256, uint256) {
+        PythStructs.Price memory pythData = IPyth(pyth).getPriceUnsafe(priceID);
+        if (pythData.price <= 0) {
+            revert InvalidPriceInt256(pythData.price);
+        }
+        uint256 price = uint64(pythData.price);
+        uint256 lastUpdated = pythData.publishTime;
+
+        return (price, lastUpdated);
+    }
+
     function decimals() external view returns (uint8) {
         return _decimals;
     }

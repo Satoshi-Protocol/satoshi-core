@@ -30,6 +30,12 @@ contract PriceFeedChainlink is IPriceFeed, SatoshiOwnable {
         return uint256(price);
     }
 
+    function fetchPriceUnsafe() external view returns (uint256, uint256) {
+        (, int256 price,, uint256 updatedAt,) = _source.latestRoundData();
+        if (price <= 0) revert InvalidPriceInt256(price);
+        return (uint256(price), updatedAt);
+    }
+
     function decimals() external view returns (uint8) {
         return _source.decimals();
     }
