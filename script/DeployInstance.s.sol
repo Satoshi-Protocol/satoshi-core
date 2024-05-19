@@ -100,8 +100,8 @@ contract DeployInstanceScript is Script {
         require(communityIssuance.allocated(address(troveManagerBeaconProxy)) == params.OSHIAllocation);
         require(communityIssuance.allocated(address(troveManagerBeaconProxyBTC)) == params.OSHIAllocation);
 
-        console.log("SortedTrovesBeaconProxy: address:", address(sortedTrovesBeaconProxy));
-        console.log("TroveManagerBeaconProxy: address:", address(troveManagerBeaconProxy));
+        console.log("SortedTrovesBeaconProxy: ", address(sortedTrovesBeaconProxy));
+        console.log("TroveManagerBeaconProxy: ", address(troveManagerBeaconProxy));
 
         vm.stopBroadcast();
     }
