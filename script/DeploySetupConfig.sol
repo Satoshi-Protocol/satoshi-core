@@ -12,7 +12,7 @@ string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
 // @todo check this WNT address
-address constant WETH_ADDRESS = 0x2DcA0825F0d5E900c1522a9A2362237BbaAecbb4;
+address constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 // @todo this is core pyth testnet address
 address constant PYTH_ADDRESS = 0x8D254a21b3C86D32F7179855531CE99164721933;
 
