@@ -260,9 +260,7 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiPeriphery.withdrawColl(
-            troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint
-        );
+        satoshiPeriphery.withdrawColl(troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint);
 
         // state after
         vars.userBalanceAfter = user.balance;
@@ -337,11 +335,7 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
         );
         // tx execution
         satoshiPeriphery.withdrawDebt(
-            troveManagerBeaconProxy,
-            vars.maxFeePercentage,
-            vars.withdrawDebtAmt,
-            vars.upperHint,
-            vars.lowerHint
+            troveManagerBeaconProxy, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint
         );
 
         // state after
