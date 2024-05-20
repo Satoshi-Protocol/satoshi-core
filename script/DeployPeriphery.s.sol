@@ -12,8 +12,8 @@ import {SatoshiPeriphery} from "../src/helpers/SatoshiPeriphery.sol";
 contract DeploySatoshiPeripheryScript is Script {
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
     ISatoshiPeriphery satoshiPeriphery;
-    IDebtToken debtToken = IDebtToken(0xc41BC99759Eaf63467FDAe72c209C652647C6f95);
-    IBorrowerOperations borrowerOperationsProxy = IBorrowerOperations(0x365b4915289f2b27dcA58BEBd2960ECDCC2AE3b6);
+    IDebtToken debtToken = IDebtToken(0xc39134ADEC50C8117af93bD311C602a55a581eDc);
+    IBorrowerOperations borrowerOperationsProxy = IBorrowerOperations(0xB18EAb008C7D71c0419a389085FA9e775d7d48A2);
     address constant WETH_ADDRESS = 0x2DcA0825F0d5E900c1522a9A2362237BbaAecbb4;
 
     function setUp() public {

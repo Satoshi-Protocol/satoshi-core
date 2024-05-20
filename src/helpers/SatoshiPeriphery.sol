@@ -497,11 +497,10 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         if (collAmount == 0) return;
 
         if (address(collateralToken) == address(weth)) {
-            if (msg.value > collAmount) revert MsgValueMismatch(msg.value, collAmount);
+            if (msg.value < collAmount) revert MsgValueMismatch(msg.value, collAmount);
 
             weth.deposit{value: collAmount}();
         } else {
-            if (msg.value != 0) revert InvalidMsgValue(msg.value);
             collateralToken.safeTransferFrom(msg.sender, address(this), collAmount);
         }
 
