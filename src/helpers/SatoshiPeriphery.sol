@@ -46,7 +46,7 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         uint256 _maxFeePercentage,
         uint256 _collAmount,
         uint256 _debtAmount,
-        address _upperHint,        
+        address _upperHint,
         address _lowerHint
     ) external payable {
         IERC20 collateralToken = troveManager.collateralToken();
@@ -107,8 +107,28 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         borrowerOperationsProxy.addColl(troveManager, msg.sender, _collAmount, _upperHint, _lowerHint);
     }
 
+    function addCollWithPythPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _collAmount,
+        address _upperHint,
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
+    ) external payable {
+        IERC20 collateralToken = troveManager.collateralToken();
+
+        _checkEnoughValue(troveManager, _collAmount, priceUpdateData);
+
+        _updatePythPriceFeed(troveManager, priceUpdateData);
+
+        _beforeAddColl(collateralToken, _collAmount);
+
+        borrowerOperationsProxy.addColl(troveManager, msg.sender, _collAmount, _upperHint, _lowerHint);
+
+        _refundGas();
+    }
+
     function withdrawColl(ITroveManager troveManager, uint256 _collWithdrawal, address _upperHint, address _lowerHint)
-    external
+        external
     {
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
@@ -196,6 +216,25 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
 
         borrowerOperationsProxy.repayDebt(troveManager, msg.sender, _debtAmount, _upperHint, _lowerHint);
     }
+
+    function repayDebtWithPythPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _debtAmount,
+        address _upperHint,
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
+    ) external payable {
+        _checkEnoughValue(troveManager, 0, priceUpdateData);
+
+        _updatePythPriceFeed(troveManager, priceUpdateData);
+
+        _beforeRepayDebt(_debtAmount);
+
+        borrowerOperationsProxy.repayDebt(troveManager, msg.sender, _debtAmount, _upperHint, _lowerHint);
+
+        _refundGas();
+    }
+
     function adjustTrove(
         ITroveManager troveManager,
         uint256 _maxFeePercentage,
@@ -319,6 +358,32 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _afterWithdrawColl(collateralToken, userCollAmount);
     }
 
+    function closeTroveWithPythPriceUpdate(ITroveManager troveManager, bytes[] calldata priceUpdateData)
+        external
+        payable
+    {
+        (uint256 collAmount, uint256 debtAmount) = troveManager.getTroveCollAndDebt(msg.sender);
+        uint256 netDebtAmount = debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION();
+
+        _checkEnoughValue(troveManager, 0, priceUpdateData);
+
+        _updatePythPriceFeed(troveManager, priceUpdateData);
+
+        _beforeRepayDebt(netDebtAmount);
+
+        IERC20 collateralToken = troveManager.collateralToken();
+        uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
+
+        borrowerOperationsProxy.closeTrove(troveManager, msg.sender);
+
+        uint256 collTokenBalanceAfter = collateralToken.balanceOf(address(this));
+        uint256 userCollAmount = collTokenBalanceAfter - collTokenBalanceBefore;
+        require(userCollAmount == collAmount, "SatoshiPeriphery: Collateral amount mismatch");
+        _afterWithdrawColl(collateralToken, userCollAmount);
+
+        _refundGas();
+    }
+
     function redeemCollateral(
         ITroveManager troveManager,
         uint256 _debtAmount,
@@ -390,7 +455,12 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _refundGas();
     }
 
-    function liquidateTroves(ILiquidationManager liquidationManager, ITroveManager troveManager, uint256 maxTrovesToLiquidate, uint256 maxICR) external {
+    function liquidateTroves(
+        ILiquidationManager liquidationManager,
+        ITroveManager troveManager,
+        uint256 maxTrovesToLiquidate,
+        uint256 maxICR
+    ) external {
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
         uint256 collTokenBalanceBefore = troveManager.collateralToken().balanceOf(address(this));
         liquidationManager.liquidateTroves(troveManager, maxTrovesToLiquidate, maxICR);
@@ -401,11 +471,17 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _afterWithdrawDebt(userDebtAmount);
         _afterWithdrawColl(troveManager.collateralToken(), userCollAmount);
     }
-    
-    function liquidateTrovesWithPythPriceUpdate(ILiquidationManager liquidationManager, ITroveManager troveManager, uint256 maxTrovesToLiquidate, uint256 maxICR, bytes[] calldata priceUpdateData) external payable {
+
+    function liquidateTrovesWithPythPriceUpdate(
+        ILiquidationManager liquidationManager,
+        ITroveManager troveManager,
+        uint256 maxTrovesToLiquidate,
+        uint256 maxICR,
+        bytes[] calldata priceUpdateData
+    ) external payable {
         _checkEnoughValue(troveManager, 0, priceUpdateData);
         _updatePythPriceFeed(troveManager, priceUpdateData);
-        
+
         uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
         uint256 collTokenBalanceBefore = troveManager.collateralToken().balanceOf(address(this));
         liquidationManager.liquidateTroves(troveManager, maxTrovesToLiquidate, maxICR);

@@ -45,6 +45,14 @@ interface ISatoshiPeriphery {
         external
         payable;
 
+    function addCollWithPythPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _collAmount,
+        address _upperHint,
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
+    ) external payable;
+
     function withdrawColl(ITroveManager troveManager, uint256 _collWithdrawal, address _upperHint, address _lowerHint)
         external;
 
@@ -76,6 +84,14 @@ interface ISatoshiPeriphery {
     function repayDebt(ITroveManager troveManager, uint256 _debtAmount, address _upperHint, address _lowerHint)
         external;
 
+    function repayDebtWithPythPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _debtAmount,
+        address _upperHint,
+        address _lowerHint,
+        bytes[] calldata priceUpdateData
+    ) external payable;
+
     function adjustTrove(
         ITroveManager troveManager,
         uint256 _maxFeePercentage,
@@ -101,6 +117,10 @@ interface ISatoshiPeriphery {
 
     function closeTrove(ITroveManager troveManager) external;
 
+    function closeTroveWithPythPriceUpdate(ITroveManager troveManager, bytes[] calldata priceUpdateData)
+        external
+        payable;
+
     function redeemCollateral(
         ITroveManager troveManager,
         uint256 _debtAmount,
@@ -124,8 +144,18 @@ interface ISatoshiPeriphery {
         bytes[] calldata priceUpdateData
     ) external payable;
 
-    function liquidateTroves(ILiquidationManager liquidationManager, ITroveManager troveManager, uint256 maxTrovesToLiquidate, uint256 maxICR) external;
+    function liquidateTroves(
+        ILiquidationManager liquidationManager,
+        ITroveManager troveManager,
+        uint256 maxTrovesToLiquidate,
+        uint256 maxICR
+    ) external;
 
-    function liquidateTrovesWithPythPriceUpdate(ILiquidationManager liquidationManager, ITroveManager troveManager, uint256 maxTrovesToLiquidate, uint256 maxICR, bytes[] calldata priceUpdateData) external payable;
-
+    function liquidateTrovesWithPythPriceUpdate(
+        ILiquidationManager liquidationManager,
+        ITroveManager troveManager,
+        uint256 maxTrovesToLiquidate,
+        uint256 maxICR,
+        bytes[] calldata priceUpdateData
+    ) external payable;
 }
