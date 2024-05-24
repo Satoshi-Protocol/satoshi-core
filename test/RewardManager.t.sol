@@ -338,7 +338,7 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // user1 claim sOSHI reward (protocol revenue)
         // uint256 interest = (vars.userDebtBefore[0]) * INTEREST_RATE_IN_BPS / 10000;
-        uint256 expectedReward = (50567282792268718326 + 5e18) * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION;
+        uint256 expectedReward = (50567282792268718326 + 5e18);
         uint256 user1PendingSATGain = rewardManagerProxy.getPendingSATGain(user1);
         assertApproxEqAbs(expectedReward, user1PendingSATGain, 1e10);
         _claimsRewardManagerProxyReward(user1);
@@ -418,11 +418,11 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // check pending coll gain
         uint256 pendingCollGain = rewardManagerProxy.getPendingCollGain(user1)[0];
-        assertApproxEqAbs(pendingCollGain, expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100);
+        assertApproxEqAbs(pendingCollGain, expectedToRM, 100);
 
         uint256 pendingCollForFeeReceiver = rewardManagerProxy.collForFeeReceiver(0);
         assertApproxEqAbs(
-            pendingCollForFeeReceiver, expectedToRM - expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100
+            pendingCollForFeeReceiver, expectedToRM - expectedToRM, 100
         );
     }
 
