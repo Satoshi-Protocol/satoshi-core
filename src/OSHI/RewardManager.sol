@@ -202,10 +202,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
         IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), _amount);
 
         if (totalOSHIWeightedStaked > 0) {
-            uint256 _amountToStaker = _amount * FEE_TO_STAKER_RATIO / FEE_RATIO_BASE;
-            uint256 _amountToFeeReceiver = _amount - _amountToStaker;
-            collFeePerOSHIStaked = _amountToStaker * DECIMAL_PRECISION / totalOSHIWeightedStaked;
-            collForFeeReceiver[index] += _amountToFeeReceiver;
+            collFeePerOSHIStaked = _amount * DECIMAL_PRECISION / totalOSHIWeightedStaked;
         } else {
             // when no OSHI is staked
             collForFeeReceiver[index] += _amount;
@@ -223,10 +220,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
         uint256 SATFeePerOSHIStaked;
 
         if (totalOSHIWeightedStaked > 0) {
-            uint256 _amountToStaker = _amount * FEE_TO_STAKER_RATIO / FEE_RATIO_BASE;
-            uint256 _amountToFeeReceiver = _amount - _amountToStaker;
-            SATFeePerOSHIStaked = _amountToStaker * DECIMAL_PRECISION / totalOSHIWeightedStaked;
-            satForFeeReceiver += _amountToFeeReceiver;
+            SATFeePerOSHIStaked = _amount * DECIMAL_PRECISION / totalOSHIWeightedStaked;
         } else {
             // when no OSHI is staked
             satForFeeReceiver += _amount;
