@@ -263,6 +263,10 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         // 3 months later, user1 can unstake OSHI
         vm.warp(block.timestamp + 90 days);
+
+        // uint256 OSHIAmount2 = _troveClaimOSHIReward(user1);
+        // _stakeOSHIToRewardManagerProxy(user1, OSHIAmount2, LockDuration.THREE);
+
         uint256 unlockedAmount = rewardManagerProxy.getAvailableUnstakeAmount(user1);
         _unstakeOSHIFromRewardManagerProxy(user1, OSHIAmount);
         assertEq(rewardManagerProxy.totalOSHIWeightedStaked(), 0);

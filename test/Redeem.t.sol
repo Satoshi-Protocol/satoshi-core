@@ -174,6 +174,7 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function test_redeem() public {
+        LocalVars memory vars;
         _openTrove(user1, 1e18, 13333e18);
         _openTrove(user2, 1e18, 13793e18);
         _openTrove(user3, 1e18, 20000e18);
@@ -194,7 +195,28 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         (uint256 coll3, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
         uint256 redemptionAmount = debt3;
-        _redeemCollateral(user4, redemptionAmount);
+        // _redeemCollateral(user4, redemptionAmount);
+        vars.price = troveManagerBeaconProxy.fetchPrice();
+        (vars.firstRedemptionHint, vars.partialRedemptionHintNICR, vars.truncatedDebtAmount) =
+            hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, vars.price, 0);
+        (address hintAddress,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
+
+        (vars.upperPartialRedemptionHint, vars.lowerPartialRedemptionHint) =
+            sortedTrovesBeaconProxy.findInsertPosition(vars.partialRedemptionHintNICR, hintAddress, hintAddress);
+
+        // redeem
+        vm.startPrank(user4);
+        troveManagerBeaconProxy.redeemCollateral(
+            vars.truncatedDebtAmount,
+            vars.firstRedemptionHint,
+            vars.upperPartialRedemptionHint,
+            vars.lowerPartialRedemptionHint,
+            vars.partialRedemptionHintNICR,
+            0,
+            maxFeePercentage
+        );
+        vm.stopPrank();
+        
 
         // check user3 closed, and user1, user2, user4 active
         assertFalse(sortedTrovesBeaconProxy.contains(user3));

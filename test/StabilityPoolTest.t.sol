@@ -611,4 +611,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         assertEq(collGainBefore, collateralMock.balanceOf(user1));
     }
+
+    function test_startCollateralSunset () public {
+        vm.startPrank(OWNER);
+        stabilityPoolProxy.startCollateralSunset(collateralMock);
+
+        assertEq(stabilityPoolProxy.indexByCollateral(collateralMock), 0);
+    }
 }
