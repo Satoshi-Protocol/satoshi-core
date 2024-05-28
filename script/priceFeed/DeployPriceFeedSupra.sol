@@ -28,10 +28,10 @@ contract DeployPriceFeedSupraScript is Script {
 
         ISupraSValueFeed source = ISupraSValueFeed(SUPRA_ORACLE_PRICE_FEED_SOURCE_ADDRESS);
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
-        priceFeedAPI3Oracle =
-            new PriceFeedAPI3Oracle(source, API3_ORACLE_PRICE_FEED_DECIMAL, satoshiCore, API3_MAX_TIME_THRESHOLD);
-        assert(priceFeedAPI3Oracle.fetchPrice() > 0);
-        console.log("PriceFeedAPI3Oracle deployed at:", address(priceFeedAPI3Oracle));
+        priceFeedSupraOracle =
+            new PriceFeedSupraOracle(satoshiCore, source, SUPRA_ORACLE_PRICE_FEED_DECIMAL, SUPRA_MAX_TIME_THRESHOLD, SUPRA_ORACLE_PAIR_INDEX);
+        assert(priceFeedSupraOracle.fetchPrice() > 0);
+        console.log("PriceFeedAPI3Oracle deployed at:", address(priceFeedSupraOracle));
 
         vm.stopBroadcast();
     }
