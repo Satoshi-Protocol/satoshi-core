@@ -5,7 +5,14 @@ import {Test, console, Vm} from "forge-std/Test.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
 import {
-    DEPLOYER, OWNER, GUARDIAN, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEIVER, _1_MILLION
+    DEPLOYER,
+    OWNER,
+    GUARDIAN,
+    GAS_COMPENSATION,
+    TestConfig,
+    REWARD_MANAGER,
+    FEE_RECEIVER,
+    _1_MILLION
 } from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
@@ -27,7 +34,6 @@ import {DIAOracleV2} from "../src/mocks/DIAOracleV2.sol";
 import {DataFeedProxy} from "../src/mocks/API3Mock.sol";
 
 contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Events {
-
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;
@@ -55,7 +61,6 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
             updatedAt: block.timestamp,
             answeredInRound: 1
         });
-
     }
 
     function testFetchPrice() public {
@@ -88,7 +93,7 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         assertEq(time, block.timestamp);
         assertEq(IPriceFeed(priceFeed).decimals(), decimals);
         assertEq(IPriceFeed(priceFeed).source(), oracleMockAddr);
-        
+
         vm.startPrank(OWNER);
         IPriceFeed(priceFeed).updateMaxTimeThreshold(150);
         assertEq(IPriceFeed(priceFeed).maxTimeThreshold(), 150);
@@ -101,7 +106,9 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         DIAOracleV2 diaSource = new DIAOracleV2();
         uint128 answer = 50000e8;
         diaSource.setValue("BTC/USD", answer, uint128(block.timestamp));
-        address priceFeed = _deployPriceFeedDIA(DEPLOYER, IDIAOracleV2(address(diaSource)), satoshiCore, ORACLE_MOCK_DECIMALS, "BTC/USD", 200);
+        address priceFeed = _deployPriceFeedDIA(
+            DEPLOYER, IDIAOracleV2(address(diaSource)), satoshiCore, ORACLE_MOCK_DECIMALS, "BTC/USD", 200
+        );
         assertEq(IPriceFeed(priceFeed).fetchPrice(), answer);
         (uint256 price, uint256 time) = IPriceFeed(priceFeed).fetchPriceUnsafe();
         assertEq(price, answer);
@@ -125,7 +132,8 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         uint128 answer = 50000e8;
         DataFeedProxy api3Source = new DataFeedProxy();
         api3Source.updatePrice(int224(uint224(answer)));
-        address priceFeed = _deployPriceFeedAPI3(DEPLOYER, IProxy(address(api3Source)), ORACLE_MOCK_DECIMALS, satoshiCore, 200);
+        address priceFeed =
+            _deployPriceFeedAPI3(DEPLOYER, IProxy(address(api3Source)), ORACLE_MOCK_DECIMALS, satoshiCore, 200);
         assertEq(IPriceFeed(priceFeed).fetchPrice(), uint256(answer));
         (uint256 price, uint256 time) = IPriceFeed(priceFeed).fetchPriceUnsafe();
         assertEq(price, uint256(answer));
@@ -176,6 +184,4 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         assertEq(price, 50000e18);
         assertEq(lastUpdated, block.timestamp);
     }
-
-    
 }

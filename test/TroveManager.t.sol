@@ -5,7 +5,15 @@ import {Test, console, Vm} from "forge-std/Test.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
 import {
-    DEPLOYER, OWNER, GUARDIAN, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEIVER, _1_MILLION, INTEREST_RATE_IN_BPS
+    DEPLOYER,
+    OWNER,
+    GUARDIAN,
+    GAS_COMPENSATION,
+    TestConfig,
+    REWARD_MANAGER,
+    FEE_RECEIVER,
+    _1_MILLION,
+    INTEREST_RATE_IN_BPS
 } from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
@@ -17,7 +25,6 @@ import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITrov
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 
 contract TroveManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
-
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;
@@ -99,7 +106,7 @@ contract TroveManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_getRedemptionFeeWithDecay() public {
         assertEq(troveManagerBeaconProxy.getRedemptionFeeWithDecay(1000e18), 1000e18 / 200);
     }
-     
+
     function test_getTroveStake() public {
         _openTrove(OWNER, 1e18, 1000e18);
         assertEq(troveManagerBeaconProxy.getTroveStake(OWNER), 1e18);
@@ -110,7 +117,11 @@ contract TroveManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(troveManagerBeaconProxy.getEntireSystemDebt(), 1000e18 + 1000e18 / 200 + GAS_COMPENSATION);
 
         vm.warp(block.timestamp + 365 days);
-        assertApproxEqAbs(troveManagerBeaconProxy.getEntireSystemDebt(), (1000e18 + 1000e18 / 200 + GAS_COMPENSATION) * (10000 + INTEREST_RATE_IN_BPS) / 10000, 10);
+        assertApproxEqAbs(
+            troveManagerBeaconProxy.getEntireSystemDebt(),
+            (1000e18 + 1000e18 / 200 + GAS_COMPENSATION) * (10000 + INTEREST_RATE_IN_BPS) / 10000,
+            10
+        );
     }
 
     function test_setPause() public {

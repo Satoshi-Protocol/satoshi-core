@@ -5,7 +5,14 @@ import {Test, console, Vm} from "forge-std/Test.sol";
 import {DeployBase, LocalVars} from "./utils/DeployBase.t.sol";
 import {HintLib} from "./utils/HintLib.sol";
 import {
-    DEPLOYER, OWNER, GUARDIAN, GAS_COMPENSATION, TestConfig, REWARD_MANAGER, FEE_RECEIVER, _1_MILLION
+    DEPLOYER,
+    OWNER,
+    GUARDIAN,
+    GAS_COMPENSATION,
+    TestConfig,
+    REWARD_MANAGER,
+    FEE_RECEIVER,
+    _1_MILLION
 } from "./TestConfig.sol";
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
@@ -17,7 +24,6 @@ import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITrov
 import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 
 contract SatoshiCoreTest is Test, DeployBase, TroveBase, TestConfig, Events {
-
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;

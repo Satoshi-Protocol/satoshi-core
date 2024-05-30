@@ -17,7 +17,13 @@ contract PriceFeedSupraOracle is IPriceFeed, SatoshiOwnable {
     uint256 public maxTimeThreshold;
     uint256 internal pairIndex;
 
-    constructor(ISatoshiCore _satoshiCore, ISupraSValueFeed source_, uint8 decimals_,  uint256 _maxTimeThreshold, uint256 _pairIndex) {
+    constructor(
+        ISatoshiCore _satoshiCore,
+        ISupraSValueFeed source_,
+        uint8 decimals_,
+        uint256 _maxTimeThreshold,
+        uint256 _pairIndex
+    ) {
         __SatoshiOwnable_init(_satoshiCore);
         _source = source_;
         _decimals = decimals_;

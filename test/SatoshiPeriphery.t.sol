@@ -29,6 +29,7 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
     address user2;
     address user3;
     address user4;
+
     struct LiquidationVars {
         uint256 entireTroveDebt;
         uint256 entireTroveColl;
@@ -528,7 +529,9 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
             GAS_COMPENSATION
         );
         // tx execution
-        satoshiPeriphery.withdrawCollWithPythPriceUpdate(troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint, new bytes[](0));
+        satoshiPeriphery.withdrawCollWithPythPriceUpdate(
+            troveManagerBeaconProxy, vars.withdrawCollAmt, vars.upperHint, vars.lowerHint, new bytes[](0)
+        );
 
         // state after
         vars.userBalanceAfter = user.balance;
@@ -682,7 +685,12 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
         );
         // tx execution
         satoshiPeriphery.withdrawDebtWithPythPriceUpdate(
-            troveManagerBeaconProxy, vars.maxFeePercentage, vars.withdrawDebtAmt, vars.upperHint, vars.lowerHint, new bytes[](0)
+            troveManagerBeaconProxy,
+            vars.maxFeePercentage,
+            vars.withdrawDebtAmt,
+            vars.upperHint,
+            vars.lowerHint,
+            new bytes[](0)
         );
 
         // state after
@@ -838,7 +846,9 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
         );
 
         // tx execution
-        satoshiPeriphery.repayDebtWithPythPriceUpdate(troveManagerBeaconProxy, vars.repayDebtAmt, vars.upperHint, vars.lowerHint, new bytes[](0));
+        satoshiPeriphery.repayDebtWithPythPriceUpdate(
+            troveManagerBeaconProxy, vars.repayDebtAmt, vars.upperHint, vars.lowerHint, new bytes[](0)
+        );
 
         // state after
         vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user);
@@ -1524,9 +1534,9 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
         vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
-        
+
         vm.stopPrank();
-        
+
         vm.warp(block.timestamp + 14 days);
         // price drop
         _updateRoundData(
@@ -1537,14 +1547,15 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
                 answeredInRound: 1
             })
         );
-    
+
         uint256 redemptionAmount = 500e18;
         deal(address(debtTokenProxy), user2, redemptionAmount);
 
         vars.price = troveManagerBeaconProxy.fetchPrice();
         (vars.firstRedemptionHint, vars.partialRedemptionHintNICR, vars.truncatedDebtAmount) =
             hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, vars.price, 0);
-        (address hintAddress,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
+        (address hintAddress,,) =
+            hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
 
         (vars.upperPartialRedemptionHint, vars.lowerPartialRedemptionHint) =
             sortedTrovesBeaconProxy.findInsertPosition(vars.partialRedemptionHintNICR, hintAddress, hintAddress);
@@ -1608,9 +1619,9 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
         vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
         vars.userBalanceBefore = user.balance;
         vars.troveManagerCollateralAmtBefore = weth.balanceOf(address(troveManagerBeaconProxy));
-        
+
         vm.stopPrank();
-        
+
         vm.warp(block.timestamp + 14 days);
         // price drop
         _updateRoundData(
@@ -1621,14 +1632,15 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
                 answeredInRound: 1
             })
         );
-        
+
         vars.userBalanceBefore = user2.balance;
         uint256 redemptionAmount = 500e18;
         deal(address(debtTokenProxy), user2, redemptionAmount);
         vars.price = troveManagerBeaconProxy.fetchPrice();
         (vars.firstRedemptionHint, vars.partialRedemptionHintNICR, vars.truncatedDebtAmount) =
             hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, vars.price, 0);
-        (address hintAddress,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
+        (address hintAddress,,) =
+            hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
 
         (vars.upperPartialRedemptionHint, vars.lowerPartialRedemptionHint) =
             sortedTrovesBeaconProxy.findInsertPosition(vars.partialRedemptionHintNICR, hintAddress, hintAddress);
@@ -1813,7 +1825,9 @@ contract SatoshiPeripheryTest is Test, DeployBase, TroveBase, TestConfig, Events
         vars.debtGasCompensation = GAS_COMPENSATION;
 
         vm.prank(user4);
-        satoshiPeriphery.liquidateTrovesWithPythPriceUpdate(liquidationManagerProxy, troveManagerBeaconProxy, 1, 110e18, new bytes[](0));
+        satoshiPeriphery.liquidateTrovesWithPythPriceUpdate(
+            liquidationManagerProxy, troveManagerBeaconProxy, 1, 110e18, new bytes[](0)
+        );
 
         (uint256 coll2, uint256 debt2) = troveManagerBeaconProxy.getTroveCollAndDebt(user2);
         (uint256 coll3, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);

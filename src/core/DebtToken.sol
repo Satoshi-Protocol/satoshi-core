@@ -44,6 +44,22 @@ contract DebtToken is IDebtToken, SatoshiOwnable, UUPSUpgradeable, ERC20Upgradea
     // Amount of debt to be locked in gas pool on opening troves
     uint256 public DEBT_GAS_COMPENSATION;
 
+    // --- Auth ---
+    mapping(address => bool) public wards;
+
+    function rely(address usr) external onlyOwner {
+        wards[usr] = true;
+    }
+
+    function deny(address usr) external onlyOwner {
+        wards[usr] = false;
+    }
+
+    modifier auth() {
+        require(wards[msg.sender], "DebtToken: not-authorized");
+        _;
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -103,14 +119,14 @@ contract DebtToken is IDebtToken, SatoshiOwnable, UUPSUpgradeable, ERC20Upgradea
 
     function mint(address _account, uint256 _amount) external {
         require(
-            msg.sender == address(borrowerOperations) || troveManager[ITroveManager(msg.sender)],
-            "Debt: Caller not BO/TM"
+            msg.sender == address(borrowerOperations) || troveManager[ITroveManager(msg.sender)] || wards[msg.sender],
+            "Debt: Caller not BO/TM/auth"
         );
         _mint(_account, _amount);
     }
 
     function burn(address _account, uint256 _amount) external {
-        require(troveManager[ITroveManager(msg.sender)], "Debt: Caller not TroveManager");
+        require(troveManager[ITroveManager(msg.sender)] || wards[msg.sender], "Debt: Caller not TroveManager or auth");
         _burn(_account, _amount);
     }
 

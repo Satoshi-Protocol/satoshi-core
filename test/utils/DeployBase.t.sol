@@ -560,16 +560,31 @@ abstract contract DeployBase is Test {
         return priceFeedChainlinkAddr;
     }
 
-    function _deployPriceFeedDIA(address deployer, IDIAOracleV2 oracle, ISatoshiCore _satoshiCore, uint8 _decimals, string memory _key, uint256 _maxTimeThreshold) internal returns (address) {
+    function _deployPriceFeedDIA(
+        address deployer,
+        IDIAOracleV2 oracle,
+        ISatoshiCore _satoshiCore,
+        uint8 _decimals,
+        string memory _key,
+        uint256 _maxTimeThreshold
+    ) internal returns (address) {
         vm.startPrank(deployer);
-        address priceFeedDIAAddr = address(new PriceFeedDIAOracle(oracle, _decimals, _key, _satoshiCore, _maxTimeThreshold));
+        address priceFeedDIAAddr =
+            address(new PriceFeedDIAOracle(oracle, _decimals, _key, _satoshiCore, _maxTimeThreshold));
         vm.stopPrank();
         return priceFeedDIAAddr;
     }
 
-    function _deployPriceFeedAPI3(address deployer, IProxy _oracle, uint8 _decimals, ISatoshiCore _satoshiCore, uint256 _maxTimeThreshold) internal returns (address) {
+    function _deployPriceFeedAPI3(
+        address deployer,
+        IProxy _oracle,
+        uint8 _decimals,
+        ISatoshiCore _satoshiCore,
+        uint256 _maxTimeThreshold
+    ) internal returns (address) {
         vm.startPrank(deployer);
-        address priceFeedAPI3Addr = address(new PriceFeedAPI3Oracle(_oracle, _decimals, _satoshiCore, _maxTimeThreshold));
+        address priceFeedAPI3Addr =
+            address(new PriceFeedAPI3Oracle(_oracle, _decimals, _satoshiCore, _maxTimeThreshold));
         vm.stopPrank();
         return priceFeedAPI3Addr;
     }

@@ -199,7 +199,8 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vars.price = troveManagerBeaconProxy.fetchPrice();
         (vars.firstRedemptionHint, vars.partialRedemptionHintNICR, vars.truncatedDebtAmount) =
             hintHelpers.getRedemptionHints(troveManagerBeaconProxy, redemptionAmount, vars.price, 0);
-        (address hintAddress,,) = hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
+        (address hintAddress,,) =
+            hintHelpers.getApproxHint(troveManagerBeaconProxy, vars.partialRedemptionHintNICR, 10, 42);
 
         (vars.upperPartialRedemptionHint, vars.lowerPartialRedemptionHint) =
             sortedTrovesBeaconProxy.findInsertPosition(vars.partialRedemptionHintNICR, hintAddress, hintAddress);
@@ -216,7 +217,6 @@ contract RedeemTest is Test, DeployBase, TroveBase, TestConfig, Events {
             maxFeePercentage
         );
         vm.stopPrank();
-        
 
         // check user3 closed, and user1, user2, user4 active
         assertFalse(sortedTrovesBeaconProxy.contains(user3));

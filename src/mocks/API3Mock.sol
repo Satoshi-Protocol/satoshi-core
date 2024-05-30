@@ -9,7 +9,6 @@ pragma solidity ^0.8.0;
 /// ProxyFactory, you are recommended to implement an equivalent validation.
 /// @dev See DapiProxy.sol for comments about usage
 contract DataFeedProxy {
-
     int224 internal value;
     uint32 internal timestamp;
 
@@ -23,11 +22,7 @@ contract DataFeedProxy {
     /// @notice Reads the data feed that this proxy maps to
     /// @return value Data feed value
     /// @return timestamp Data feed timestamp
-    function read()
-        external
-        view
-        returns (int224, uint32)
-    {
+    function read() external view returns (int224, uint32) {
         return (value, timestamp);
     }
 }
