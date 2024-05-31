@@ -194,7 +194,6 @@ contract DeploySetupTest is Test, DeployBase {
             IBeacon(cpSortedTrovesBeaconAddr),
             IBeacon(cpTroveManagerBeaconAddr),
             ICommunityIssuance(cpCommunityIssuanceProxyAddr),
-            IRewardManager(cpRewardManagerProxyAddr),
             GAS_COMPENSATION
         );
 

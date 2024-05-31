@@ -39,7 +39,6 @@ contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
     IBeacon public troveManagerBeacon;
     uint256 public gasCompensation;
     ICommunityIssuance public communityIssuance;
-    IRewardManager public rewardManager;
     ITroveManager[] public troveManagers;
 
     uint128 public constant maxRewardRate = 126839167935058336; //  (20_000_000e18 / (5 * 31536000))
@@ -65,7 +64,6 @@ contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
         IBeacon _sortedTrovesBeacon,
         IBeacon _troveManagerBeacon,
         ICommunityIssuance _communityIssuance,
-        IRewardManager _rewardManager,
         uint256 _gasCompensation
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
@@ -81,7 +79,6 @@ contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
         troveManagerBeacon = _troveManagerBeacon;
         gasCompensation = _gasCompensation;
         communityIssuance = _communityIssuance;
-        rewardManager = _rewardManager;
     }
 
     function troveManagerCount() external view returns (uint256) {

@@ -58,8 +58,6 @@ contract DeployInstanceScript is Script {
         assert(address(communityIssuance) != address(0));
         debtToken = factory.debtToken();
         assert(address(debtToken) != address(0));
-        rewardManager = factory.rewardManager();
-        assert(address(rewardManager) != address(0));
         deploymentParams = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,

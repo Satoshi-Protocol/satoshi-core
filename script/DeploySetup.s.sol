@@ -299,7 +299,6 @@ contract DeploySetupScript is Script {
                 IBeacon(cpSortedTrovesBeaconAddr),
                 IBeacon(cpTroveManagerBeaconAddr),
                 ICommunityIssuance(cpCommunityIssuanceProxyAddr),
-                IRewardManager(cpRewardManagerProxyAddr),
                 GAS_COMPENSATION
             )
         );
