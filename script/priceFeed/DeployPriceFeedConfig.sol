@@ -2,11 +2,11 @@
 pragma solidity ^0.8.13;
 
 /* Satoshi Core Address */
-address constant SATOSHI_CORE_ADDRESS = 0x03ca0C7ce1BeC001b9B28e206db409973e93Da85;
+address constant SATOSHI_CORE_ADDRESS = 0x6401446A7f9989158F8BD65aeed43332eeFd5216;
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
-address constant CHAINLINK_PRICE_FEED_SOURCE_ADDRESS = 0x4c99AD68C293A9de0Cc04B86B6B87AeAFd90F989;
+address constant CHAINLINK_PRICE_FEED_SOURCE_ADDRESS = 0xafB68Ec2aA21B5c2D2A408792eaD54a7AC8fC197;
 
 /* DIA Oracle Integration Config */
 //NOTE: DIA oracle source address

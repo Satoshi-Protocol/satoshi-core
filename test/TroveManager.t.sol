@@ -158,4 +158,14 @@ contract TroveManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         troveManagerBeaconProxy.collectInterests();
         assertGt(debtTokenProxy.balanceOf(address(rewardManagerProxy)), 0);
     }
+
+    function test_removeTroveManager() public {
+        vm.expectRevert("Trove Manager cannot be removed");
+        borrowerOperationsProxy.removeTroveManager(troveManagerBeaconProxy);
+
+        vm.prank(OWNER);
+        troveManagerBeaconProxy.startSunset();
+
+        borrowerOperationsProxy.removeTroveManager(troveManagerBeaconProxy);
+    }
 }

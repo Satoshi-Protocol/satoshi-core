@@ -61,4 +61,6 @@ interface IDebtToken is IERC20Upgradeable {
         IGasPool _gasPool,
         uint256 _gasCompensation
     ) external;
+
+    function wards(address) external view returns (bool);
 }

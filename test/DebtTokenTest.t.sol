@@ -240,4 +240,24 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(debtToken.balanceOf(satoshiCore.rewardManager()), 9e18);
         assertEq(debtToken.totalSupply() - 9e18, totalSupplyBefore);
     }
+
+    function test_relyAndDeny() public {
+        vm.expectRevert("Only owner");
+        debtToken.rely(address(this));
+
+        vm.startPrank(OWNER);
+        debtToken.rely(address(this));
+
+        assertEq(debtToken.wards(address(this)), true);
+
+        debtToken.deny(address(this));
+        assertEq(debtToken.wards(address(this)), false);
+
+        vm.stopPrank();
+    }
+
+    function testFlashFee() public {
+        assertEq(debtToken.flashFee(address(0), 1000e18), 0);
+        assertEq(debtToken.flashFee(address(debtToken), 1000e18), 1000e18 * 9 / 10000);
+    }
 }

@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-address constant SATOSHI_CORE_OWNER = 0xE79c8DBe6D08b85C7B47140C8c10AF5C62678b4a;
-address constant SATOSHI_CORE_GUARDIAN = 0x9802b73e7F8BCe57262D537c30521897C07E541C;
-address constant SATOSHI_CORE_FEE_RECEIVER = 0x7af1d463627FC62decdEA0826A306eE7660821E8;
+address constant SATOSHI_CORE_OWNER = 0xD17FF2e991616BC759981152B8E5B57c8Fddb15C;
+address constant SATOSHI_CORE_GUARDIAN = 0x1B83eC3584e1060f0Ece74F672Aee480df5C5BF1;
+address constant SATOSHI_CORE_FEE_RECEIVER = 0x48Af21dB49928a168599451ecC34Bca1B12F5F13;
 
-uint256 constant BO_MIN_NET_DEBT = 10e18; // 10 SAT
-uint256 constant GAS_COMPENSATION = 2e18; // 2 SAT
+uint256 constant BO_MIN_NET_DEBT = 100e18; // 100 SAT
+uint256 constant GAS_COMPENSATION = 10e18; // 10 SAT
 
 string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
-// @todo check this WNT address
-address constant WETH_ADDRESS = 0x2DcA0825F0d5E900c1522a9A2362237BbaAecbb4;
+address constant WETH_ADDRESS = 0xfF204e2681A6fA0e2C3FaDe68a1B28fb90E4Fc5F;
+// bitlayer testnet
+// address constant WETH_ADDRESS = 0x3e57d6946f893314324C975AA9CEBBdF3232967E;
 // @todo this is core pyth testnet address
 address constant PYTH_ADDRESS = 0x8D254a21b3C86D32F7179855531CE99164721933;
 
@@ -20,4 +21,4 @@ address constant PYTH_ADDRESS = 0x8D254a21b3C86D32F7179855531CE99164721933;
 uint32 constant SP_CLAIM_START_TIME = 4294967295; // max uint32
 // OSHI token initial allocation
 uint256 constant _1_MILLION = 1e24; // 1e6 * 1e18 = 1e24
-uint256 constant SP_ALLOCATION = 10 * _1_MILLION; // 10,000,000 OSHI (10% of total supply)
+uint256 constant SP_ALLOCATION = 0; // 10,000,000 OSHI (10% of total supply)

@@ -31,7 +31,8 @@ import {
     REWARD_RATE,
     OSHI_TOKEN_ADDRESS,
     TM_ALLOCATION,
-    TM_CLAIM_START_TIME
+    TM_CLAIM_START_TIME,
+    REWARD_MANAGER_ADDRESS
 } from "./DeployInstanceConfig.sol";
 
 contract DeployInstanceScript is Script {
@@ -58,6 +59,8 @@ contract DeployInstanceScript is Script {
         assert(address(communityIssuance) != address(0));
         debtToken = factory.debtToken();
         assert(address(debtToken) != address(0));
+        rewardManager = IRewardManager(REWARD_MANAGER_ADDRESS);
+        assert(address(rewardManager) != address(0));
         deploymentParams = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,
