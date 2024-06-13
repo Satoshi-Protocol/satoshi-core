@@ -10,6 +10,7 @@ import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IPegStability} from "../interfaces/core/IPegStability.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
+import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 
@@ -34,7 +35,7 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     /// @notice The value representing one dollar in the stable token.
     /// @dev Our oracle is returning amount depending on the number of decimals of the stable token. (36 - asset_decimals) E.g. 8 decimal asset = 1e28.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    uint256 public immutable ONE_DOLLAR;
+    uint256 public constant ONE_DOLLAR = 1e18;
 
     IDebtToken immutable public SAT;
 
@@ -79,7 +80,6 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         _ensureNonzeroAddress(stableTokenAddress_);
         _ensureNonzeroAddress(SATAddress_);
 
-        ONE_DOLLAR = 10 ** 18; // 1$ scaled to the decimals returned by our Oracle
         STABLE_TOKEN_ADDRESS = stableTokenAddress_;
         SAT = IDebtToken(SATAddress_);
         _disableInitializers();
@@ -198,9 +198,11 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         // mint SAT to receiver
         SAT.mint(receiver, SATToMint);
 
-        // mint SAT fee to venus treasury
+        // mint SAT fee to rewardManager
         if (fee != 0) {
-            SAT.mint(rewardManagerAddr, fee);
+            SAT.mint(address(this), fee);
+            SAT.approve(rewardManagerAddr, fee);
+            IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
         emit StableForSATSwapped(actualTransferAmt, SATToMint, fee);

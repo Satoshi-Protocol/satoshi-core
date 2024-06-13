@@ -63,4 +63,8 @@ interface IDebtToken is IERC20Upgradeable {
     ) external;
 
     function wards(address) external view returns (bool);
+
+    function rely(address) external;
+
+    function deny(address) external;
 }

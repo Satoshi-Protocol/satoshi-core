@@ -34,6 +34,7 @@ import {PriceFeedPythOracle} from "../../src/dependencies/priceFeed/PriceFeedPyt
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
+import {PegStability} from "../../src/core/PegStability.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -51,6 +52,7 @@ import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiPeriphery} from "../../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
+import {IPegStability} from "../../src/interfaces/core/IPegStability.sol";
 import {IDIAOracleV2} from "../../src/interfaces/dependencies/priceFeed/IDIAOracleV2.sol";
 import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {IProxy} from "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.sol";
@@ -135,6 +137,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuanceImpl;
     IOSHIToken oshiTokenImpl;
     ISatoshiLPFactory satoshiLPFactoryImpl;
+    IPegStability pegStabilityImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
@@ -149,6 +152,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuanceProxy;
     IOSHIToken oshiTokenProxy;
     ISatoshiLPFactory satoshiLPFactoryProxy;
+    IPegStability pegStabilityProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
@@ -511,6 +515,24 @@ abstract contract DeployBase is Test {
             (ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr))
         );
         satoshiLPFactoryProxy = ISatoshiLPFactory(address(new ERC1967Proxy(address(satoshiLPFactoryImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployPegStabilityProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        pegStabilityImpl = new PegStability(address(collateralMock), cpDebtTokenProxyAddr);
+        assert(pegStabilityImpl != IPegStability(address(0)));
+        assert(pegStabilityProxy == IPegStability(address(0)));
+        bytes memory data = abi.encodeCall(
+            IPegStability.initialize,
+            (satoshiCore,
+            address(rewardManagerProxy),
+            address(priceFeedAggregatorProxy),
+            0,
+            0,
+            1e19)
+        );
+        pegStabilityProxy = IPegStability(address(new ERC1967Proxy(address(pegStabilityImpl), data)));
         vm.stopPrank();
     }
 
