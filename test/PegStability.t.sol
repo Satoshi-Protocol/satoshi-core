@@ -15,6 +15,7 @@ import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 import {INTEREST_RATE_IN_BPS} from "./TestConfig.sol";
+import {IPegStability} from "../src/interfaces/core/IPegStability.sol";
 
 contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
@@ -50,8 +51,10 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // deploy peg stability module contract
         _deployPegStabilityProxy(DEPLOYER);
 
-        vm.prank(OWNER);
+        vm.startPrank(OWNER);
         debtTokenProxy.rely(address(pegStabilityProxy));
+        rewardManagerProxy.setWhitelistCaller(address(pegStabilityProxy), true);
+        vm.stopPrank();
     }
 
     // utils
@@ -173,14 +176,65 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
-    // function test_previewSwapSATForStable() public {
-    //     assertEq(pegStabilityProxy.previewSwapSATForStable(1e18), 1e18);
-    // }
+    function test_previewSwapSATForStable() public {
+        deal(address(collateralMock), user1, 100e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(pegStabilityProxy), 100e18);
+        pegStabilityProxy.swapStableForSAT(user1, 100e18);
+        uint256 amount = 1e18;
+        uint256 fee = amount * pegStabilityProxy.feeOut() / pegStabilityProxy.BASIS_POINTS_DIVISOR();
+        assertEq(pegStabilityProxy.previewSwapSATForStable(amount), amount + fee);
+
+        vm.stopPrank();
+    }
 
     function test_previewSwapStableForSAT() public {
         uint256 amount = 1e18;
         uint256 fee = amount * pegStabilityProxy.feeIn() / pegStabilityProxy.BASIS_POINTS_DIVISOR();
-        assertEq(pegStabilityProxy.previewSwapStableForSAT(1e18), 1e18 - fee);
+        assertEq(pegStabilityProxy.previewSwapStableForSAT(amount), amount - fee);
     }
 
+    function test_scheduleSwapSATForStable() public {
+        deal(address(collateralMock), user1, 100e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(pegStabilityProxy), 100e18);
+        pegStabilityProxy.swapStableForSAT(user1, 100e18);
+
+        uint256 amount = 1e18;
+        uint256 fee = amount * pegStabilityProxy.feeOut() / pegStabilityProxy.BASIS_POINTS_DIVISOR();
+        debtTokenProxy.approve(address(pegStabilityProxy), amount + fee);
+        pegStabilityProxy.scheduleSwapSATForStable(amount);
+        // try to withdraw => should fail
+        vm.expectRevert(IPegStability.WithdrawalNotAvailable.selector);
+        pegStabilityProxy.withdrawStable();
+
+        vm.warp(block.timestamp + pegStabilityProxy.swapWaitingPeriod());
+        pegStabilityProxy.withdrawStable();
+        assertEq(collateralMock.balanceOf(user1), amount);
+        vm.stopPrank();
+    }
+
+    function test_scheduleTwice() public {
+        deal(address(collateralMock), user1, 100e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(pegStabilityProxy), 100e18);
+        pegStabilityProxy.swapStableForSAT(user1, 100e18);
+
+        uint256 amount = 1e18;
+        uint256 fee = amount * pegStabilityProxy.feeOut() / pegStabilityProxy.BASIS_POINTS_DIVISOR();
+        debtTokenProxy.approve(address(pegStabilityProxy), amount + fee);
+        pegStabilityProxy.scheduleSwapSATForStable(amount);
+
+        vm.expectRevert(IPegStability.WithdrawalAlreadyScheduled.selector);
+        pegStabilityProxy.scheduleSwapSATForStable(amount);
+    }
+
+    function test_mintCapReached() public {
+        deal(address(collateralMock), user1, 10000e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(pegStabilityProxy), 10000e18);
+        vm.expectRevert(IPegStability.SATMintCapReached.selector);
+        pegStabilityProxy.swapStableForSAT(user1, 10000e18);
+        vm.stopPrank();
+    }
 }

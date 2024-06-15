@@ -158,11 +158,9 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         uint256 actualTransferAmt = balanceAfter - balanceBefore;
         // convert to decimal 18
         uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(actualTransferAmt);
-        console.log("actualTransferAmtInUSD: ", actualTransferAmtInUSD);
 
         // calculate feeIn
         uint256 fee = _calculateFee(actualTransferAmtInUSD, FeeDirection.IN);
-        console.log("fee: ", fee);
         uint256 SATToMint = actualTransferAmtInUSD - fee;
 
         if (satMinted + actualTransferAmtInUSD > satMintCap) {
