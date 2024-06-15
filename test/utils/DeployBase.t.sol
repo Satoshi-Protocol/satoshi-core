@@ -528,9 +528,10 @@ abstract contract DeployBase is Test {
             (satoshiCore,
             address(rewardManagerProxy),
             address(priceFeedAggregatorProxy),
-            0,
-            0,
-            1e19)
+            10,
+            10,
+            1000e18,
+            3 days)
         );
         pegStabilityProxy = IPegStability(address(new ERC1967Proxy(address(pegStabilityImpl), data)));
         vm.stopPrank();

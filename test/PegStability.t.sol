@@ -85,17 +85,102 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
-    function test_swapStableForSAT() public {
+    function test_swapInAndOut_noFee() public {
         // assume collateral is the stable coin
         deal(address(collateralMock), user1, 100e18);
 
+        vm.prank(OWNER);
+        pegStabilityProxy.setPrivileged(user1, true);
+
         vm.startPrank(user1);
         collateralMock.approve(address(pegStabilityProxy), 1e18);
-        pegStabilityProxy.swapStableForSAT(user1, 1e18);
+        pegStabilityProxy.swapStableForSATPrivileged(user1, 1e18);
 
         // check user1 sat balance
         assertEq(debtTokenProxy.balanceOf(user1), 1e18);
 
+        // swap out 
+        pegStabilityProxy.swapSATForStablePrivileged(user1, 1e18);
+        assertEq(collateralMock.balanceOf(user1), 100e18);
+
         vm.stopPrank();
     }
+
+    function test_pause() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.pause();
+        assertTrue(pegStabilityProxy.isPaused());
+    }
+
+    function test_resume() public {
+        vm.startPrank(OWNER);
+        pegStabilityProxy.pause();
+        assertTrue(pegStabilityProxy.isPaused());
+        pegStabilityProxy.resume();
+        assertFalse(pegStabilityProxy.isPaused());
+        vm.stopPrank();
+    }
+
+    function test_setFeeIn() public {
+        vm.startPrank(OWNER);
+        pegStabilityProxy.setFeeIn(100);
+        assertEq(pegStabilityProxy.feeIn(), 100);
+        vm.stopPrank();
+    }
+
+    function test_setFeeOut() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.setFeeOut(100);
+        assertEq(pegStabilityProxy.feeOut(), 100);
+    }
+
+    function test_setSATMintCap() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.setSATMintCap(100e18);
+        assertEq(pegStabilityProxy.satMintCap(), 100e18);
+    }
+
+    function test_setRewardManager() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.setRewardManager(REWARD_MANAGER);
+        assertEq(pegStabilityProxy.rewardManagerAddr(), REWARD_MANAGER);
+    }
+
+    function test_setUsingOracle() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.setUsingOracle(true);
+        assertTrue(pegStabilityProxy.usingOracle());
+    }
+
+    function test_setOracle() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.setOracle(oracleMockAddr);
+        assertEq(address(pegStabilityProxy.oracle()), oracleMockAddr);
+    }
+
+    function test_setSwapWaitingPeriod() public {
+        vm.prank(OWNER);
+        pegStabilityProxy.setSwapWaitingPeriod(2 days);
+        assertEq(pegStabilityProxy.swapWaitingPeriod(), 2 days);
+    }
+
+    function test_transerTokenToPrivilegedVault() public {
+        vm.startPrank(OWNER);
+        deal(address(collateralMock), address(pegStabilityProxy), 100e18);
+        pegStabilityProxy.setPrivileged(user1, true);
+        pegStabilityProxy.transerTokenToPrivilegedVault(address(collateralMock), user1, 100e18);
+        assertEq(collateralMock.balanceOf(user1), 100e18);
+        vm.stopPrank();
+    }
+
+    // function test_previewSwapSATForStable() public {
+    //     assertEq(pegStabilityProxy.previewSwapSATForStable(1e18), 1e18);
+    // }
+
+    function test_previewSwapStableForSAT() public {
+        uint256 amount = 1e18;
+        uint256 fee = amount * pegStabilityProxy.feeIn() / pegStabilityProxy.BASIS_POINTS_DIVISOR();
+        assertEq(pegStabilityProxy.previewSwapStableForSAT(1e18), 1e18 - fee);
+    }
+
 }

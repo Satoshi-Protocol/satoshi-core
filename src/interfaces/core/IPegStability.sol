@@ -39,6 +39,18 @@ interface IPegStability {
     /// @notice Event emitted when stable token is swapped for SAT.
     event SATForStableSwapped(uint256 SATBurnt, uint256 stableOut, uint256 SATFee);
 
+    event UsingOracleSet(bool usingOracle);
+
+    event PrivilegedSet(address privileged, bool isPrivileged);
+
+    event SwapWaitingPeriodSet(uint256 swapWaitingPeriod);
+
+    event WithdrawalScheduled(address indexed user, uint256 amount, uint256 fee);
+
+    event WithdrawStable(address user, uint256 amount);
+
+    event TokenTransferred(address indexed token, address indexed to, uint256 amount);
+
     /// @notice thrown when contract is in paused state
     error Paused();
 
@@ -75,6 +87,12 @@ interface IPegStability {
     /// @notice thrown when fee calculation will result in rounding down to 0 due to stable token amount being a too small number
     error AmountTooSmall();
 
+    error WithdrawalAlreadyScheduled();
+
+    error WithdrawalNotAvailable();
+
+    error NotPrivileged();
+
     function TARGET_DIGITS() external view returns (uint256);
 
     function BASIS_POINTS_DIVISOR() external view returns (uint256);
@@ -107,13 +125,9 @@ interface IPegStability {
         address oracleAddress_,
         uint256 feeIn_,
         uint256 feeOut_,
-        uint256 satMintCap_
+        uint256 satMintCap_,
+        uint256 swapWaitingPeriod_
     ) external;
-
-    function swapSATForStable(
-        address receiver,
-        uint256 stableTknAmount
-    ) external returns (uint256);
 
     function swapStableForSAT(
         address receiver,
@@ -136,10 +150,32 @@ interface IPegStability {
 
     function setOracle(address oracle_) external;
 
-    function transerToken(address token, uint256 amount) external;
+    function setSwapWaitingPeriod(uint256 swapWaitingPeriod_) external;
+
+    function setPrivileged(address account, bool isPrivileged_) external;
+
+    function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external;
 
     function previewSwapSATForStable(uint256 stableTknAmount) external returns (uint256);
 
     function previewSwapStableForSAT(uint256 stableTknAmount) external returns (uint256);
+
+    function swapSATForStablePrivileged(
+        address receiver,
+        uint256 stableTknAmount
+    ) external returns (uint256);
+
+    function swapStableForSATPrivileged(
+        address receiver,
+        uint256 stableTknAmount
+    ) external returns (uint256);
+
+    function scheduleSwapSATForStable(
+        uint256 stableTknAmount
+    ) external returns (uint256);
+
+    function withdrawStable() external;
+
+    function swapWaitingPeriod() external view returns (uint256);
 }
 

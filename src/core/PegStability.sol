@@ -14,6 +14,8 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 
+import {console} from "forge-std/console.sol";
+
 /**
  * @title Peg Stability Module Contract.
  * Mutated from:
@@ -67,11 +69,25 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     /// @notice A flag indicating whether the contract is using an oracle or not.
     bool public usingOracle;
 
+    /// @notice The time used to 
+    uint256 public swapWaitingPeriod;
+
+    mapping (address => bool) public isPrivileged;
+
+    mapping (address => uint32) public withdrawalTime;
+
+    mapping (address => uint256) public scheduledWithdrawalAmount;
+
     /**
      * @dev Prevents functions to execute when contract is paused.
      */
     modifier isActive() {
         if (isPaused) revert Paused();
+        _;
+    }
+
+    modifier onlyPrivileged() {
+        require(isPrivileged[msg.sender], "PegStability: caller is not privileged");
         _;
     }
 
@@ -99,7 +115,8 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         address oracleAddress_,
         uint256 feeIn_,
         uint256 feeOut_,
-        uint256 satMintCap_
+        uint256 satMintCap_,
+        uint256 swapWaitingPeriod_
     ) external initializer {
         __SatoshiOwnable_init(satoshiCore_);
         __ReentrancyGuard_init();
@@ -113,51 +130,10 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         satMintCap = satMintCap_;
         rewardManagerAddr = rewardManagerAddr_;
         oracle = IPriceFeedAggregator(oracleAddress_);
+        swapWaitingPeriod = swapWaitingPeriod_;
     }
 
     /*** Swap Functions ***/
-
-    /**
-     * @notice Swaps SAT for a stable token.
-     * @param receiver The address where the stablecoin will be sent.
-     * @param stableTknAmount The amount of stable tokens to receive.
-     * @return The amount of SAT received and burnt from the sender.
-     */
-    // @custom:event Emits SATForStableSwapped event.
-    function swapSATForStable(
-        address receiver,
-        uint256 stableTknAmount
-    ) external isActive nonReentrant returns (uint256) {
-        _ensureNonzeroAddress(receiver);
-        _ensureNonzeroAmount(stableTknAmount);
-
-        // dec 18
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
-        uint256 fee = _calculateFee(stableTknAmountUSD, FeeDirection.OUT);
-
-        if (SAT.balanceOf(msg.sender) < stableTknAmountUSD + fee) {
-            revert NotEnoughSAT();
-        }
-        if (satMinted < stableTknAmountUSD) {
-            revert SATMintedUnderflow();
-        }
-
-        unchecked {
-            satMinted -= stableTknAmountUSD;
-        }
-
-        if (fee != 0) {
-            bool success = SAT.transferFrom(msg.sender, rewardManagerAddr, fee);
-            if (!success) {
-                revert SATTransferFail();
-            }
-        }
-
-        SAT.burn(msg.sender, stableTknAmountUSD);
-        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransfer(receiver, stableTknAmount);
-        emit SATForStableSwapped(stableTknAmountUSD, stableTknAmount, fee);
-        return stableTknAmountUSD;
-    }
 
     /**
      * @notice Swaps stable tokens for SAT with fees.
@@ -180,12 +156,13 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
 
         // calculate actual transfered amount (in case of fee-on-transfer tokens)
         uint256 actualTransferAmt = balanceAfter - balanceBefore;
-
         // convert to decimal 18
         uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(actualTransferAmt);
+        console.log("actualTransferAmtInUSD: ", actualTransferAmtInUSD);
 
         // calculate feeIn
         uint256 fee = _calculateFee(actualTransferAmtInUSD, FeeDirection.IN);
+        console.log("fee: ", fee);
         uint256 SATToMint = actualTransferAmtInUSD - fee;
 
         if (satMinted + actualTransferAmtInUSD > satMintCap) {
@@ -207,6 +184,138 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
 
         emit StableForSATSwapped(actualTransferAmt, SATToMint, fee);
         return SATToMint;
+    }
+
+    /**
+     * @notice Swaps SAT for a stable token.
+     * @param receiver The address where the stablecoin will be sent.
+     * @param stableTknAmount The amount of stable tokens to receive.
+     * @return The amount of SAT received and burnt from the sender.
+     */
+    // @custom:event Emits SATForStableSwapped event.
+    function swapSATForStablePrivileged(
+        address receiver,
+        uint256 stableTknAmount
+    ) external isActive onlyPrivileged nonReentrant returns (uint256) {
+        _ensureNonzeroAddress(receiver);
+        _ensureNonzeroAmount(stableTknAmount);
+
+        // dec 18
+        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
+
+        if (SAT.balanceOf(msg.sender) < stableTknAmountUSD) {
+            revert NotEnoughSAT();
+        }
+        if (satMinted < stableTknAmountUSD) {
+            revert SATMintedUnderflow();
+        }
+
+        unchecked {
+            satMinted -= stableTknAmountUSD;
+        }
+
+        SAT.burn(msg.sender, stableTknAmountUSD);
+        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransfer(receiver, stableTknAmount);
+        emit SATForStableSwapped(stableTknAmountUSD, stableTknAmount, 0);
+        return stableTknAmountUSD;
+    }
+
+    /**
+     * @notice Swaps stable tokens for SAT.
+     * @dev This function adds support to fee-on-transfer tokens. The actualTransferAmt is calculated, by recording token balance state before and after the transfer.
+     * @param receiver The address that will receive the SAT tokens.
+     * @param stableTknAmount The amount of stable tokens to be swapped.
+     * @return Amount of SAT minted to the sender.
+     */
+    // @custom:event Emits StableForSATSwapped event.
+    function swapStableForSATPrivileged(
+        address receiver,
+        uint256 stableTknAmount
+    ) external isActive onlyPrivileged nonReentrant returns (uint256) {
+        _ensureNonzeroAddress(receiver);
+        _ensureNonzeroAmount(stableTknAmount);
+        // transfer IN, supporting fee-on-transfer tokens
+        uint256 balanceBefore = IERC20Upgradeable(STABLE_TOKEN_ADDRESS).balanceOf(address(this));
+        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), stableTknAmount);
+        uint256 balanceAfter = IERC20Upgradeable(STABLE_TOKEN_ADDRESS).balanceOf(address(this));
+
+        // calculate actual transfered amount (in case of fee-on-transfer tokens)
+        uint256 actualTransferAmt = balanceAfter - balanceBefore;
+
+        // convert to decimal 18
+        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(actualTransferAmt);
+
+        if (satMinted + actualTransferAmtInUSD > satMintCap) {
+            revert SATMintCapReached();
+        }
+        unchecked {
+            satMinted += actualTransferAmtInUSD;
+        }
+
+        // mint SAT to receiver
+        SAT.mint(receiver, actualTransferAmtInUSD);
+
+        emit StableForSATSwapped(actualTransferAmt, actualTransferAmtInUSD, 0);
+        return actualTransferAmtInUSD;
+    }
+
+    /** 
+     * @notice Schedule a swap sat for stable token.
+    */
+    function scheduleSwapSATForStable(
+        uint256 stableTknAmount
+    ) external isActive nonReentrant returns (uint256) {
+        _ensureNonzeroAmount(stableTknAmount);
+
+        if (withdrawalTime[msg.sender] != 0) {
+            revert WithdrawalAlreadyScheduled();
+        }
+
+        withdrawalTime[msg.sender] = uint32(block.timestamp + swapWaitingPeriod);
+
+        // dec 18
+        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
+        uint256 fee = _calculateFee(stableTknAmountUSD, FeeDirection.OUT);
+
+        if (SAT.balanceOf(msg.sender) < stableTknAmountUSD + fee) {
+            revert NotEnoughSAT();
+        }
+        if (satMinted < stableTknAmountUSD) {
+            revert SATMintedUnderflow();
+        }
+
+        unchecked {
+            satMinted -= stableTknAmountUSD;
+        }
+
+        if (fee != 0) {
+            SAT.transferFrom(msg.sender, address(this), fee);
+            SAT.approve(rewardManagerAddr, fee);
+            IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
+        }
+
+        SAT.burn(msg.sender, stableTknAmountUSD);
+        scheduledWithdrawalAmount[msg.sender] = stableTknAmount;
+        emit WithdrawalScheduled(msg.sender, stableTknAmount, fee);
+        return stableTknAmountUSD;
+    }
+
+    function withdrawStable() external {
+        if (withdrawalTime[msg.sender] == 0 || block.timestamp < withdrawalTime[msg.sender]) {
+            revert WithdrawalNotAvailable();
+          }
+      
+        withdrawalTime[msg.sender] = 0;
+        uint256 _amount = scheduledWithdrawalAmount[msg.sender];
+        scheduledWithdrawalAmount[msg.sender] = 0;
+
+        // check the stable is enough
+        if (IERC20(STABLE_TOKEN_ADDRESS).balanceOf(address(this)) < _amount) {
+            revert SATTransferFail();
+        }
+
+        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransfer(msg.sender, _amount);
+        emit WithdrawStable(msg.sender, _amount);
     }
 
     /*** Admin Functions ***/
@@ -288,6 +397,7 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
 
     function setUsingOracle(bool usingOracle_) external onlyOwner {
         usingOracle = usingOracle_;
+        emit UsingOracleSet(usingOracle_);
     }
 
     /**
@@ -303,8 +413,22 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         emit OracleChanged(oldOracleAddress, oracleAddress_);
     }
 
-    function transerToken(address token, uint256 amount) external onlyOwner {
-        IERC20(token).transfer(msg.sender, amount);
+    function setPrivileged(address account, bool isPrivileged_) external onlyOwner {
+        isPrivileged[account] = isPrivileged_;
+        emit PrivilegedSet(account, isPrivileged_);
+    }
+
+    function setSwapWaitingPeriod(uint256 swapWaitingPeriod_) external onlyOwner {
+        swapWaitingPeriod = swapWaitingPeriod_;
+        emit SwapWaitingPeriodSet(swapWaitingPeriod_);
+    }
+
+    function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external onlyOwner {
+        if(!isPrivileged[vault]) {
+            revert NotPrivileged();
+        }
+        IERC20(token).transfer(vault, amount);
+        emit TokenTransferred(token, vault, amount);
     }
 
     /*** Helper Functions ***/
