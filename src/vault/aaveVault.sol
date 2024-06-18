@@ -6,8 +6,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IPSMVault} from "../interfaces/vault/IPSMVault.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {ILendingPool} from "../interfaces/dependencies/vault/ILendingPool.sol";
 
-contract CeffuVault is IPSMVault, SatoshiOwnable, UUPSUpgradeable {
+contract AAVEVault is IPSMVault, SatoshiOwnable, UUPSUpgradeable {
     address public strategyAddr;
     address public psmAddr;
     address public STABLE_TOKEN_ADDRESS;
@@ -39,13 +40,14 @@ contract CeffuVault is IPSMVault, SatoshiOwnable, UUPSUpgradeable {
     }
 
     function executeStrategy(uint256 amount) external onlyOwner {
-        // execute strategy: transfer token to ceffu
-        IERC20(STABLE_TOKEN_ADDRESS).transfer(strategyAddr, amount);
-        emit TokenTransferredToStrategy(amount);
+        // deposit token to lending
+        ILendingPool(strategyAddr).deposit(STABLE_TOKEN_ADDRESS, amount, address(this), 0);
     }
 
-    // todo
-    function exitStrategy(uint256 amount) external onlyOwner {}
+    function exitStrategy(uint256 amount) external onlyOwner {
+        // withdraw token from lending
+        ILendingPool(strategyAddr).withdraw(STABLE_TOKEN_ADDRESS, amount, psmAddr);
+    }
 
     function transferTokenToPSM(uint256 amount) external onlyOwner {
         IERC20(STABLE_TOKEN_ADDRESS).transfer(psmAddr, amount);
