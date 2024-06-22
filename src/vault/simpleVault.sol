@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
-import {IPSMVault} from "../interfaces/vault/IPSMVault.sol";
+import {INYMVault} from "../interfaces/vault/INYMVault.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 
-contract CeffuVault is IPSMVault, SatoshiOwnable, UUPSUpgradeable {
+contract SimpleVault is INYMVault, SatoshiOwnable, UUPSUpgradeable {
     address public strategyAddr;
-    address public psmAddr;
+    address public nymAddr;
     address public STABLE_TOKEN_ADDRESS;
 
     constructor() {
@@ -33,9 +33,9 @@ contract CeffuVault is IPSMVault, SatoshiOwnable, UUPSUpgradeable {
         emit StrategyAddrSet(_strategyAddr);
     }
 
-    function setPSMAddr(address _psmAddr) external onlyOwner {
-        psmAddr = _psmAddr;
-        emit PSMAddrSet(_psmAddr);
+    function setNYMAddr(address _nymAddr) external onlyOwner {
+        nymAddr = _nymAddr;
+        emit NYMAddrSet(_nymAddr);
     }
 
     function executeStrategy(uint256 amount) external onlyOwner {
@@ -47,9 +47,9 @@ contract CeffuVault is IPSMVault, SatoshiOwnable, UUPSUpgradeable {
     // todo
     function exitStrategy(uint256 amount) external onlyOwner {}
 
-    function transferTokenToPSM(uint256 amount) external onlyOwner {
-        IERC20(STABLE_TOKEN_ADDRESS).transfer(psmAddr, amount);
-        emit TokenTransferredToPSM(amount);
+    function transferTokenToNYM(uint256 amount) external onlyOwner {
+        IERC20(STABLE_TOKEN_ADDRESS).transfer(nymAddr, amount);
+        emit TokenTransferredToNYM(amount);
     }
 
     function transferToken(address token, address to, uint256 amount) external onlyOwner {

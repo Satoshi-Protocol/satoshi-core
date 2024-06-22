@@ -17,7 +17,7 @@ uint256 constant REDEMPTION_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
 uint256 constant MAX_REDEMPTION_FEE = 1e18 / 100 * 5; //  (5%)
 uint256 constant BORROWING_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
 uint256 constant MAX_BORROWING_FEE = 1e18 / 100 * 5; //  (5%)
-uint256 constant INTEREST_RATE_IN_BPS = 450; //  (4.5%)
+uint256 constant INTEREST_RATE_IN_BPS = 0; //  (4.5%)
 uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
 uint256 constant MCR = 11 * 1e17; //  (110%)
 

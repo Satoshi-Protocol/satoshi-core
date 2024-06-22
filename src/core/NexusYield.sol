@@ -4,10 +4,11 @@ pragma solidity ^0.8.19;
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import {IERC20MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import {IERC20MetadataUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
-import {IPegStability} from "../interfaces/core/IPegStability.sol";
+import {INexusYield} from "../interfaces/core/INexusYield.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
@@ -17,17 +18,16 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {console} from "forge-std/console.sol";
 
 /**
- * @title Peg Stability Module Contract.
+ * @title Nexus Yield Module Contract.
  * Mutated from:
  * https://github.com/VenusProtocol/venus-protocol/blob/develop/contracts/PegStability/PegStability.sol
  * @notice Contract for swapping stable token for SAT token and vice versa to maintain the peg stability between them.
  */
-
-contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeable {
+contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     uint256 public constant TARGET_DIGITS = 18;
-    
+
     /// @notice The divisor used to convert fees to basis points.
     uint256 public constant BASIS_POINTS_DIVISOR = 10000;
 
@@ -39,7 +39,7 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     uint256 public constant ONE_DOLLAR = 1e18;
 
-    IDebtToken immutable public SAT;
+    IDebtToken public immutable SAT;
 
     /// @notice The address of the stable token contract.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -69,14 +69,14 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     /// @notice A flag indicating whether the contract is using an oracle or not.
     bool public usingOracle;
 
-    /// @notice The time used to 
+    /// @notice The time used to
     uint256 public swapWaitingPeriod;
 
-    mapping (address => bool) public isPrivileged;
+    mapping(address => bool) public isPrivileged;
 
-    mapping (address => uint32) public withdrawalTime;
+    mapping(address => uint32) public withdrawalTime;
 
-    mapping (address => uint256) public scheduledWithdrawalAmount;
+    mapping(address => uint256) public scheduledWithdrawalAmount;
 
     /**
      * @dev Prevents functions to execute when contract is paused.
@@ -87,7 +87,7 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     }
 
     modifier onlyPrivileged() {
-        require(isPrivileged[msg.sender], "PegStability: caller is not privileged");
+        require(isPrivileged[msg.sender], "NexusYield: caller is not privileged");
         _;
     }
 
@@ -133,7 +133,9 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         swapWaitingPeriod = swapWaitingPeriod_;
     }
 
-    /*** Swap Functions ***/
+    /**
+     * Swap Functions **
+     */
 
     /**
      * @notice Swaps stable tokens for SAT with fees.
@@ -143,10 +145,12 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
      * @return Amount of SAT minted to the sender.
      */
     // @custom:event Emits StableForSATSwapped event.
-    function swapStableForSAT(
-        address receiver,
-        uint256 stableTknAmount
-    ) external isActive nonReentrant returns (uint256) {
+    function swapStableForSAT(address receiver, uint256 stableTknAmount)
+        external
+        isActive
+        nonReentrant
+        returns (uint256)
+    {
         _ensureNonzeroAddress(receiver);
         _ensureNonzeroAmount(stableTknAmount);
         // transfer IN, supporting fee-on-transfer tokens
@@ -191,10 +195,13 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
      * @return The amount of SAT received and burnt from the sender.
      */
     // @custom:event Emits SATForStableSwapped event.
-    function swapSATForStablePrivileged(
-        address receiver,
-        uint256 stableTknAmount
-    ) external isActive onlyPrivileged nonReentrant returns (uint256) {
+    function swapSATForStablePrivileged(address receiver, uint256 stableTknAmount)
+        external
+        isActive
+        onlyPrivileged
+        nonReentrant
+        returns (uint256)
+    {
         _ensureNonzeroAddress(receiver);
         _ensureNonzeroAmount(stableTknAmount);
 
@@ -226,10 +233,13 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
      * @return Amount of SAT minted to the sender.
      */
     // @custom:event Emits StableForSATSwapped event.
-    function swapStableForSATPrivileged(
-        address receiver,
-        uint256 stableTknAmount
-    ) external isActive onlyPrivileged nonReentrant returns (uint256) {
+    function swapStableForSATPrivileged(address receiver, uint256 stableTknAmount)
+        external
+        isActive
+        onlyPrivileged
+        nonReentrant
+        returns (uint256)
+    {
         _ensureNonzeroAddress(receiver);
         _ensureNonzeroAmount(stableTknAmount);
         // transfer IN, supporting fee-on-transfer tokens
@@ -257,12 +267,10 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         return actualTransferAmtInUSD;
     }
 
-    /** 
+    /**
      * @notice Schedule a swap sat for stable token.
-    */
-    function scheduleSwapSATForStable(
-        uint256 stableTknAmount
-    ) external isActive nonReentrant returns (uint256) {
+     */
+    function scheduleSwapSATForStable(uint256 stableTknAmount) external isActive nonReentrant returns (uint256) {
         _ensureNonzeroAmount(stableTknAmount);
 
         if (withdrawalTime[msg.sender] != 0) {
@@ -301,8 +309,8 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     function withdrawStable() external {
         if (withdrawalTime[msg.sender] == 0 || block.timestamp < withdrawalTime[msg.sender]) {
             revert WithdrawalNotAvailable();
-          }
-      
+        }
+
         withdrawalTime[msg.sender] = 0;
         uint256 _amount = scheduledWithdrawalAmount[msg.sender];
         scheduledWithdrawalAmount[msg.sender] = 0;
@@ -316,32 +324,34 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
         emit WithdrawStable(msg.sender, _amount);
     }
 
-    /*** Admin Functions ***/
+    /**
+     * Admin Functions **
+     */
 
     /**
-     * @notice Pause the PSM contract.
+     * @notice Pause the NYM contract.
      * @dev Reverts if the contract is already paused.
      */
-    // @custom:event Emits PSMPaused event.
+    // @custom:event Emits NYMPaused event.
     function pause() external onlyOwner {
         if (isPaused) {
             revert AlreadyPaused();
         }
         isPaused = true;
-        emit PSMPaused(msg.sender);
+        emit NYMPaused(msg.sender);
     }
 
     /**
-     * @notice Resume the PSM contract.
+     * @notice Resume the NYM contract.
      * @dev Reverts if the contract is not paused.
      */
-    // @custom:event Emits PSMResumed event.
+    // @custom:event Emits NYMResumed event.
     function resume() external onlyOwner {
         if (!isPaused) {
             revert NotPaused();
         }
         isPaused = false;
-        emit PSMResumed(msg.sender);
+        emit NYMResumed(msg.sender);
     }
 
     /**
@@ -422,14 +432,16 @@ contract PegStability is IPegStability, SatoshiOwnable, ReentrancyGuardUpgradeab
     }
 
     function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external onlyOwner {
-        if(!isPrivileged[vault]) {
+        if (!isPrivileged[vault]) {
             revert NotPrivileged();
         }
         IERC20(token).transfer(vault, amount);
         emit TokenTransferred(token, vault, amount);
     }
 
-    /*** Helper Functions ***/
+    /**
+     * Helper Functions **
+     */
 
     /**
      * @notice Calculates the amount of SAT that would be burnt from the user.

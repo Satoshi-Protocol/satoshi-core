@@ -4,8 +4,7 @@ import {IDebtToken} from "./IDebtToken.sol";
 import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "./ISatoshiCore.sol";
 
-interface IPegStability {
-
+interface INexusYield {
     // Helper enum for calculation of the fee.
     enum FeeDirection {
         IN,
@@ -13,10 +12,10 @@ interface IPegStability {
     }
 
     /// @notice Event emitted when contract is paused.
-    event PSMPaused(address indexed admin);
+    event NYMPaused(address indexed admin);
 
     /// @notice Event emitted when the contract is resumed after pause.
-    event PSMResumed(address indexed admin);
+    event NYMResumed(address indexed admin);
 
     /// @notice Event emitted when feeIn state var is modified.
     event FeeInChanged(uint256 oldFeeIn, uint256 newFeeIn);
@@ -115,7 +114,7 @@ interface IPegStability {
 
     function satMintCap() external view returns (uint256);
 
-    function isPaused() external view returns (bool);   
+    function isPaused() external view returns (bool);
 
     function usingOracle() external view returns (bool);
 
@@ -129,10 +128,7 @@ interface IPegStability {
         uint256 swapWaitingPeriod_
     ) external;
 
-    function swapStableForSAT(
-        address receiver,
-        uint256 stableTknAmount
-    ) external returns (uint256);
+    function swapStableForSAT(address receiver, uint256 stableTknAmount) external returns (uint256);
 
     function pause() external;
 
@@ -160,22 +156,13 @@ interface IPegStability {
 
     function previewSwapStableForSAT(uint256 stableTknAmount) external returns (uint256);
 
-    function swapSATForStablePrivileged(
-        address receiver,
-        uint256 stableTknAmount
-    ) external returns (uint256);
+    function swapSATForStablePrivileged(address receiver, uint256 stableTknAmount) external returns (uint256);
 
-    function swapStableForSATPrivileged(
-        address receiver,
-        uint256 stableTknAmount
-    ) external returns (uint256);
+    function swapStableForSATPrivileged(address receiver, uint256 stableTknAmount) external returns (uint256);
 
-    function scheduleSwapSATForStable(
-        uint256 stableTknAmount
-    ) external returns (uint256);
+    function scheduleSwapSATForStable(uint256 stableTknAmount) external returns (uint256);
 
     function withdrawStable() external;
 
     function swapWaitingPeriod() external view returns (uint256);
 }
-

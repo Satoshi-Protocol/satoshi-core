@@ -126,7 +126,7 @@ contract RecoveryModeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // user 1 top up and borrow
         vars.addCollAmt = 0.5e18;
         vars.withdrawDebtAmt = 1000e18;
-        
+
         vm.startPrank(user1);
         deal(address(collateralMock), user1, vars.addCollAmt);
         collateralMock.approve(address(borrowerOperationsProxy), vars.addCollAmt);
