@@ -482,6 +482,20 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
         return SATToMint;
     }
 
+    function convertSATToStableAmount(uint256 amount) external view returns (uint256) {
+        uint256 scaledAmt;
+        uint256 decimals = IERC20MetadataUpgradeable(STABLE_TOKEN_ADDRESS).decimals();
+        if (decimals == TARGET_DIGITS) {
+            scaledAmt = amount;
+        } else if (decimals < TARGET_DIGITS) {
+            scaledAmt = amount / (10 ** (TARGET_DIGITS - decimals));
+        } else {
+            scaledAmt = amount * (10 ** (decimals - TARGET_DIGITS));
+        }
+
+        return scaledAmt;
+    }
+
     /**
      * @dev Calculates the USD value of the given amount of stable tokens depending on the swap direction.
      * @param amount The amount of stable tokens.
@@ -512,9 +526,8 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      */
     function _getPriceInUSD() internal returns (uint256) {
         // fetch price with decimal 18
-        uint256 price = oracle.fetchPrice(IERC20(STABLE_TOKEN_ADDRESS));
 
-        return usingOracle ? price : ONE_DOLLAR;
+        return usingOracle ? oracle.fetchPrice(IERC20(STABLE_TOKEN_ADDRESS)) : ONE_DOLLAR;
     }
 
     /**

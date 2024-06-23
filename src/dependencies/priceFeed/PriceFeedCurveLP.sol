@@ -17,11 +17,7 @@ contract PriceFeedCurveLPOracle is SatoshiOwnable {
     ICurvePool internal immutable _source;
     uint8 internal immutable _decimals;
 
-    constructor(
-        ICurvePool source_,
-        uint8 decimals_,
-        ISatoshiCore _satoshiCore
-    ) {
+    constructor(ICurvePool source_, uint8 decimals_, ISatoshiCore _satoshiCore) {
         __SatoshiOwnable_init(_satoshiCore);
         _source = source_;
         _decimals = decimals_;

@@ -165,4 +165,6 @@ interface INexusYield {
     function withdrawStable() external;
 
     function swapWaitingPeriod() external view returns (uint256);
+
+    function convertSATToStableAmount(uint256 amount) external view returns (uint256);
 }

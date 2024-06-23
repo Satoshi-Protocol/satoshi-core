@@ -31,7 +31,7 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         // No additional authorization logic is needed for this contract
     }
 
-    function initialize(ISatoshiCore _satoshiCore, address stableTokenAddress_, address satAddress_)
+    function initialize(ISatoshiCore _satoshiCore, address stableTokenAddress_, address satAddress_, address pair_)
         external
         initializer
     {
@@ -39,6 +39,7 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         __SatoshiOwnable_init(_satoshiCore);
         STABLE_TOKEN_ADDRESS = stableTokenAddress_;
         SAT_ADDRESS = satAddress_;
+        PAIR_ADDRESS = pair_;
     }
 
     function setStrategyAddr(address _strategyAddr) external onlyOwner {
@@ -51,13 +52,17 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         emit NYMAddrSet(_nymAddr);
     }
 
-    function executeStrategy(uint256 amount, uint256 minA, uint256 minB) external onlyOwner {
+    function executeStrategy(uint256 amountA, uint256 amountB, uint256 minA, uint256 minB) external onlyOwner {
         // swap stable to sat in nym
-        IERC20(STABLE_TOKEN_ADDRESS).approve(nymAddr, amount / 2);
-        INexusYield(nymAddr).swapStableForSATPrivileged(address(this), amount / 2);
+        IERC20(STABLE_TOKEN_ADDRESS).approve(nymAddr, amountA);
+        INexusYield(nymAddr).swapStableForSATPrivileged(address(this), amountA);
+        require(IERC20(SAT_ADDRESS).balanceOf(address(this)) == amountB, "balance not match");
+
+        IERC20(STABLE_TOKEN_ADDRESS).approve(strategyAddr, amountA);
+        IERC20(SAT_ADDRESS).approve(strategyAddr, amountB);
         // add liquidity on dex
         IUniswapV2Router01(strategyAddr).addLiquidity(
-            STABLE_TOKEN_ADDRESS, SAT_ADDRESS, amount / 2, amount / 2, minA, minB, address(this), block.timestamp + 100
+            STABLE_TOKEN_ADDRESS, SAT_ADDRESS, amountA, amountB, minA, minB, address(this), block.timestamp + 100
         );
     }
 
@@ -69,7 +74,7 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         );
         // swap sat to stable in nym
         uint256 previewAmount =
-            INexusYield(nymAddr).previewSwapSATForStable(IERC20(SAT_ADDRESS).balanceOf(address(this)));
+            INexusYield(nymAddr).convertSATToStableAmount(IERC20(SAT_ADDRESS).balanceOf(address(this)));
         INexusYield(nymAddr).swapSATForStablePrivileged(address(this), previewAmount);
     }
 
