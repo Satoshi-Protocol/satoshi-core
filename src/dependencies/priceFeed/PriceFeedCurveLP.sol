@@ -17,9 +17,9 @@ contract PriceFeedCurveLPOracle is SatoshiOwnable {
     ICurvePool internal immutable _source;
     uint8 internal immutable _decimals;
 
-    constructor(ICurvePool source_, uint8 decimals_, ISatoshiCore _satoshiCore) {
+    constructor(address source_, uint8 decimals_, ISatoshiCore _satoshiCore) {
         __SatoshiOwnable_init(_satoshiCore);
-        _source = source_;
+        _source = ICurvePool(source_);
         _decimals = decimals_;
     }
 
@@ -31,10 +31,7 @@ contract PriceFeedCurveLPOracle is SatoshiOwnable {
         return price;
     }
 
-    function fetchPriceUnsafe() external returns (uint256, uint256) {
-        // remove liquidity 0 to prevent price manipulation
-        uint256[2] memory amounts;
-        ICurvePool(_source).remove_liquidity(0, amounts);
+    function fetchPriceUnsafe() external view returns (uint256, uint256) {
         uint256 price = ICurvePool(_source).get_virtual_price();
         return (price, 0);
     }

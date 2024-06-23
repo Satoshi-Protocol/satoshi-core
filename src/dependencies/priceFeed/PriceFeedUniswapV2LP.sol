@@ -29,18 +29,12 @@ contract PriceFeedUniswapV2LPOracle is SatoshiOwnable {
     IPriceFeed oracle2;
     uint8 internal immutable _decimals;
 
-    constructor(
-        IUniswapV2Pair pair_,
-        IPriceFeed oracle1_,
-        IPriceFeed oracle2_,
-        uint8 decimals_,
-        ISatoshiCore _satoshiCore
-    ) {
+    constructor(address pair_, address oracle1_, address oracle2_, uint8 decimals_, ISatoshiCore _satoshiCore) {
         __SatoshiOwnable_init(_satoshiCore);
-        pair = pair_;
+        pair = IUniswapV2Pair(pair_);
         _decimals = decimals_;
-        oracle1 = oracle1_;
-        oracle2 = oracle2_;
+        oracle1 = IPriceFeed(oracle1_);
+        oracle2 = IPriceFeed(oracle2_);
     }
 
     /// @dev Adapted from https://blog.alphaventuredao.io/fair-lp-token-pricing
