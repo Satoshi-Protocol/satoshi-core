@@ -34,7 +34,7 @@ import {PriceFeedPythOracle} from "../../src/dependencies/priceFeed/PriceFeedPyt
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
-import {NexusYield} from "../../src/core/NexusYield.sol";
+import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -52,7 +52,7 @@ import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiPeriphery} from "../../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
-import {INexusYield} from "../../src/interfaces/core/INexusYield.sol";
+import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.sol";
 import {IDIAOracleV2} from "../../src/interfaces/dependencies/priceFeed/IDIAOracleV2.sol";
 import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {IProxy} from "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.sol";
@@ -137,7 +137,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuanceImpl;
     IOSHIToken oshiTokenImpl;
     ISatoshiLPFactory satoshiLPFactoryImpl;
-    INexusYield nexusYieldImpl;
+    INexusYieldManager nexusYieldImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
@@ -152,7 +152,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuanceProxy;
     IOSHIToken oshiTokenProxy;
     ISatoshiLPFactory satoshiLPFactoryProxy;
-    INexusYield nexusYieldProxy;
+    INexusYieldManager nexusYieldProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
@@ -520,14 +520,11 @@ abstract contract DeployBase is Test {
 
     function _deployNexusYieldProxy(address deployer) internal {
         vm.startPrank(deployer);
-        nexusYieldImpl = new NexusYield(address(collateralMock), cpDebtTokenProxyAddr);
-        assert(nexusYieldImpl != INexusYield(address(0)));
-        assert(nexusYieldProxy == INexusYield(address(0)));
-        bytes memory data = abi.encodeCall(
-            INexusYield.initialize,
-            (satoshiCore, address(rewardManagerProxy), address(priceFeedAggregatorProxy), 10, 10, 1000e18, 3 days)
-        );
-        nexusYieldProxy = INexusYield(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
+        nexusYieldImpl = new NexusYieldManager(cpDebtTokenProxyAddr);
+        assert(nexusYieldImpl != INexusYieldManager(address(0)));
+        assert(nexusYieldProxy == INexusYieldManager(address(0)));
+        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, address(rewardManagerProxy)));
+        nexusYieldProxy = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         vm.stopPrank();
     }
 

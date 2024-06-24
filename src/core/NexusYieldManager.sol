@@ -8,22 +8,19 @@ import {IERC20MetadataUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
-import {INexusYield} from "../interfaces/core/INexusYield.sol";
+import {INexusYieldManager, AssetConfig} from "../interfaces/core/INexusYieldManager.sol";
 import {IPriceFeedAggregator} from "../interfaces/core/IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
-
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 
-import {console} from "forge-std/console.sol";
-
 /**
- * @title Nexus Yield Module Contract.
+ * @title Nexus Yield Manager Contract.
  * Mutated from:
  * https://github.com/VenusProtocol/venus-protocol/blob/develop/contracts/PegStability/PegStability.sol
  * @notice Contract for swapping stable token for SAT token and vice versa to maintain the peg stability between them.
  */
-contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
+contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     uint256 public constant TARGET_DIGITS = 18;
@@ -41,42 +38,21 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
 
     IDebtToken public immutable SAT;
 
-    /// @notice The address of the stable token contract.
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    address public immutable STABLE_TOKEN_ADDRESS;
-
-    /// @notice The address of ResilientOracle contract wrapped in its interface.
-    IPriceFeedAggregator public oracle;
-
     /// @notice The address of the Reward Manager.
     address public rewardManagerAddr;
-
-    /// @notice The incoming stableCoin fee. (Fee for swapStableForSAT).
-    uint256 public feeIn;
-
-    /// @notice The outgoing stableCoin fee. (Fee for swapSATForStable).
-    uint256 public feeOut;
-
-    /// @notice The maximum amount of SAT that can be minted through this contract.
-    uint256 public satMintCap;
-
-    /// @notice The total amount of SAT minted through this contract.
-    uint256 public satMinted;
 
     /// @notice A flag indicating whether the contract is currently paused or not.
     bool public isPaused;
 
-    /// @notice A flag indicating whether the contract is using an oracle or not.
-    bool public usingOracle;
-
-    /// @notice The time used to
-    uint256 public swapWaitingPeriod;
-
     mapping(address => bool) public isPrivileged;
 
-    mapping(address => uint32) public withdrawalTime;
+    mapping(address => mapping(address => uint32)) public withdrawalTime;
 
-    mapping(address => uint256) public scheduledWithdrawalAmount;
+    mapping(address => mapping(address => uint256)) public scheduledWithdrawalAmount;
+
+    mapping(address => AssetConfig) public assetConfigs;
+
+    mapping(address => bool) public isAssetSupported;
 
     /**
      * @dev Prevents functions to execute when contract is paused.
@@ -87,16 +63,14 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     }
 
     modifier onlyPrivileged() {
-        require(isPrivileged[msg.sender], "NexusYield: caller is not privileged");
+        require(isPrivileged[msg.sender], "NexusYieldManager: caller is not privileged");
         _;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address stableTokenAddress_, address SATAddress_) {
-        _ensureNonzeroAddress(stableTokenAddress_);
+    constructor(address SATAddress_) {
         _ensureNonzeroAddress(SATAddress_);
 
-        STABLE_TOKEN_ADDRESS = stableTokenAddress_;
         SAT = IDebtToken(SATAddress_);
         _disableInitializers();
     }
@@ -104,33 +78,39 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     /**
      * @notice Initializes the contract via Proxy Contract with the required parameters.
      * @param rewardManagerAddr_ The address where fees will be sent.
-     * @param oracleAddress_ The address of the ResilientOracle contract.
-     * @param feeIn_ The percentage of fees to be applied to a stablecoin -> SAT swap.
-     * @param feeOut_ The percentage of fees to be applied to a SAT -> stablecoin swap.
-     * @param satMintCap_ The cap for the total amount of SAT that can be minted.
      */
-    function initialize(
-        ISatoshiCore satoshiCore_,
-        address rewardManagerAddr_,
-        address oracleAddress_,
+    function initialize(ISatoshiCore satoshiCore_, address rewardManagerAddr_) external initializer {
+        __SatoshiOwnable_init(satoshiCore_);
+        __ReentrancyGuard_init();
+        rewardManagerAddr = rewardManagerAddr_;
+    }
+
+    function setAssetConfig(
+        address asset,
         uint256 feeIn_,
         uint256 feeOut_,
         uint256 satMintCap_,
+        uint256 dailySatMintCap_,
+        address oracle_,
+        bool usingOracle_,
         uint256 swapWaitingPeriod_
-    ) external initializer {
-        __SatoshiOwnable_init(satoshiCore_);
-        __ReentrancyGuard_init();
-
+    ) external onlyOwner {
         if (feeIn_ >= BASIS_POINTS_DIVISOR || feeOut_ >= BASIS_POINTS_DIVISOR) {
             revert InvalidFee();
         }
+        AssetConfig storage config = assetConfigs[asset];
+        config.feeIn = feeIn_;
+        config.feeOut = feeOut_;
+        config.satMintCap = satMintCap_;
+        config.dailySatMintCap = dailySatMintCap_;
+        config.oracle = IPriceFeedAggregator(oracle_);
+        config.usingOracle = usingOracle_;
+        config.swapWaitingPeriod = swapWaitingPeriod_;
+        isAssetSupported[asset] = true;
+    }
 
-        feeIn = feeIn_;
-        feeOut = feeOut_;
-        satMintCap = satMintCap_;
-        rewardManagerAddr = rewardManagerAddr_;
-        oracle = IPriceFeedAggregator(oracleAddress_);
-        swapWaitingPeriod = swapWaitingPeriod_;
+    function sunsetAsset(address asset) external onlyOwner {
+        isAssetSupported[asset] = false;
     }
 
     /**
@@ -145,7 +125,7 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @return Amount of SAT minted to the sender.
      */
     // @custom:event Emits StableForSATSwapped event.
-    function swapStableForSAT(address receiver, uint256 stableTknAmount)
+    function swapStableForSAT(address asset, address receiver, uint256 stableTknAmount)
         external
         isActive
         nonReentrant
@@ -153,25 +133,27 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     {
         _ensureNonzeroAddress(receiver);
         _ensureNonzeroAmount(stableTknAmount);
+        _ensureAssetSupported(asset);
+
         // transfer IN, supporting fee-on-transfer tokens
-        uint256 balanceBefore = IERC20Upgradeable(STABLE_TOKEN_ADDRESS).balanceOf(address(this));
-        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), stableTknAmount);
-        uint256 balanceAfter = IERC20Upgradeable(STABLE_TOKEN_ADDRESS).balanceOf(address(this));
+        uint256 balanceBefore = IERC20Upgradeable(asset).balanceOf(address(this));
+        IERC20Upgradeable(asset).safeTransferFrom(msg.sender, address(this), stableTknAmount);
+        uint256 balanceAfter = IERC20Upgradeable(asset).balanceOf(address(this));
 
         // calculate actual transfered amount (in case of fee-on-transfer tokens)
         uint256 actualTransferAmt = balanceAfter - balanceBefore;
         // convert to decimal 18
-        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(actualTransferAmt);
+        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(asset, actualTransferAmt);
 
         // calculate feeIn
-        uint256 fee = _calculateFee(actualTransferAmtInUSD, FeeDirection.IN);
+        uint256 fee = _calculateFee(asset, actualTransferAmtInUSD, FeeDirection.IN);
         uint256 SATToMint = actualTransferAmtInUSD - fee;
 
-        if (satMinted + actualTransferAmtInUSD > satMintCap) {
+        if (assetConfigs[asset].satMinted + actualTransferAmtInUSD > assetConfigs[asset].satMintCap) {
             revert SATMintCapReached();
         }
         unchecked {
-            satMinted += actualTransferAmtInUSD;
+            assetConfigs[asset].satMinted += actualTransferAmtInUSD;
         }
 
         // mint SAT to receiver
@@ -195,7 +177,7 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @return The amount of SAT received and burnt from the sender.
      */
     // @custom:event Emits SATForStableSwapped event.
-    function swapSATForStablePrivileged(address receiver, uint256 stableTknAmount)
+    function swapSATForStablePrivileged(address asset, address receiver, uint256 stableTknAmount)
         external
         isActive
         onlyPrivileged
@@ -204,24 +186,27 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     {
         _ensureNonzeroAddress(receiver);
         _ensureNonzeroAmount(stableTknAmount);
+        _ensureAssetSupported(asset);
+
+        AssetConfig storage config = assetConfigs[asset];
 
         // dec 18
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
+        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
 
         if (SAT.balanceOf(msg.sender) < stableTknAmountUSD) {
             revert NotEnoughSAT();
         }
-        if (satMinted < stableTknAmountUSD) {
+        if (config.satMinted < stableTknAmountUSD) {
             revert SATMintedUnderflow();
         }
 
         unchecked {
-            satMinted -= stableTknAmountUSD;
+            config.satMinted -= stableTknAmountUSD;
         }
 
         SAT.burn(msg.sender, stableTknAmountUSD);
-        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransfer(receiver, stableTknAmount);
-        emit SATForStableSwapped(stableTknAmountUSD, stableTknAmount, 0);
+        IERC20Upgradeable(asset).safeTransfer(receiver, stableTknAmount);
+        emit SATForStableSwapped(asset, stableTknAmountUSD, stableTknAmount, 0);
         return stableTknAmountUSD;
     }
 
@@ -233,7 +218,7 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @return Amount of SAT minted to the sender.
      */
     // @custom:event Emits StableForSATSwapped event.
-    function swapStableForSATPrivileged(address receiver, uint256 stableTknAmount)
+    function swapStableForSATPrivileged(address asset, address receiver, uint256 stableTknAmount)
         external
         isActive
         onlyPrivileged
@@ -242,22 +227,24 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     {
         _ensureNonzeroAddress(receiver);
         _ensureNonzeroAmount(stableTknAmount);
+        _ensureAssetSupported(asset);
+
         // transfer IN, supporting fee-on-transfer tokens
-        uint256 balanceBefore = IERC20Upgradeable(STABLE_TOKEN_ADDRESS).balanceOf(address(this));
-        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), stableTknAmount);
-        uint256 balanceAfter = IERC20Upgradeable(STABLE_TOKEN_ADDRESS).balanceOf(address(this));
+        uint256 balanceBefore = IERC20Upgradeable(asset).balanceOf(address(this));
+        IERC20Upgradeable(asset).safeTransferFrom(msg.sender, address(this), stableTknAmount);
+        uint256 balanceAfter = IERC20Upgradeable(asset).balanceOf(address(this));
 
         // calculate actual transfered amount (in case of fee-on-transfer tokens)
         uint256 actualTransferAmt = balanceAfter - balanceBefore;
 
         // convert to decimal 18
-        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(actualTransferAmt);
+        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(asset, actualTransferAmt);
 
-        if (satMinted + actualTransferAmtInUSD > satMintCap) {
+        if (assetConfigs[asset].satMinted + actualTransferAmtInUSD > assetConfigs[asset].satMintCap) {
             revert SATMintCapReached();
         }
         unchecked {
-            satMinted += actualTransferAmtInUSD;
+            assetConfigs[asset].satMinted += actualTransferAmtInUSD;
         }
 
         // mint SAT to receiver
@@ -270,28 +257,34 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
     /**
      * @notice Schedule a swap sat for stable token.
      */
-    function scheduleSwapSATForStable(uint256 stableTknAmount) external isActive nonReentrant returns (uint256) {
+    function scheduleSwapSATForStable(address asset, uint256 stableTknAmount)
+        external
+        isActive
+        nonReentrant
+        returns (uint256)
+    {
         _ensureNonzeroAmount(stableTknAmount);
+        _ensureAssetSupported(asset);
 
-        if (withdrawalTime[msg.sender] != 0) {
+        if (withdrawalTime[asset][msg.sender] != 0) {
             revert WithdrawalAlreadyScheduled();
         }
 
-        withdrawalTime[msg.sender] = uint32(block.timestamp + swapWaitingPeriod);
+        withdrawalTime[asset][msg.sender] = uint32(block.timestamp + assetConfigs[asset].swapWaitingPeriod);
 
         // dec 18
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
-        uint256 fee = _calculateFee(stableTknAmountUSD, FeeDirection.OUT);
+        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
+        uint256 fee = _calculateFee(asset, stableTknAmountUSD, FeeDirection.OUT);
 
         if (SAT.balanceOf(msg.sender) < stableTknAmountUSD + fee) {
             revert NotEnoughSAT();
         }
-        if (satMinted < stableTknAmountUSD) {
+        if (assetConfigs[asset].satMinted < stableTknAmountUSD) {
             revert SATMintedUnderflow();
         }
 
         unchecked {
-            satMinted -= stableTknAmountUSD;
+            assetConfigs[asset].satMinted -= stableTknAmountUSD;
         }
 
         if (fee != 0) {
@@ -301,27 +294,27 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
         }
 
         SAT.burn(msg.sender, stableTknAmountUSD);
-        scheduledWithdrawalAmount[msg.sender] = stableTknAmount;
-        emit WithdrawalScheduled(msg.sender, stableTknAmount, fee);
+        scheduledWithdrawalAmount[asset][msg.sender] = stableTknAmount;
+        emit WithdrawalScheduled(asset, msg.sender, stableTknAmount, fee);
         return stableTknAmountUSD;
     }
 
-    function withdrawStable() external {
-        if (withdrawalTime[msg.sender] == 0 || block.timestamp < withdrawalTime[msg.sender]) {
+    function withdrawStable(address asset) external {
+        if (withdrawalTime[asset][msg.sender] == 0 || block.timestamp < withdrawalTime[asset][msg.sender]) {
             revert WithdrawalNotAvailable();
         }
 
-        withdrawalTime[msg.sender] = 0;
-        uint256 _amount = scheduledWithdrawalAmount[msg.sender];
-        scheduledWithdrawalAmount[msg.sender] = 0;
+        withdrawalTime[asset][msg.sender] = 0;
+        uint256 _amount = scheduledWithdrawalAmount[asset][msg.sender];
+        scheduledWithdrawalAmount[asset][msg.sender] = 0;
 
         // check the stable is enough
-        if (IERC20(STABLE_TOKEN_ADDRESS).balanceOf(address(this)) < _amount) {
+        if (IERC20(asset).balanceOf(address(this)) < _amount) {
             revert SATTransferFail();
         }
 
-        IERC20Upgradeable(STABLE_TOKEN_ADDRESS).safeTransfer(msg.sender, _amount);
-        emit WithdrawStable(msg.sender, _amount);
+        IERC20Upgradeable(asset).safeTransfer(msg.sender, _amount);
+        emit WithdrawStable(asset, msg.sender, _amount);
     }
 
     /**
@@ -354,81 +347,15 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
         emit NYMResumed(msg.sender);
     }
 
-    /**
-     * @notice Set the fee percentage for incoming swaps.
-     * @dev Reverts if the new fee percentage is invalid (greater than or equal to BASIS_POINTS_DIVISOR).
-     * @param feeIn_ The new fee percentage for incoming swaps.
-     */
-    // @custom:event Emits FeeInChanged event.
-    function setFeeIn(uint256 feeIn_) external onlyOwner {
-        // feeIn = 10000 = 100%
-        if (feeIn_ >= BASIS_POINTS_DIVISOR) {
-            revert InvalidFee();
-        }
-        uint256 oldFeeIn = feeIn;
-        feeIn = feeIn_;
-        emit FeeInChanged(oldFeeIn, feeIn_);
-    }
-
-    /**
-     * @notice Set the fee percentage for outgoing swaps.
-     * @dev Reverts if the new fee percentage is invalid (greater than or equal to BASIS_POINTS_DIVISOR).
-     * @param feeOut_ The new fee percentage for outgoing swaps.
-     */
-    // @custom:event Emits FeeOutChanged event.
-    function setFeeOut(uint256 feeOut_) external onlyOwner {
-        // feeOut = 10000 = 100%
-        if (feeOut_ >= BASIS_POINTS_DIVISOR) {
-            revert InvalidFee();
-        }
-        uint256 oldFeeOut = feeOut;
-        feeOut = feeOut_;
-        emit FeeOutChanged(oldFeeOut, feeOut_);
-    }
-
-    /**
-     * @dev Set the maximum amount of SAT that can be minted through this contract.
-     * @param satMintCap_ The new maximum amount of SAT that can be minted.
-     */
-    // @custom:event Emits SATMintCapChanged event.
-    function setSATMintCap(uint256 satMintCap_) external onlyOwner {
-        uint256 oldsatMintCap = satMintCap;
-        satMintCap = satMintCap_;
-        emit SATMintCapChanged(oldsatMintCap, satMintCap_);
-    }
-
     function setRewardManager(address rewardManager_) external onlyOwner {
         address oldTreasuryAddress = rewardManagerAddr;
         rewardManagerAddr = rewardManager_;
         emit RewardManagerChanged(oldTreasuryAddress, rewardManager_);
     }
 
-    function setUsingOracle(bool usingOracle_) external onlyOwner {
-        usingOracle = usingOracle_;
-        emit UsingOracleSet(usingOracle_);
-    }
-
-    /**
-     * @notice Set the address of the ResilientOracle contract.
-     * @dev Reverts if the new address is zero.
-     * @param oracleAddress_ The new address of the ResilientOracle contract.
-     */
-    // @custom:event Emits OracleChanged event.
-    function setOracle(address oracleAddress_) external onlyOwner {
-        _ensureNonzeroAddress(oracleAddress_);
-        address oldOracleAddress = address(oracle);
-        oracle = IPriceFeedAggregator(oracleAddress_);
-        emit OracleChanged(oldOracleAddress, oracleAddress_);
-    }
-
     function setPrivileged(address account, bool isPrivileged_) external onlyOwner {
         isPrivileged[account] = isPrivileged_;
         emit PrivilegedSet(account, isPrivileged_);
-    }
-
-    function setSwapWaitingPeriod(uint256 swapWaitingPeriod_) external onlyOwner {
-        swapWaitingPeriod = swapWaitingPeriod_;
-        emit SwapWaitingPeriodSet(swapWaitingPeriod_);
     }
 
     function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external onlyOwner {
@@ -449,12 +376,14 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @param stableTknAmount The amount of stable tokens to be received after the swap.
      * @return The amount of SAT that would be taken from the user.
      */
-    function previewSwapSATForStable(uint256 stableTknAmount) external returns (uint256) {
+    function previewSwapSATForStable(address asset, uint256 stableTknAmount) external returns (uint256) {
         _ensureNonzeroAmount(stableTknAmount);
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
-        uint256 fee = _calculateFee(stableTknAmountUSD, FeeDirection.OUT);
+        _ensureAssetSupported(asset);
 
-        if (satMinted < stableTknAmountUSD) {
+        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
+        uint256 fee = _calculateFee(asset, stableTknAmountUSD, FeeDirection.OUT);
+
+        if (assetConfigs[asset].satMinted < stableTknAmountUSD) {
             revert SATMintedUnderflow();
         }
 
@@ -467,24 +396,26 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @param stableTknAmount The amount of stable tokens provided for the swap.
      * @return The amount of SAT that would be sent to the receiver.
      */
-    function previewSwapStableForSAT(uint256 stableTknAmount) external returns (uint256) {
+    function previewSwapStableForSAT(address asset, uint256 stableTknAmount) external returns (uint256) {
         _ensureNonzeroAmount(stableTknAmount);
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(stableTknAmount);
+        _ensureAssetSupported(asset);
+
+        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
 
         //calculate feeIn
-        uint256 fee = _calculateFee(stableTknAmountUSD, FeeDirection.IN);
+        uint256 fee = _calculateFee(asset, stableTknAmountUSD, FeeDirection.IN);
         uint256 SATToMint = stableTknAmountUSD - fee;
 
-        if (satMinted + stableTknAmountUSD > satMintCap) {
+        if (assetConfigs[asset].satMinted + stableTknAmountUSD > assetConfigs[asset].satMintCap) {
             revert SATMintCapReached();
         }
 
         return SATToMint;
     }
 
-    function convertSATToStableAmount(uint256 amount) external view returns (uint256) {
+    function convertSATToStableAmount(address asset, uint256 amount) external view returns (uint256) {
         uint256 scaledAmt;
-        uint256 decimals = IERC20MetadataUpgradeable(STABLE_TOKEN_ADDRESS).decimals();
+        uint256 decimals = IERC20MetadataUpgradeable(asset).decimals();
         if (decimals == TARGET_DIGITS) {
             scaledAmt = amount;
         } else if (decimals < TARGET_DIGITS) {
@@ -501,13 +432,13 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @param amount The amount of stable tokens.
      * @return The USD value of the given amount of stable tokens scaled by 1e18 taking into account the direction of the swap
      */
-    function _previewTokenUSDAmount(uint256 amount) internal returns (uint256) {
-        return (_getScaledAmt(amount) * _getPriceInUSD()) / MANTISSA_ONE;
+    function _previewTokenUSDAmount(address asset, uint256 amount) internal returns (uint256) {
+        return (_getScaledAmt(asset, amount) * _getPriceInUSD(asset)) / MANTISSA_ONE;
     }
 
-    function _getScaledAmt(uint256 amount) internal view returns (uint256) {
+    function _getScaledAmt(address asset, uint256 amount) internal view returns (uint256) {
         uint256 scaledAmt;
-        uint256 decimals = IERC20MetadataUpgradeable(STABLE_TOKEN_ADDRESS).decimals();
+        uint256 decimals = IERC20MetadataUpgradeable(asset).decimals();
         if (decimals == TARGET_DIGITS) {
             scaledAmt = amount;
         } else if (decimals < TARGET_DIGITS) {
@@ -524,10 +455,10 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @dev This function gets the price of the stable token in USD.
      * @return The price in USD, adjusted based on the selected direction.
      */
-    function _getPriceInUSD() internal returns (uint256) {
+    function _getPriceInUSD(address asset) internal returns (uint256) {
         // fetch price with decimal 18
 
-        return usingOracle ? oracle.fetchPrice(IERC20(STABLE_TOKEN_ADDRESS)) : ONE_DOLLAR;
+        return assetConfigs[asset].usingOracle ? assetConfigs[asset].oracle.fetchPrice(IERC20(asset)) : ONE_DOLLAR;
     }
 
     /**
@@ -537,12 +468,12 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      * @param direction The direction of the fee: FeeDirection.IN or FeeDirection.OUT.
      * @return The fee amount.
      */
-    function _calculateFee(uint256 amount, FeeDirection direction) internal view returns (uint256) {
+    function _calculateFee(address asset, uint256 amount, FeeDirection direction) internal view returns (uint256) {
         uint256 feePercent;
         if (direction == FeeDirection.IN) {
-            feePercent = feeIn;
+            feePercent = assetConfigs[asset].feeIn;
         } else {
-            feePercent = feeOut;
+            feePercent = assetConfigs[asset].feeOut;
         }
         if (feePercent == 0) {
             return 0;
@@ -569,5 +500,43 @@ contract NexusYield is INexusYield, SatoshiOwnable, ReentrancyGuardUpgradeable {
      */
     function _ensureNonzeroAmount(uint256 amount) private pure {
         if (amount == 0) revert ZeroAmount();
+    }
+
+    function _ensureAssetSupported(address asset) private view {
+        if (!isAssetSupported[asset]) {
+            revert AssetNotSupported();
+        }
+    }
+
+    function oracle(address asset) public view returns (IPriceFeedAggregator) {
+        return assetConfigs[asset].oracle;
+    }
+
+    function feeIn(address asset) public view returns (uint256) {
+        return assetConfigs[asset].feeIn;
+    }
+
+    function feeOut(address asset) public view returns (uint256) {
+        return assetConfigs[asset].feeOut;
+    }
+
+    function satMintCap(address asset) public view returns (uint256) {
+        return assetConfigs[asset].satMintCap;
+    }
+
+    function dailySatMintCap(address asset) public view returns (uint256) {
+        return assetConfigs[asset].dailySatMintCap;
+    }
+
+    function satMinted(address asset) public view returns (uint256) {
+        return assetConfigs[asset].satMinted;
+    }
+
+    function usingOracle(address asset) public view returns (bool) {
+        return assetConfigs[asset].usingOracle;
+    }
+
+    function swapWaitingPeriod(address asset) public view returns (uint256) {
+        return assetConfigs[asset].swapWaitingPeriod;
     }
 }

@@ -15,9 +15,9 @@ import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
 import {INTEREST_RATE_IN_BPS} from "./TestConfig.sol";
-import {INexusYield} from "../src/interfaces/core/INexusYield.sol";
+import {INexusYieldManager} from "../src/interfaces/core/INexusYieldManager.sol";
 
-contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
+contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
@@ -52,6 +52,7 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _deployNexusYieldProxy(DEPLOYER);
 
         vm.startPrank(OWNER);
+        nexusYieldProxy.setAssetConfig(address(collateralMock), 10, 10, 10000e18, 1000e18, address(0), false, 3 days);
         debtTokenProxy.rely(address(nexusYieldProxy));
         rewardManagerProxy.setWhitelistCaller(address(nexusYieldProxy), true);
         vm.stopPrank();
@@ -97,13 +98,13 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vm.startPrank(user1);
         collateralMock.approve(address(nexusYieldProxy), 1e18);
-        nexusYieldProxy.swapStableForSATPrivileged(user1, 1e18);
+        nexusYieldProxy.swapStableForSATPrivileged(address(collateralMock), user1, 1e18);
 
         // check user1 sat balance
         assertEq(debtTokenProxy.balanceOf(user1), 1e18);
 
         // swap out
-        nexusYieldProxy.swapSATForStablePrivileged(user1, 1e18);
+        nexusYieldProxy.swapSATForStablePrivileged(address(collateralMock), user1, 1e18);
         assertEq(collateralMock.balanceOf(user1), 100e18);
 
         vm.stopPrank();
@@ -124,49 +125,6 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.stopPrank();
     }
 
-    function test_setFeeIn() public {
-        vm.startPrank(OWNER);
-        nexusYieldProxy.setFeeIn(100);
-        assertEq(nexusYieldProxy.feeIn(), 100);
-        vm.stopPrank();
-    }
-
-    function test_setFeeOut() public {
-        vm.prank(OWNER);
-        nexusYieldProxy.setFeeOut(100);
-        assertEq(nexusYieldProxy.feeOut(), 100);
-    }
-
-    function test_setSATMintCap() public {
-        vm.prank(OWNER);
-        nexusYieldProxy.setSATMintCap(100e18);
-        assertEq(nexusYieldProxy.satMintCap(), 100e18);
-    }
-
-    function test_setRewardManager() public {
-        vm.prank(OWNER);
-        nexusYieldProxy.setRewardManager(REWARD_MANAGER);
-        assertEq(nexusYieldProxy.rewardManagerAddr(), REWARD_MANAGER);
-    }
-
-    function test_setUsingOracle() public {
-        vm.prank(OWNER);
-        nexusYieldProxy.setUsingOracle(true);
-        assertTrue(nexusYieldProxy.usingOracle());
-    }
-
-    function test_setOracle() public {
-        vm.prank(OWNER);
-        nexusYieldProxy.setOracle(oracleMockAddr);
-        assertEq(address(nexusYieldProxy.oracle()), oracleMockAddr);
-    }
-
-    function test_setSwapWaitingPeriod() public {
-        vm.prank(OWNER);
-        nexusYieldProxy.setSwapWaitingPeriod(2 days);
-        assertEq(nexusYieldProxy.swapWaitingPeriod(), 2 days);
-    }
-
     function test_transerTokenToPrivilegedVault() public {
         vm.startPrank(OWNER);
         deal(address(collateralMock), address(nexusYieldProxy), 100e18);
@@ -180,36 +138,36 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         deal(address(collateralMock), user1, 100e18);
         vm.startPrank(user1);
         collateralMock.approve(address(nexusYieldProxy), 100e18);
-        nexusYieldProxy.swapStableForSAT(user1, 100e18);
+        nexusYieldProxy.swapStableForSAT(address(collateralMock), user1, 100e18);
         uint256 amount = 1e18;
-        uint256 fee = amount * nexusYieldProxy.feeOut() / nexusYieldProxy.BASIS_POINTS_DIVISOR();
-        assertEq(nexusYieldProxy.previewSwapSATForStable(amount), amount + fee);
+        uint256 fee = amount * nexusYieldProxy.feeOut(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
+        assertEq(nexusYieldProxy.previewSwapSATForStable(address(collateralMock), amount), amount + fee);
 
         vm.stopPrank();
     }
 
     function test_previewSwapStableForSAT() public {
         uint256 amount = 1e18;
-        uint256 fee = amount * nexusYieldProxy.feeIn() / nexusYieldProxy.BASIS_POINTS_DIVISOR();
-        assertEq(nexusYieldProxy.previewSwapStableForSAT(amount), amount - fee);
+        uint256 fee = amount * nexusYieldProxy.feeIn(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
+        assertEq(nexusYieldProxy.previewSwapStableForSAT(address(collateralMock), amount), amount - fee);
     }
 
     function test_scheduleSwapSATForStable() public {
         deal(address(collateralMock), user1, 100e18);
         vm.startPrank(user1);
         collateralMock.approve(address(nexusYieldProxy), 100e18);
-        nexusYieldProxy.swapStableForSAT(user1, 100e18);
+        nexusYieldProxy.swapStableForSAT(address(collateralMock), user1, 100e18);
 
         uint256 amount = 1e18;
-        uint256 fee = amount * nexusYieldProxy.feeOut() / nexusYieldProxy.BASIS_POINTS_DIVISOR();
+        uint256 fee = amount * nexusYieldProxy.feeOut(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
         debtTokenProxy.approve(address(nexusYieldProxy), amount + fee);
-        nexusYieldProxy.scheduleSwapSATForStable(amount);
+        nexusYieldProxy.scheduleSwapSATForStable(address(collateralMock), amount);
         // try to withdraw => should fail
-        vm.expectRevert(INexusYield.WithdrawalNotAvailable.selector);
-        nexusYieldProxy.withdrawStable();
+        vm.expectRevert(INexusYieldManager.WithdrawalNotAvailable.selector);
+        nexusYieldProxy.withdrawStable(address(collateralMock));
 
-        vm.warp(block.timestamp + nexusYieldProxy.swapWaitingPeriod());
-        nexusYieldProxy.withdrawStable();
+        vm.warp(block.timestamp + nexusYieldProxy.swapWaitingPeriod(address(collateralMock)));
+        nexusYieldProxy.withdrawStable(address(collateralMock));
         assertEq(collateralMock.balanceOf(user1), amount);
         vm.stopPrank();
     }
@@ -218,23 +176,23 @@ contract PegStabiltityTest is Test, DeployBase, TroveBase, TestConfig, Events {
         deal(address(collateralMock), user1, 100e18);
         vm.startPrank(user1);
         collateralMock.approve(address(nexusYieldProxy), 100e18);
-        nexusYieldProxy.swapStableForSAT(user1, 100e18);
+        nexusYieldProxy.swapStableForSAT(address(collateralMock), user1, 100e18);
 
         uint256 amount = 1e18;
-        uint256 fee = amount * nexusYieldProxy.feeOut() / nexusYieldProxy.BASIS_POINTS_DIVISOR();
+        uint256 fee = amount * nexusYieldProxy.feeOut(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
         debtTokenProxy.approve(address(nexusYieldProxy), amount + fee);
-        nexusYieldProxy.scheduleSwapSATForStable(amount);
+        nexusYieldProxy.scheduleSwapSATForStable(address(collateralMock), amount);
 
-        vm.expectRevert(INexusYield.WithdrawalAlreadyScheduled.selector);
-        nexusYieldProxy.scheduleSwapSATForStable(amount);
+        vm.expectRevert(INexusYieldManager.WithdrawalAlreadyScheduled.selector);
+        nexusYieldProxy.scheduleSwapSATForStable(address(collateralMock), amount);
     }
 
     function test_mintCapReached() public {
-        deal(address(collateralMock), user1, 10000e18);
+        deal(address(collateralMock), user1, 1000000e18);
         vm.startPrank(user1);
-        collateralMock.approve(address(nexusYieldProxy), 10000e18);
-        vm.expectRevert(INexusYield.SATMintCapReached.selector);
-        nexusYieldProxy.swapStableForSAT(user1, 10000e18);
+        collateralMock.approve(address(nexusYieldProxy), 1000000e18);
+        vm.expectRevert(INexusYieldManager.SATMintCapReached.selector);
+        nexusYieldProxy.swapStableForSAT(address(collateralMock), user1, 1000000e18);
         vm.stopPrank();
     }
 }

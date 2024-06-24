@@ -4,7 +4,26 @@ import {IDebtToken} from "./IDebtToken.sol";
 import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "./ISatoshiCore.sol";
 
-interface INexusYield {
+struct AssetConfig {
+    /// The address of ResilientOracle contract wrapped in its interface.
+    IPriceFeedAggregator oracle;
+    /// The incoming stableCoin fee. (Fee for swapStableForSAT).
+    uint256 feeIn;
+    /// The outgoing stableCoin fee. (Fee for swapSATForStable).
+    uint256 feeOut;
+    /// The maximum amount of SAT that can be minted through this contract.
+    uint256 satMintCap;
+    /// The maximum amount of SAT that can be minted everyday.
+    uint256 dailySatMintCap;
+    /// The total amount of SAT minted through this asset.
+    uint256 satMinted;
+    /// A flag indicating whether the contract is using an oracle or not.
+    bool usingOracle;
+    /// The time used to
+    uint256 swapWaitingPeriod;
+}
+
+interface INexusYieldManager {
     // Helper enum for calculation of the fee.
     enum FeeDirection {
         IN,
@@ -36,7 +55,7 @@ interface INexusYield {
     event StableForSATSwapped(uint256 stableIn, uint256 SATOut, uint256 fee);
 
     /// @notice Event emitted when stable token is swapped for SAT.
-    event SATForStableSwapped(uint256 SATBurnt, uint256 stableOut, uint256 SATFee);
+    event SATForStableSwapped(address asset, uint256 SATBurnt, uint256 stableOut, uint256 SATFee);
 
     event UsingOracleSet(bool usingOracle);
 
@@ -44,9 +63,9 @@ interface INexusYield {
 
     event SwapWaitingPeriodSet(uint256 swapWaitingPeriod);
 
-    event WithdrawalScheduled(address indexed user, uint256 amount, uint256 fee);
+    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee);
 
-    event WithdrawStable(address user, uint256 amount);
+    event WithdrawStable(address asset, address user, uint256 amount);
 
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
 
@@ -92,6 +111,8 @@ interface INexusYield {
 
     error NotPrivileged();
 
+    error AssetNotSupported();
+
     function TARGET_DIGITS() external view returns (uint256);
 
     function BASIS_POINTS_DIVISOR() external view returns (uint256);
@@ -102,69 +123,68 @@ interface INexusYield {
 
     function SAT() external view returns (IDebtToken);
 
-    function STABLE_TOKEN_ADDRESS() external view returns (address);
-
-    function oracle() external view returns (IPriceFeedAggregator);
-
     function rewardManagerAddr() external view returns (address);
-
-    function feeIn() external view returns (uint256);
-
-    function feeOut() external view returns (uint256);
-
-    function satMintCap() external view returns (uint256);
 
     function isPaused() external view returns (bool);
 
-    function usingOracle() external view returns (bool);
+    function initialize(ISatoshiCore satoshiCore_, address rewardManagerAddr) external;
 
-    function initialize(
-        ISatoshiCore satoshiCore_,
-        address rewardManagerAddr_,
-        address oracleAddress_,
+    function setAssetConfig(
+        address asset,
         uint256 feeIn_,
         uint256 feeOut_,
         uint256 satMintCap_,
+        uint256 dailyMintCap_,
+        address oracle_,
+        bool usingOracle_,
         uint256 swapWaitingPeriod_
     ) external;
 
-    function swapStableForSAT(address receiver, uint256 stableTknAmount) external returns (uint256);
+    function sunsetAsset(address asset) external;
+
+    function swapStableForSAT(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
 
     function pause() external;
 
     function resume() external;
 
-    function setFeeIn(uint256 newFeeIn) external;
-
-    function setFeeOut(uint256 newFeeOut) external;
-
-    function setSATMintCap(uint256 newCap) external;
-
     function setRewardManager(address rewardManager_) external;
-
-    function setUsingOracle(bool usingOracle_) external;
-
-    function setOracle(address oracle_) external;
-
-    function setSwapWaitingPeriod(uint256 swapWaitingPeriod_) external;
 
     function setPrivileged(address account, bool isPrivileged_) external;
 
     function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external;
 
-    function previewSwapSATForStable(uint256 stableTknAmount) external returns (uint256);
+    function previewSwapSATForStable(address asset, uint256 stableTknAmount) external returns (uint256);
 
-    function previewSwapStableForSAT(uint256 stableTknAmount) external returns (uint256);
+    function previewSwapStableForSAT(address asset, uint256 stableTknAmount) external returns (uint256);
 
-    function swapSATForStablePrivileged(address receiver, uint256 stableTknAmount) external returns (uint256);
+    function swapSATForStablePrivileged(address asset, address receiver, uint256 stableTknAmount)
+        external
+        returns (uint256);
 
-    function swapStableForSATPrivileged(address receiver, uint256 stableTknAmount) external returns (uint256);
+    function swapStableForSATPrivileged(address asset, address receiver, uint256 stableTknAmount)
+        external
+        returns (uint256);
 
-    function scheduleSwapSATForStable(uint256 stableTknAmount) external returns (uint256);
+    function scheduleSwapSATForStable(address asset, uint256 stableTknAmount) external returns (uint256);
 
-    function withdrawStable() external;
+    function withdrawStable(address asset) external;
 
-    function swapWaitingPeriod() external view returns (uint256);
+    function convertSATToStableAmount(address asset, uint256 amount) external view returns (uint256);
 
-    function convertSATToStableAmount(uint256 amount) external view returns (uint256);
+    function oracle(address asset) external view returns (IPriceFeedAggregator);
+
+    function feeIn(address asset) external view returns (uint256);
+
+    function feeOut(address asset) external view returns (uint256);
+
+    function satMintCap(address asset) external view returns (uint256);
+
+    function dailySatMintCap(address asset) external view returns (uint256);
+
+    function satMinted(address asset) external view returns (uint256);
+
+    function usingOracle(address asset) external view returns (bool);
+
+    function swapWaitingPeriod(address asset) external view returns (uint256);
 }

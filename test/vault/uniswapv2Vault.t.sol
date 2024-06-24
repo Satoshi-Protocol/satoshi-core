@@ -17,8 +17,8 @@ import {Events} from "../utils/Events.sol";
 import {RoundData} from "../../src/mocks/OracleMock.sol";
 import {INTEREST_RATE_IN_BPS} from "../TestConfig.sol";
 import {UniV2Vault} from "../../src/vault/uniswapV2Vault.sol";
-import {NexusYield} from "../../src/core/NexusYield.sol";
-import {INexusYield} from "../../src/interfaces/core/INexusYield.sol";
+import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
+import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.sol";
 
 interface IUniswapV2Factory {
     function createPair(address tokenA, address tokenB) external returns (address pair);
@@ -62,14 +62,17 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         // deploy hint helper contract
         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
-        NexusYield nexusYieldimpl = new NexusYield(stableTokenAddress, cpDebtTokenProxyAddr);
-        bytes memory data = abi.encodeCall(
-            INexusYield.initialize,
-            (satoshiCore, address(rewardManagerProxy), address(priceFeedAggregatorProxy), 10, 10, 1e27, 3 days)
-        );
-        nexusYieldProxy = INexusYield(address(new ERC1967Proxy(address(nexusYieldimpl), data)));
+        _deployNexusYieldProxy(DEPLOYER);
+
+        // NexusYieldManager nexusYieldimpl = new NexusYieldManager(stableTokenAddress, cpDebtTokenProxyAddr);
+        // bytes memory data = abi.encodeCall(
+        //     INexusYieldManager.initialize,
+        //     (satoshiCore, address(rewardManagerProxy), address(priceFeedAggregatorProxy), 10, 10, 1e27, 3 days)
+        // );
+        // nexusYieldProxy = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldimpl), data)));
 
         vm.startPrank(OWNER);
+        nexusYieldProxy.setAssetConfig(stableTokenAddress, 10, 10, 10000e18, 1000e18, address(0), false, 3 days);
         debtTokenProxy.rely(address(nexusYieldProxy));
         rewardManagerProxy.setWhitelistCaller(address(nexusYieldProxy), true);
         vm.stopPrank();
@@ -78,7 +81,8 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         pair = uniswapV2Factory.createPair(stableTokenAddress, address(debtTokenProxy));
 
         UniV2Vault univ2Vaultimpl = new UniV2Vault();
-        data = abi.encodeCall(UniV2Vault.initialize, (satoshiCore, stableTokenAddress, address(debtTokenProxy), pair));
+        bytes memory data =
+            abi.encodeCall(UniV2Vault.initialize, (satoshiCore, stableTokenAddress, address(debtTokenProxy), pair));
         address proxy = address(new ERC1967Proxy(address(univ2Vaultimpl), data));
         uniV2Vault = UniV2Vault(proxy);
 
@@ -99,7 +103,7 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.prank(whale);
         IERC20(stableTokenAddress).transfer(address(this), 100e8);
         IERC20(stableTokenAddress).approve(address(nexusYieldProxy), 100e8);
-        nexusYieldProxy.swapStableForSAT(address(this), 100e8);
+        nexusYieldProxy.swapStableForSAT(stableTokenAddress, address(this), 100e8);
     }
 
     function test_executeAndExitStrategyV2() public {

@@ -22,7 +22,6 @@ contract PriceFeedUniV2LPTest is Test {
         ISatoshiCore _satoshiCore = ISatoshiCore(address(new SatoshiCore(owner, owner, owner, owner)));
         priceFeed1 = new PriceFeedChainlink(AggregatorV3Interface(oracle1), _satoshiCore);
         priceFeed2 = new PriceFeedChainlink(AggregatorV3Interface(oracle2), _satoshiCore);
-
         oracle = new PriceFeedUniswapV2LPOracle(pool, address(priceFeed1), address(priceFeed2), 8, _satoshiCore);
     }
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {PriceFeedCurveLPOracle} from "../src/dependencies/priceFeed/PriceFeedCurveLP.sol";
+import {PriceFeedCurveLPOracle, ICurvePool} from "../src/dependencies/priceFeed/PriceFeedCurveLP.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
 
@@ -19,11 +19,11 @@ contract PriceFeedCurveLPTest is Test {
 
     function test_CurvefetchPrice() public {
         uint256 price = oracle.fetchPrice();
-        console.log("price: ", price);
+        assertEq(ICurvePool(oracle.source()).get_virtual_price(), price);
     }
 
     function test_CurvefetchPriceUnsafe() public {
-        (uint256 price, uint256 time) = oracle.fetchPriceUnsafe();
-        console.log(price);
+        (uint256 price,) = oracle.fetchPriceUnsafe();
+        assertEq(ICurvePool(oracle.source()).get_virtual_price(), price);
     }
 }

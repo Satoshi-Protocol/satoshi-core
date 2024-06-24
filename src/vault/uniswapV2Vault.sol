@@ -5,7 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
-import {INexusYield} from "../interfaces/core/INexusYield.sol";
+import {INexusYieldManager} from "../interfaces/core/INexusYieldManager.sol";
 import {IUniswapV2Router01} from "../interfaces/dependencies/vault/IUniswapV2Router01.sol";
 
 contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
@@ -55,7 +55,7 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
     function executeStrategy(uint256 amountA, uint256 amountB, uint256 minA, uint256 minB) external onlyOwner {
         // swap stable to sat in nym
         IERC20(STABLE_TOKEN_ADDRESS).approve(nymAddr, amountA);
-        INexusYield(nymAddr).swapStableForSATPrivileged(address(this), amountA);
+        INexusYieldManager(nymAddr).swapStableForSATPrivileged(STABLE_TOKEN_ADDRESS, address(this), amountA);
         require(IERC20(SAT_ADDRESS).balanceOf(address(this)) == amountB, "balance not match");
 
         IERC20(STABLE_TOKEN_ADDRESS).approve(strategyAddr, amountA);
@@ -73,9 +73,10 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
             STABLE_TOKEN_ADDRESS, SAT_ADDRESS, amount, 0, 0, address(this), block.timestamp + 100
         );
         // swap sat to stable in nym
-        uint256 previewAmount =
-            INexusYield(nymAddr).convertSATToStableAmount(IERC20(SAT_ADDRESS).balanceOf(address(this)));
-        INexusYield(nymAddr).swapSATForStablePrivileged(address(this), previewAmount);
+        uint256 previewAmount = INexusYieldManager(nymAddr).convertSATToStableAmount(
+            STABLE_TOKEN_ADDRESS, IERC20(SAT_ADDRESS).balanceOf(address(this))
+        );
+        INexusYieldManager(nymAddr).swapSATForStablePrivileged(STABLE_TOKEN_ADDRESS, address(this), previewAmount);
     }
 
     function transferTokenToNYM(uint256 amount) external onlyOwner {
