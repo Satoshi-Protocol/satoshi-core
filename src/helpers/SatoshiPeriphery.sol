@@ -689,26 +689,6 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _afterWithdrawColl(troveManager.collateralToken(), userCollAmount);
     }
 
-    function liquidateTroves(
-        ILiquidationManager liquidationManager,
-        ITroveManager troveManager,
-        uint256 maxTrovesToLiquidate,
-        uint256 maxICR,
-        bytes calldata _bytesProof
-    ) external {
-        _updateSupraPriceFeed(troveManager, _bytesProof);
-
-        uint256 debtTokenBalanceBefore = debtToken.balanceOf(address(this));
-        uint256 collTokenBalanceBefore = troveManager.collateralToken().balanceOf(address(this));
-        liquidationManager.liquidateTroves(troveManager, maxTrovesToLiquidate, maxICR);
-        uint256 debtTokenBalanceAfter = debtToken.balanceOf(address(this));
-        uint256 collTokenBalanceAfter = troveManager.collateralToken().balanceOf(address(this));
-        uint256 userDebtAmount = debtTokenBalanceAfter - debtTokenBalanceBefore;
-        uint256 userCollAmount = collTokenBalanceAfter - collTokenBalanceBefore;
-        _afterWithdrawDebt(userDebtAmount);
-        _afterWithdrawColl(troveManager.collateralToken(), userCollAmount);
-    }
-
     function _beforeAddColl(IERC20 collateralToken, uint256 collAmount) private {
         if (collAmount == 0) return;
 

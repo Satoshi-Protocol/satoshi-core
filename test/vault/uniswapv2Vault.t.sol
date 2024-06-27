@@ -64,15 +64,8 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         _deployNexusYieldProxy(DEPLOYER);
 
-        // NexusYieldManager nexusYieldimpl = new NexusYieldManager(stableTokenAddress, cpDebtTokenProxyAddr);
-        // bytes memory data = abi.encodeCall(
-        //     INexusYieldManager.initialize,
-        //     (satoshiCore, address(rewardManagerProxy), address(priceFeedAggregatorProxy), 10, 10, 1e27, 3 days)
-        // );
-        // nexusYieldProxy = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldimpl), data)));
-
         vm.startPrank(OWNER);
-        nexusYieldProxy.setAssetConfig(stableTokenAddress, 10, 10, 10000e18, 1000e18, address(0), false, 3 days);
+        nexusYieldProxy.setAssetConfig(stableTokenAddress, 10, 10, 1000000e18, 100000e18, address(0), false, 3 days);
         debtTokenProxy.rely(address(nexusYieldProxy));
         rewardManagerProxy.setWhitelistCaller(address(nexusYieldProxy), true);
         vm.stopPrank();
@@ -111,9 +104,9 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         IERC20(stableTokenAddress).transfer(address(uniV2Vault), 100e6);
         assertEq(IERC20(stableTokenAddress).balanceOf(address(uniV2Vault)), 100e6);
         vm.startPrank(OWNER);
-        uniV2Vault.executeStrategy(50e6, 50e18, 0, 0);
+        uniV2Vault.executeStrategy(5e6, 5e18, 0, 0);
         // exit strategy
-        uniV2Vault.exitStrategy(100e10);
+        uniV2Vault.exitStrategy(10e10);
 
         uint256 nymBalance = IERC20(stableTokenAddress).balanceOf(address(nexusYieldProxy));
         uniV2Vault.transferTokenToNYM(100);
