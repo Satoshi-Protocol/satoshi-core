@@ -5,13 +5,14 @@ import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeed} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
 import {ISupraSValueFeed} from "../../interfaces/dependencies/priceFeed/ISupraSValueFeed.sol";
-
+import {ISupraOraclePull} from "../../interfaces/dependencies/priceFeed/ISupraOraclePull.sol";
 /**
  * @title PriceFeed Contract to integrate with Supra Oracle
  *        Convert data from interface of Supra Oracle to Satoshi's IPriceFeed
  */
 contract PriceFeedSupraOracle is IPriceFeed, SatoshiOwnable {
-    ISupraSValueFeed internal immutable _source;
+    ISupraSValueFeed public immutable _source;
+    ISupraOraclePull public immutable _pullSource;
     uint8 internal immutable _decimals;
     string internal _key;
     uint256 public maxTimeThreshold;
@@ -20,12 +21,14 @@ contract PriceFeedSupraOracle is IPriceFeed, SatoshiOwnable {
     constructor(
         ISatoshiCore _satoshiCore,
         ISupraSValueFeed source_,
+        ISupraOraclePull pullSource_,
         uint8 decimals_,
         uint256 _maxTimeThreshold,
         uint256 _pairIndex
     ) {
         __SatoshiOwnable_init(_satoshiCore);
         _source = source_;
+        _pullSource = pullSource_;
         _decimals = decimals_;
         maxTimeThreshold = _maxTimeThreshold;
         pairIndex = _pairIndex;
@@ -59,6 +62,6 @@ contract PriceFeedSupraOracle is IPriceFeed, SatoshiOwnable {
     }
 
     function source() external view returns (address) {
-        return address(_source);
+        return address(_pullSource);
     }
 }

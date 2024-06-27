@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-address constant SATOSHI_CORE_OWNER = 0xD17FF2e991616BC759981152B8E5B57c8Fddb15C;
+address constant SATOSHI_CORE_OWNER = 0x3AFdDB93D86222669D77d76b50C0C4100454AcAa;
 address constant SATOSHI_CORE_GUARDIAN = 0x1B83eC3584e1060f0Ece74F672Aee480df5C5BF1;
 address constant SATOSHI_CORE_FEE_RECEIVER = 0x48Af21dB49928a168599451ecC34Bca1B12F5F13;
 
@@ -11,7 +11,7 @@ uint256 constant GAS_COMPENSATION = 10e18; // 10 SAT
 string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
-address constant WETH_ADDRESS = 0xfF204e2681A6fA0e2C3FaDe68a1B28fb90E4Fc5F;
+address constant WETH_ADDRESS = 0x23a62E7A0b8541b6C217A5a1E750CDb01E954807;
 // bitlayer testnet
 // address constant WETH_ADDRESS = 0x3e57d6946f893314324C975AA9CEBBdF3232967E;
 // @todo this is core pyth testnet address
