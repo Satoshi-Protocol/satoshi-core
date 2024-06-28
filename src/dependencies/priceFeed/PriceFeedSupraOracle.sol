@@ -38,7 +38,7 @@ contract PriceFeedSupraOracle is IPriceFeed, SatoshiOwnable {
     function fetchPrice() external view returns (uint256) {
         ISupraSValueFeed.priceFeed memory pricefeed = _source.getSvalue(pairIndex);
         if (pricefeed.price == 0) revert InvalidPriceUInt256(pricefeed.price);
-        if (block.timestamp - uint256(pricefeed.time) > maxTimeThreshold) {
+        if (block.timestamp - uint256(pricefeed.time / 1000) > maxTimeThreshold) {
             revert PriceTooOld();
         }
 
