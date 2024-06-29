@@ -44,7 +44,7 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
     address constant whale = 0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa;
 
     function setUp() public override {
-        vm.createSelectFork("https://eth.llamarpc.com");
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
         super.setUp();
 
         // testing user
@@ -75,8 +75,7 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         UniV2Vault univ2Vaultimpl = new UniV2Vault();
         bytes memory initializeData = abi.encode(satoshiCore, stableTokenAddress, address(debtTokenProxy), pair);
-        bytes memory data =
-            abi.encodeCall(UniV2Vault.initialize, (initializeData));
+        bytes memory data = abi.encodeCall(UniV2Vault.initialize, (initializeData));
         address proxy = address(new ERC1967Proxy(address(univ2Vaultimpl), data));
         uniV2Vault = UniV2Vault(proxy);
 

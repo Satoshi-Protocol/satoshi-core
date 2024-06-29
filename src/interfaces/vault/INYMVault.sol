@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import {ISatoshiCore} from "../core/ISatoshiCore.sol";
 
 interface INYMVault {
-    event StrategyAddrSet(address ceffuAddr);
-    event NYMAddrSet(address psmAddr);
+    event StrategyAddrSet(address strategyAddr);
+    event NYMAddrSet(address nymAddr);
     event TokenTransferredToStrategy(uint256 amount);
     event TokenTransferredToNYM(uint256 amount);
     event TokenTransferred(address token, address to, uint256 amount);

@@ -12,7 +12,7 @@ contract PriceFeedCurveLPTest is Test {
     address constant owner = 0xE79c8DBe6D08b85C7B47140C8c10AF5C62678b4a;
 
     function setUp() public {
-        vm.createSelectFork("https://eth.llamarpc.com");
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
         ISatoshiCore _satoshiCore = ISatoshiCore(address(new SatoshiCore(owner, owner, owner, owner)));
         oracle = new PriceFeedCurveLPOracle(pool, 18, _satoshiCore);
     }

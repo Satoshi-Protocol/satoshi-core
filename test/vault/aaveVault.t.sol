@@ -17,7 +17,7 @@ contract AAVEVaultTest is Test {
     AAVEVault aaveVault;
 
     function setUp() public {
-        vm.createSelectFork("https://eth.llamarpc.com");
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
         AAVEVault aaveVaultImpl = new AAVEVault();
         ISatoshiCore _satoshiCore = ISatoshiCore(address(new SatoshiCore(owner, owner, owner, owner)));
 

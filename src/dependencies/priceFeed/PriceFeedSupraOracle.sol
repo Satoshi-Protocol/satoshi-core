@@ -10,6 +10,7 @@ import {ISupraOraclePull} from "../../interfaces/dependencies/priceFeed/ISupraOr
  * @title PriceFeed Contract to integrate with Supra Oracle
  *        Convert data from interface of Supra Oracle to Satoshi's IPriceFeed
  */
+
 contract PriceFeedSupraOracle is IPriceFeed, SatoshiOwnable {
     ISupraSValueFeed public immutable _source;
     ISupraOraclePull public immutable _pullSource;

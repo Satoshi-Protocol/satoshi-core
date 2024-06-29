@@ -155,10 +155,13 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _refundGas();
     }
 
-    function addCollWithSupraPriceUpdate(ITroveManager troveManager, uint256 _collAmount, address _upperHint, address _lowerHint, bytes calldata _bytesProof)
-        external
-        payable
-    {
+    function addCollWithSupraPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _collAmount,
+        address _upperHint,
+        address _lowerHint,
+        bytes calldata _bytesProof
+    ) external payable {
         IERC20 collateralToken = troveManager.collateralToken();
 
         _updateSupraPriceFeed(troveManager, _bytesProof);
@@ -206,9 +209,13 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _refundGas();
     }
 
-    function withdrawCollWithSupraPriceUpdate(ITroveManager troveManager, uint256 _collWithdrawal, address _upperHint, address _lowerHint, bytes calldata _bytesProof)
-        external
-    {
+    function withdrawCollWithSupraPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _collWithdrawal,
+        address _upperHint,
+        address _lowerHint,
+        bytes calldata _bytesProof
+    ) external {
         IERC20 collateralToken = troveManager.collateralToken();
         uint256 collTokenBalanceBefore = collateralToken.balanceOf(address(this));
 
@@ -314,11 +321,15 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
         _refundGas();
     }
 
-    function repayDebtWithSupraPriceUpdate(ITroveManager troveManager, uint256 _debtAmount, address _upperHint, address _lowerHint, bytes calldata _bytesProof)
-        external
-    {
+    function repayDebtWithSupraPriceUpdate(
+        ITroveManager troveManager,
+        uint256 _debtAmount,
+        address _upperHint,
+        address _lowerHint,
+        bytes calldata _bytesProof
+    ) external {
         _updateSupraPriceFeed(troveManager, _bytesProof);
-        
+
         _beforeRepayDebt(_debtAmount);
 
         borrowerOperationsProxy.repayDebt(troveManager, msg.sender, _debtAmount, _upperHint, _lowerHint);
@@ -529,7 +540,7 @@ contract SatoshiPeriphery is ISatoshiPeriphery, ReentrancyGuard {
     function closeTroveWithSupraPriceUpdate(ITroveManager troveManager, bytes calldata _bytesProof) external {
         (uint256 collAmount, uint256 debtAmount) = troveManager.getTroveCollAndDebt(msg.sender);
         uint256 netDebtAmount = debtAmount - borrowerOperationsProxy.DEBT_GAS_COMPENSATION();
-        
+
         _updateSupraPriceFeed(troveManager, _bytesProof);
 
         _beforeRepayDebt(netDebtAmount);

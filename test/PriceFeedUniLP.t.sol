@@ -18,7 +18,7 @@ contract PriceFeedUniV2LPTest is Test {
     PriceFeedChainlink priceFeed2;
 
     function setUp() public {
-        vm.createSelectFork("https://eth.llamarpc.com");
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
         ISatoshiCore _satoshiCore = ISatoshiCore(address(new SatoshiCore(owner, owner, owner, owner)));
         priceFeed1 = new PriceFeedChainlink(AggregatorV3Interface(oracle1), _satoshiCore);
         priceFeed2 = new PriceFeedChainlink(AggregatorV3Interface(oracle2), _satoshiCore);

@@ -33,7 +33,12 @@ contract DeployPriceFeedSupraScript is Script {
         ISupraOraclePull pullSource = ISupraOraclePull(SUPRA_ORACLE_PRICE_FEED_PULL_SOURCE_ADDRESS);
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
         priceFeedSupraOracle = new PriceFeedSupraOracle(
-            satoshiCore, source, pullSource, SUPRA_ORACLE_PRICE_FEED_DECIMAL, SUPRA_MAX_TIME_THRESHOLD, SUPRA_ORACLE_PAIR_INDEX
+            satoshiCore,
+            source,
+            pullSource,
+            SUPRA_ORACLE_PRICE_FEED_DECIMAL,
+            SUPRA_MAX_TIME_THRESHOLD,
+            SUPRA_ORACLE_PAIR_INDEX
         );
         assert(priceFeedSupraOracle.fetchPrice() > 0);
         console.log("PriceFeedSupraOracle deployed at:", address(priceFeedSupraOracle));
