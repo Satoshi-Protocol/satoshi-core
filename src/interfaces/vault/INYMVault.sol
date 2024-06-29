@@ -13,7 +13,7 @@ interface INYMVault {
     function setStrategyAddr(address _strategyAddr) external;
     function setNYMAddr(address _nymAddr) external;
     function transferTokenToNYM(uint256 amount) external;
-    function executeStrategy(uint256 amount) external;
-    function exitStrategy(uint256 amount) external;
-    function initialize(ISatoshiCore _satoshiCore, address stableTokenAddress_) external;
+    function executeStrategy(bytes calldata data) external;
+    function exitStrategy(bytes calldata data) external;
+    function initialize(bytes calldata data) external;
 }

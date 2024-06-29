@@ -22,8 +22,9 @@ contract SimpleVault is INYMVault, SatoshiOwnable, UUPSUpgradeable {
         // No additional authorization logic is needed for this contract
     }
 
-    function initialize(ISatoshiCore _satoshiCore, address stableTokenAddress_) external initializer {
+    function initialize(bytes calldata data) external initializer {
         __UUPSUpgradeable_init_unchained();
+        (ISatoshiCore _satoshiCore, address stableTokenAddress_) = _decodeInitializeData(data);
         __SatoshiOwnable_init(_satoshiCore);
         STABLE_TOKEN_ADDRESS = stableTokenAddress_;
     }
@@ -38,14 +39,17 @@ contract SimpleVault is INYMVault, SatoshiOwnable, UUPSUpgradeable {
         emit NYMAddrSet(_nymAddr);
     }
 
-    function executeStrategy(uint256 amount) external onlyOwner {
+    function executeStrategy(bytes calldata data) external onlyOwner {
+        uint256 amount = _decodeExecuteData(data);
         // execute strategy: transfer token to ceffu
         IERC20(STABLE_TOKEN_ADDRESS).transfer(strategyAddr, amount);
         emit TokenTransferredToStrategy(amount);
     }
 
     // todo
-    function exitStrategy(uint256 amount) external onlyOwner {}
+    function exitStrategy(bytes calldata data) external onlyOwner {
+        uint256 amount = _decodeExitData(data);
+    }
 
     function transferTokenToNYM(uint256 amount) external onlyOwner {
         IERC20(STABLE_TOKEN_ADDRESS).transfer(nymAddr, amount);
@@ -55,5 +59,17 @@ contract SimpleVault is INYMVault, SatoshiOwnable, UUPSUpgradeable {
     function transferToken(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).transfer(to, amount);
         emit TokenTransferred(token, to, amount);
+    }
+
+    function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
+        return abi.decode(data, (ISatoshiCore, address));
+    }
+
+    function _decodeExecuteData(bytes calldata data) internal pure returns (uint256) {
+        return abi.decode(data, (uint256));
+    }
+
+    function _decodeExitData(bytes calldata data) internal pure returns (uint256) {
+        return abi.decode(data, (uint256));
     }
 }

@@ -21,7 +21,8 @@ contract AAVEVaultTest is Test {
         AAVEVault aaveVaultImpl = new AAVEVault();
         ISatoshiCore _satoshiCore = ISatoshiCore(address(new SatoshiCore(owner, owner, owner, owner)));
 
-        bytes memory data = abi.encodeCall(INYMVault.initialize, (_satoshiCore, stableTokenAddress));
+        bytes memory initializeData = abi.encode(_satoshiCore, stableTokenAddress);
+        bytes memory data = abi.encodeCall(INYMVault.initialize, (initializeData));
         address proxy = address(new ERC1967Proxy(address(aaveVaultImpl), data));
         aaveVault = AAVEVault(proxy);
 
@@ -37,8 +38,9 @@ contract AAVEVaultTest is Test {
         assertEq(IERC20(stableTokenAddress).balanceOf(address(aaveVault)), 100);
 
         vm.startPrank(owner);
-        aaveVault.executeStrategy(100);
-        aaveVault.exitStrategy(100);
+        bytes memory data = abi.encode(100);
+        aaveVault.executeStrategy(data);
+        aaveVault.exitStrategy(data);
         assertEq(IERC20(stableTokenAddress).balanceOf(owner), 100);
         vm.stopPrank();
     }

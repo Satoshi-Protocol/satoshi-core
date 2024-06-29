@@ -52,10 +52,10 @@ interface INexusYieldManager {
     event OracleChanged(address indexed oldOracle, address indexed newOracle);
 
     /// @notice Event emitted when stable token is swapped for SAT.
-    event StableForSATSwapped(uint256 stableIn, uint256 SATOut, uint256 fee);
+    event StableForSATSwapped(address caller, address receiver, uint256 stableIn, uint256 SATOut, uint256 fee);
 
     /// @notice Event emitted when stable token is swapped for SAT.
-    event SATForStableSwapped(address asset, uint256 SATBurnt, uint256 stableOut, uint256 SATFee);
+    event SATForStableSwapped(address caller, address receiver, address asset, uint256 SATBurnt, uint256 stableOut, uint256 SATFee);
 
     event UsingOracleSet(bool usingOracle);
 

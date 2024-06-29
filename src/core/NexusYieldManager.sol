@@ -166,7 +166,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        emit StableForSATSwapped(actualTransferAmt, SATToMint, fee);
+        emit StableForSATSwapped(msg.sender, receiver, actualTransferAmt, SATToMint, fee);
         return SATToMint;
     }
 
@@ -206,7 +206,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         SAT.burn(msg.sender, stableTknAmountUSD);
         IERC20Upgradeable(asset).safeTransfer(receiver, stableTknAmount);
-        emit SATForStableSwapped(asset, stableTknAmountUSD, stableTknAmount, 0);
+        emit SATForStableSwapped(msg.sender, receiver, asset, stableTknAmountUSD, stableTknAmount, 0);
         return stableTknAmountUSD;
     }
 
@@ -250,7 +250,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         // mint SAT to receiver
         SAT.mint(receiver, actualTransferAmtInUSD);
 
-        emit StableForSATSwapped(actualTransferAmt, actualTransferAmtInUSD, 0);
+        emit StableForSATSwapped(msg.sender, receiver, actualTransferAmt, actualTransferAmtInUSD, 0);
         return actualTransferAmtInUSD;
     }
 

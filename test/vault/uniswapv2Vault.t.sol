@@ -74,8 +74,9 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         pair = uniswapV2Factory.createPair(stableTokenAddress, address(debtTokenProxy));
 
         UniV2Vault univ2Vaultimpl = new UniV2Vault();
+        bytes memory initializeData = abi.encode(satoshiCore, stableTokenAddress, address(debtTokenProxy), pair);
         bytes memory data =
-            abi.encodeCall(UniV2Vault.initialize, (satoshiCore, stableTokenAddress, address(debtTokenProxy), pair));
+            abi.encodeCall(UniV2Vault.initialize, (initializeData));
         address proxy = address(new ERC1967Proxy(address(univ2Vaultimpl), data));
         uniV2Vault = UniV2Vault(proxy);
 
@@ -104,9 +105,12 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         IERC20(stableTokenAddress).transfer(address(uniV2Vault), 100e6);
         assertEq(IERC20(stableTokenAddress).balanceOf(address(uniV2Vault)), 100e6);
         vm.startPrank(OWNER);
-        uniV2Vault.executeStrategy(5e6, 5e18, 0, 0);
+        // execute strategy
+        bytes memory executeData = abi.encode(5e6, 5e18, 0, 0);
+        uniV2Vault.executeStrategy(executeData);
         // exit strategy
-        uniV2Vault.exitStrategy(10e10);
+        bytes memory exitData = abi.encode(10e10);
+        uniV2Vault.exitStrategy(exitData);
 
         uint256 nymBalance = IERC20(stableTokenAddress).balanceOf(address(nexusYieldProxy));
         uniV2Vault.transferTokenToNYM(100);

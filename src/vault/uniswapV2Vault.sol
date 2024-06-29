@@ -7,14 +7,9 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {INexusYieldManager} from "../interfaces/core/INexusYieldManager.sol";
 import {IUniswapV2Router01} from "../interfaces/dependencies/vault/IUniswapV2Router01.sol";
+import {INYMVault} from "../interfaces/vault/INYMVault.sol";
 
-contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
-    event StrategyAddrSet(address ceffuAddr);
-    event NYMAddrSet(address nymAddr);
-    event TokenTransferredToStrategy(uint256 amount);
-    event TokenTransferredToNYM(uint256 amount);
-    event TokenTransferred(address token, address to, uint256 amount);
-
+contract UniV2Vault is INYMVault, SatoshiOwnable, UUPSUpgradeable {
     address public strategyAddr;
     address public nymAddr;
     address public STABLE_TOKEN_ADDRESS;
@@ -31,11 +26,12 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         // No additional authorization logic is needed for this contract
     }
 
-    function initialize(ISatoshiCore _satoshiCore, address stableTokenAddress_, address satAddress_, address pair_)
+    function initialize(bytes calldata data)
         external
         initializer
     {
         __UUPSUpgradeable_init_unchained();
+        (ISatoshiCore _satoshiCore, address stableTokenAddress_, address satAddress_, address pair_) = _decodeInitializeData(data);
         __SatoshiOwnable_init(_satoshiCore);
         STABLE_TOKEN_ADDRESS = stableTokenAddress_;
         SAT_ADDRESS = satAddress_;
@@ -52,7 +48,8 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         emit NYMAddrSet(_nymAddr);
     }
 
-    function executeStrategy(uint256 amountA, uint256 amountB, uint256 minA, uint256 minB) external onlyOwner {
+    function executeStrategy(bytes calldata data) external onlyOwner {
+        (uint256 amountA, uint256 amountB, uint256 minA, uint256 minB) = _decodeExecuteData(data);
         // swap stable to sat in nym
         IERC20(STABLE_TOKEN_ADDRESS).approve(nymAddr, amountA);
         INexusYieldManager(nymAddr).swapStableForSATPrivileged(STABLE_TOKEN_ADDRESS, address(this), amountA);
@@ -66,7 +63,8 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
         );
     }
 
-    function exitStrategy(uint256 amount) external onlyOwner {
+    function exitStrategy(bytes calldata data) external onlyOwner {
+        uint256 amount = _decodeExitData(data);
         IERC20(PAIR_ADDRESS).approve(strategyAddr, amount);
         // remove liquidity from dex
         IUniswapV2Router01(strategyAddr).removeLiquidity(
@@ -87,5 +85,17 @@ contract UniV2Vault is SatoshiOwnable, UUPSUpgradeable {
     function transferToken(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).transfer(to, amount);
         emit TokenTransferred(token, to, amount);
+    }
+
+    function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address, address, address) {
+        return abi.decode(data, (ISatoshiCore, address, address, address));
+    }
+
+    function _decodeExecuteData(bytes calldata data) internal pure returns (uint256, uint256, uint256, uint256) {
+        return abi.decode(data, (uint256, uint256, uint256, uint256));
+    }
+
+    function _decodeExitData(bytes calldata data) internal pure returns (uint256) {
+        return abi.decode(data, (uint256));
     }
 }
