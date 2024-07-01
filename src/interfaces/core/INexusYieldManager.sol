@@ -7,16 +7,16 @@ import {ISatoshiCore} from "./ISatoshiCore.sol";
 struct AssetConfig {
     /// The address of ResilientOracle contract wrapped in its interface.
     IPriceFeedAggregator oracle;
-    /// The incoming stableCoin fee. (Fee for swapStableForSAT).
+    /// The incoming stableCoin fee. (Fee for swapIn).
     uint256 feeIn;
-    /// The outgoing stableCoin fee. (Fee for swapSATForStable).
+    /// The outgoing stableCoin fee. (Fee for swapOut).
     uint256 feeOut;
-    /// The maximum amount of SAT that can be minted through this contract.
-    uint256 satMintCap;
-    /// The maximum amount of SAT that can be minted everyday.
-    uint256 dailySatMintCap;
-    /// The total amount of SAT minted through this asset.
-    uint256 satMinted;
+    /// The maximum amount of debtToken that can be minted through this contract.
+    uint256 debtTokenMintCap;
+    /// The maximum amount of debtToken that can be minted everyday.
+    uint256 dailyDebtTokenMintCap;
+    /// The total amount of debtToken minted through this asset.
+    uint256 debtTokenMinted;
     /// A flag indicating whether the contract is using an oracle or not.
     bool usingOracle;
     /// The time used to
@@ -43,7 +43,7 @@ interface INexusYieldManager {
     event FeeOutChanged(uint256 oldFeeOut, uint256 newFeeOut);
 
     /// @notice Event emitted when SATMintCap state var is modified.
-    event SATMintCapChanged(uint256 oldCap, uint256 newCap);
+    event DebtTokenMintCapChanged(uint256 oldCap, uint256 newCap);
 
     /// @notice Event emitted when RewardManager state var is modified.
     event RewardManagerChanged(address indexed oldTreasury, address indexed newTreasury);
@@ -51,12 +51,12 @@ interface INexusYieldManager {
     /// @notice Event emitted when oracle state var is modified.
     event OracleChanged(address indexed oldOracle, address indexed newOracle);
 
-    /// @notice Event emitted when stable token is swapped for SAT.
-    event StableForSATSwapped(address caller, address receiver, uint256 stableIn, uint256 SATOut, uint256 fee);
+    /// @notice Event emitted when stable token is swapped for debtToken.
+    event AssetForDebtTokenSwapped(address caller, address receiver, uint256 stableIn, uint256 SATOut, uint256 fee);
 
-    /// @notice Event emitted when stable token is swapped for SAT.
-    event SATForStableSwapped(
-        address caller, address receiver, address asset, uint256 SATBurnt, uint256 stableOut, uint256 SATFee
+    /// @notice Event emitted when stable token is swapped for debtToken.
+    event DebtTokenForAssetSwapped(
+        address caller, address receiver, address asset, uint256 debtTokenBurnt, uint256 stableOut, uint256 fee
     );
 
     event UsingOracleSet(bool usingOracle);
@@ -67,7 +67,7 @@ interface INexusYieldManager {
 
     event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee);
 
-    event WithdrawStable(address asset, address user, uint256 amount);
+    event Withdraw(address asset, address user, uint256 amount);
 
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
 
@@ -92,17 +92,19 @@ interface INexusYieldManager {
     /// @notice thrown when a zero amount is passed as stable token amount parameter
     error ZeroAmount();
 
-    /// @notice thrown when the user doesn't have enough SAT balance to provide for the amount of stable tokens he wishes to get
-    error NotEnoughSAT();
+    /// @notice thrown when the user doesn't have enough debtToken balance to provide for the amount of stable tokens he wishes to get
+    error NotEnoughDebtToken();
 
-    /// @notice thrown when the amount of SAT to be burnt exceeds the SATMinted amount
-    error SATMintedUnderflow();
+    /// @notice thrown when the amount of debtToken to be burnt exceeds the debtTokenMinted amount
+    error DebtTokenMintedUnderflow();
 
-    /// @notice thrown when the SAT transfer to treasury fails
-    error SATTransferFail();
+    /// @notice thrown when the debtToken transfer to treasury fails
+    error DebtTokenTransferFail();
 
-    /// @notice thrown when SAT to be minted will go beyond the mintCap threshold
-    error SATMintCapReached();
+    /// @notice thrown when debtToken to be minted will go beyond the mintCap threshold
+    error DebtTokenMintCapReached();
+
+    error DebtTokenDailyMintCapReached();
 
     /// @notice thrown when fee calculation will result in rounding down to 0 due to stable token amount being a too small number
     error AmountTooSmall();
@@ -123,7 +125,7 @@ interface INexusYieldManager {
 
     function ONE_DOLLAR() external view returns (uint256);
 
-    function SAT() external view returns (IDebtToken);
+    function debtToken() external view returns (IDebtToken);
 
     function rewardManagerAddr() external view returns (address);
 
@@ -135,7 +137,7 @@ interface INexusYieldManager {
         address asset,
         uint256 feeIn_,
         uint256 feeOut_,
-        uint256 satMintCap_,
+        uint256 debtTokenMintCap_,
         uint256 dailyMintCap_,
         address oracle_,
         bool usingOracle_,
@@ -144,7 +146,7 @@ interface INexusYieldManager {
 
     function sunsetAsset(address asset) external;
 
-    function swapStableForSAT(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
+    function swapIn(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
 
     function pause() external;
 
@@ -156,23 +158,19 @@ interface INexusYieldManager {
 
     function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external;
 
-    function previewSwapSATForStable(address asset, uint256 stableTknAmount) external returns (uint256);
+    function previewSwapOut(address asset, uint256 stableTknAmount) external returns (uint256, uint256);
 
-    function previewSwapStableForSAT(address asset, uint256 stableTknAmount) external returns (uint256);
+    function previewSwapIn(address asset, uint256 stableTknAmount) external returns (uint256);
 
-    function swapSATForStablePrivileged(address asset, address receiver, uint256 stableTknAmount)
-        external
-        returns (uint256);
+    function swapOutPrivileged(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
 
-    function swapStableForSATPrivileged(address asset, address receiver, uint256 stableTknAmount)
-        external
-        returns (uint256);
+    function swapInPrivileged(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
 
-    function scheduleSwapSATForStable(address asset, uint256 stableTknAmount) external returns (uint256);
+    function scheduleSwapOut(address asset, uint256 stableTknAmount) external returns (uint256);
 
-    function withdrawStable(address asset) external;
+    function withdraw(address asset) external;
 
-    function convertSATToStableAmount(address asset, uint256 amount) external view returns (uint256);
+    function convertDebtTokenToAssetAmount(address asset, uint256 amount) external view returns (uint256);
 
     function oracle(address asset) external view returns (IPriceFeedAggregator);
 
@@ -180,11 +178,11 @@ interface INexusYieldManager {
 
     function feeOut(address asset) external view returns (uint256);
 
-    function satMintCap(address asset) external view returns (uint256);
+    function debtTokenMintCap(address asset) external view returns (uint256);
 
-    function dailySatMintCap(address asset) external view returns (uint256);
+    function dailyDebtTokenMintCap(address asset) external view returns (uint256);
 
-    function satMinted(address asset) external view returns (uint256);
+    function debtTokenMinted(address asset) external view returns (uint256);
 
     function usingOracle(address asset) external view returns (bool);
 

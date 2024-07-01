@@ -25,7 +25,7 @@ contract UniV2Vault is VaultCore {
         (uint256 amountA, uint256 amountB, uint256 minA, uint256 minB) = _decodeExecuteData(data);
         // swap stable to sat in nym
         IERC20(STABLE_TOKEN_ADDRESS).approve(nymAddr, amountA);
-        INexusYieldManager(nymAddr).swapStableForSATPrivileged(STABLE_TOKEN_ADDRESS, address(this), amountA);
+        INexusYieldManager(nymAddr).swapInPrivileged(STABLE_TOKEN_ADDRESS, address(this), amountA);
         require(IERC20(SAT_ADDRESS).balanceOf(address(this)) == amountB, "balance not match");
 
         IERC20(STABLE_TOKEN_ADDRESS).approve(strategyAddr, amountA);
@@ -44,10 +44,10 @@ contract UniV2Vault is VaultCore {
             STABLE_TOKEN_ADDRESS, SAT_ADDRESS, amount, 0, 0, address(this), block.timestamp + 100
         );
         // swap sat to stable in nym
-        uint256 previewAmount = INexusYieldManager(nymAddr).convertSATToStableAmount(
+        uint256 previewAmount = INexusYieldManager(nymAddr).convertDebtTokenToAssetAmount(
             STABLE_TOKEN_ADDRESS, IERC20(SAT_ADDRESS).balanceOf(address(this))
         );
-        INexusYieldManager(nymAddr).swapSATForStablePrivileged(STABLE_TOKEN_ADDRESS, address(this), previewAmount);
+        INexusYieldManager(nymAddr).swapOutPrivileged(STABLE_TOKEN_ADDRESS, address(this), previewAmount);
     }
 
     function _decodeInitializeData(bytes calldata data)

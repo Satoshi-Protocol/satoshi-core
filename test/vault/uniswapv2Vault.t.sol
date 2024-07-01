@@ -96,7 +96,7 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.prank(whale);
         IERC20(stableTokenAddress).transfer(address(this), 100e8);
         IERC20(stableTokenAddress).approve(address(nexusYieldProxy), 100e8);
-        nexusYieldProxy.swapStableForSAT(stableTokenAddress, address(this), 100e8);
+        nexusYieldProxy.swapIn(stableTokenAddress, address(this), 100e8);
     }
 
     function test_executeAndExitStrategyV2() public {

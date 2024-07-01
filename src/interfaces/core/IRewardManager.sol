@@ -15,6 +15,7 @@ enum LockDuration {
     SIX, // 6 months
     NINE, // 9 months
     TWELVE // 12 months
+
 }
 
 uint256 constant NUMBER_OF_LOCK_DURATIONS = 4;

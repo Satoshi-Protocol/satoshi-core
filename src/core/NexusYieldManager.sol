@@ -18,7 +18,7 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
  * @title Nexus Yield Manager Contract.
  * Mutated from:
  * https://github.com/VenusProtocol/venus-protocol/blob/develop/contracts/PegStability/PegStability.sol
- * @notice Contract for swapping stable token for SAT token and vice versa to maintain the peg stability between them.
+ * @notice Contract for swapping stable token for debtToken token and vice versa to maintain the peg stability between them.
  */
 contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -32,17 +32,19 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     uint256 public constant MANTISSA_ONE = 1e18;
 
     /// @notice The value representing one dollar in the stable token.
-    /// @dev Our oracle is returning amount depending on the number of decimals of the stable token. (36 - asset_decimals) E.g. 8 decimal asset = 1e28.
+    /// @dev Our oracle is returning amount depending on the number of decimals of the asset. (36 - asset_decimals) E.g. 8 decimal asset = 1e28.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     uint256 public constant ONE_DOLLAR = 1e18;
 
-    IDebtToken public immutable SAT;
+    IDebtToken public immutable debtToken;
 
     /// @notice The address of the Reward Manager.
     address public rewardManagerAddr;
 
     /// @notice A flag indicating whether the contract is currently paused or not.
     bool public isPaused;
+
+    uint256 public day;
 
     mapping(address => bool) public isPrivileged;
 
@@ -53,6 +55,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     mapping(address => AssetConfig) public assetConfigs;
 
     mapping(address => bool) public isAssetSupported;
+
+    mapping(address => uint256) public dailyMintCount;
 
     /**
      * @dev Prevents functions to execute when contract is paused.
@@ -68,10 +72,10 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address SATAddress_) {
-        _ensureNonzeroAddress(SATAddress_);
+    constructor(address debtTokenAddress_) {
+        _ensureNonzeroAddress(debtTokenAddress_);
 
-        SAT = IDebtToken(SATAddress_);
+        debtToken = IDebtToken(debtTokenAddress_);
         _disableInitializers();
     }
 
@@ -89,8 +93,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         address asset,
         uint256 feeIn_,
         uint256 feeOut_,
-        uint256 satMintCap_,
-        uint256 dailySatMintCap_,
+        uint256 debtTokenMintCap_,
+        uint256 dailyDebtTokenMintCap_,
         address oracle_,
         bool usingOracle_,
         uint256 swapWaitingPeriod_
@@ -101,8 +105,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         AssetConfig storage config = assetConfigs[asset];
         config.feeIn = feeIn_;
         config.feeOut = feeOut_;
-        config.satMintCap = satMintCap_;
-        config.dailySatMintCap = dailySatMintCap_;
+        config.debtTokenMintCap = debtTokenMintCap_;
+        config.dailyDebtTokenMintCap = dailyDebtTokenMintCap_;
         config.oracle = IPriceFeedAggregator(oracle_);
         config.usingOracle = usingOracle_;
         config.swapWaitingPeriod = swapWaitingPeriod_;
@@ -118,66 +122,79 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
      */
 
     /**
-     * @notice Swaps stable tokens for SAT with fees.
+     * @notice Swaps asset for debtToken with fees.
      * @dev This function adds support to fee-on-transfer tokens. The actualTransferAmt is calculated, by recording token balance state before and after the transfer.
-     * @param receiver The address that will receive the SAT tokens.
-     * @param stableTknAmount The amount of stable tokens to be swapped.
-     * @return Amount of SAT minted to the sender.
+     * @param receiver The address that will receive the debtToken tokens.
+     * @param assetAmount The amount of asset to be swapped.
+     * @return Amount of debtToken minted to the sender.
      */
-    // @custom:event Emits StableForSATSwapped event.
-    function swapStableForSAT(address asset, address receiver, uint256 stableTknAmount)
+    // @custom:event Emits AssetForDebtTokenSwapped event.
+    function swapIn(address asset, address receiver, uint256 assetAmount)
         external
         isActive
         nonReentrant
         returns (uint256)
     {
         _ensureNonzeroAddress(receiver);
-        _ensureNonzeroAmount(stableTknAmount);
+        _ensureNonzeroAmount(assetAmount);
         _ensureAssetSupported(asset);
 
         // transfer IN, supporting fee-on-transfer tokens
         uint256 balanceBefore = IERC20Upgradeable(asset).balanceOf(address(this));
-        IERC20Upgradeable(asset).safeTransferFrom(msg.sender, address(this), stableTknAmount);
+        IERC20Upgradeable(asset).safeTransferFrom(msg.sender, address(this), assetAmount);
         uint256 balanceAfter = IERC20Upgradeable(asset).balanceOf(address(this));
 
         // calculate actual transfered amount (in case of fee-on-transfer tokens)
         uint256 actualTransferAmt = balanceAfter - balanceBefore;
         // convert to decimal 18
-        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(asset, actualTransferAmt);
+        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(asset, actualTransferAmt, FeeDirection.IN);
 
         // calculate feeIn
         uint256 fee = _calculateFee(asset, actualTransferAmtInUSD, FeeDirection.IN);
-        uint256 SATToMint = actualTransferAmtInUSD - fee;
+        uint256 debtTokenToMint = actualTransferAmtInUSD - fee;
 
-        if (assetConfigs[asset].satMinted + actualTransferAmtInUSD > assetConfigs[asset].satMintCap) {
-            revert SATMintCapReached();
+        if (assetConfigs[asset].debtTokenMinted + actualTransferAmtInUSD > assetConfigs[asset].debtTokenMintCap) {
+            revert DebtTokenMintCapReached();
         }
+
+        uint256 today = block.timestamp / 1 days;
+
+        if (today > day) {
+            day = today;
+            dailyMintCount[asset] = 0;
+        }
+
+        if (dailyMintCount[asset] + actualTransferAmtInUSD > assetConfigs[asset].dailyDebtTokenMintCap) {
+            revert DebtTokenDailyMintCapReached();
+        }
+
         unchecked {
-            assetConfigs[asset].satMinted += actualTransferAmtInUSD;
+            assetConfigs[asset].debtTokenMinted += actualTransferAmtInUSD;
+            dailyMintCount[asset] += actualTransferAmtInUSD;
         }
 
-        // mint SAT to receiver
-        SAT.mint(receiver, SATToMint);
+        // mint debtToken to receiver
+        debtToken.mint(receiver, debtTokenToMint);
 
-        // mint SAT fee to rewardManager
+        // mint debtToken fee to rewardManager
         if (fee != 0) {
-            SAT.mint(address(this), fee);
-            SAT.approve(rewardManagerAddr, fee);
+            debtToken.mint(address(this), fee);
+            debtToken.approve(rewardManagerAddr, fee);
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        emit StableForSATSwapped(msg.sender, receiver, actualTransferAmt, SATToMint, fee);
-        return SATToMint;
+        emit AssetForDebtTokenSwapped(msg.sender, receiver, actualTransferAmt, debtTokenToMint, fee);
+        return debtTokenToMint;
     }
 
     /**
-     * @notice Swaps SAT for a stable token.
+     * @notice Swaps debtToken for a asset.
      * @param receiver The address where the stablecoin will be sent.
-     * @param stableTknAmount The amount of stable tokens to receive.
-     * @return The amount of SAT received and burnt from the sender.
+     * @param amount The amount of stable tokens to receive.
+     * @return The amount of asset received.
      */
-    // @custom:event Emits SATForStableSwapped event.
-    function swapSATForStablePrivileged(address asset, address receiver, uint256 stableTknAmount)
+    // @custom:event Emits DebtTokenForAssetSwapped event.
+    function swapOutPrivileged(address asset, address receiver, uint256 amount)
         external
         isActive
         onlyPrivileged
@@ -185,40 +202,41 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         returns (uint256)
     {
         _ensureNonzeroAddress(receiver);
-        _ensureNonzeroAmount(stableTknAmount);
+        _ensureNonzeroAmount(amount);
         _ensureAssetSupported(asset);
 
         AssetConfig storage config = assetConfigs[asset];
 
-        // dec 18
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
+        // get asset amount
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
 
-        if (SAT.balanceOf(msg.sender) < stableTknAmountUSD) {
-            revert NotEnoughSAT();
+        if (debtToken.balanceOf(msg.sender) < amount) {
+            revert NotEnoughDebtToken();
         }
-        if (config.satMinted < stableTknAmountUSD) {
-            revert SATMintedUnderflow();
+
+        if (config.debtTokenMinted < amount) {
+            revert DebtTokenMintedUnderflow();
         }
 
         unchecked {
-            config.satMinted -= stableTknAmountUSD;
+            config.debtTokenMinted -= amount;
         }
 
-        SAT.burn(msg.sender, stableTknAmountUSD);
-        IERC20Upgradeable(asset).safeTransfer(receiver, stableTknAmount);
-        emit SATForStableSwapped(msg.sender, receiver, asset, stableTknAmountUSD, stableTknAmount, 0);
-        return stableTknAmountUSD;
+        debtToken.burn(msg.sender, amount);
+        IERC20Upgradeable(asset).safeTransfer(receiver, assetAmount);
+        emit DebtTokenForAssetSwapped(msg.sender, receiver, asset, amount, assetAmount, 0);
+        return assetAmount;
     }
 
     /**
-     * @notice Swaps stable tokens for SAT.
+     * @notice Swaps stable tokens for debtToken.
      * @dev This function adds support to fee-on-transfer tokens. The actualTransferAmt is calculated, by recording token balance state before and after the transfer.
-     * @param receiver The address that will receive the SAT tokens.
-     * @param stableTknAmount The amount of stable tokens to be swapped.
-     * @return Amount of SAT minted to the sender.
+     * @param receiver The address that will receive the debtToken tokens.
+     * @param assetAmount The amount of stable tokens to be swapped.
+     * @return Amount of debtToken minted to the sender.
      */
-    // @custom:event Emits StableForSATSwapped event.
-    function swapStableForSATPrivileged(address asset, address receiver, uint256 stableTknAmount)
+    // @custom:event Emits AssetForDebtTokenSwapped event.
+    function swapInPrivileged(address asset, address receiver, uint256 assetAmount)
         external
         isActive
         onlyPrivileged
@@ -226,44 +244,41 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         returns (uint256)
     {
         _ensureNonzeroAddress(receiver);
-        _ensureNonzeroAmount(stableTknAmount);
+        _ensureNonzeroAmount(assetAmount);
         _ensureAssetSupported(asset);
 
         // transfer IN, supporting fee-on-transfer tokens
         uint256 balanceBefore = IERC20Upgradeable(asset).balanceOf(address(this));
-        IERC20Upgradeable(asset).safeTransferFrom(msg.sender, address(this), stableTknAmount);
+        IERC20Upgradeable(asset).safeTransferFrom(msg.sender, address(this), assetAmount);
         uint256 balanceAfter = IERC20Upgradeable(asset).balanceOf(address(this));
 
         // calculate actual transfered amount (in case of fee-on-transfer tokens)
         uint256 actualTransferAmt = balanceAfter - balanceBefore;
 
         // convert to decimal 18
-        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(asset, actualTransferAmt);
+        uint256 actualTransferAmtInUSD = _previewTokenUSDAmount(asset, actualTransferAmt, FeeDirection.IN);
 
-        if (assetConfigs[asset].satMinted + actualTransferAmtInUSD > assetConfigs[asset].satMintCap) {
-            revert SATMintCapReached();
+        if (assetConfigs[asset].debtTokenMinted + actualTransferAmtInUSD > assetConfigs[asset].debtTokenMintCap) {
+            revert DebtTokenMintCapReached();
         }
         unchecked {
-            assetConfigs[asset].satMinted += actualTransferAmtInUSD;
+            assetConfigs[asset].debtTokenMinted += actualTransferAmtInUSD;
         }
 
-        // mint SAT to receiver
-        SAT.mint(receiver, actualTransferAmtInUSD);
+        // mint debtToken to receiver
+        debtToken.mint(receiver, actualTransferAmtInUSD);
 
-        emit StableForSATSwapped(msg.sender, receiver, actualTransferAmt, actualTransferAmtInUSD, 0);
+        emit AssetForDebtTokenSwapped(msg.sender, receiver, actualTransferAmt, actualTransferAmtInUSD, 0);
         return actualTransferAmtInUSD;
     }
 
     /**
-     * @notice Schedule a swap sat for stable token.
+     * @notice Schedule a swap debtToken for asset.
+     * @param asset The address of the asset.
+     * @param amount The amount of debt tokens.
      */
-    function scheduleSwapSATForStable(address asset, uint256 stableTknAmount)
-        external
-        isActive
-        nonReentrant
-        returns (uint256)
-    {
-        _ensureNonzeroAmount(stableTknAmount);
+    function scheduleSwapOut(address asset, uint256 amount) external isActive nonReentrant returns (uint256) {
+        _ensureNonzeroAmount(amount);
         _ensureAssetSupported(asset);
 
         if (withdrawalTime[asset][msg.sender] != 0) {
@@ -272,34 +287,33 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         withdrawalTime[asset][msg.sender] = uint32(block.timestamp + assetConfigs[asset].swapWaitingPeriod);
 
-        // dec 18
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
-        uint256 fee = _calculateFee(asset, stableTknAmountUSD, FeeDirection.OUT);
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
+        uint256 fee = _calculateFee(asset, amount, FeeDirection.OUT);
 
-        if (SAT.balanceOf(msg.sender) < stableTknAmountUSD + fee) {
-            revert NotEnoughSAT();
+        if (debtToken.balanceOf(msg.sender) < amount + fee) {
+            revert NotEnoughDebtToken();
         }
-        if (assetConfigs[asset].satMinted < stableTknAmountUSD) {
-            revert SATMintedUnderflow();
+        if (assetConfigs[asset].debtTokenMinted < amount) {
+            revert DebtTokenMintedUnderflow();
         }
 
         unchecked {
-            assetConfigs[asset].satMinted -= stableTknAmountUSD;
+            assetConfigs[asset].debtTokenMinted -= amount;
         }
 
         if (fee != 0) {
-            SAT.transferFrom(msg.sender, address(this), fee);
-            SAT.approve(rewardManagerAddr, fee);
+            debtToken.transferFrom(msg.sender, address(this), fee);
+            debtToken.approve(rewardManagerAddr, fee);
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        SAT.burn(msg.sender, stableTknAmountUSD);
-        scheduledWithdrawalAmount[asset][msg.sender] = stableTknAmount;
-        emit WithdrawalScheduled(asset, msg.sender, stableTknAmount, fee);
-        return stableTknAmountUSD;
+        debtToken.burn(msg.sender, amount);
+        scheduledWithdrawalAmount[asset][msg.sender] = assetAmount;
+        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee);
+        return assetAmount;
     }
 
-    function withdrawStable(address asset) external {
+    function withdraw(address asset) external {
         if (withdrawalTime[asset][msg.sender] == 0 || block.timestamp < withdrawalTime[asset][msg.sender]) {
             revert WithdrawalNotAvailable();
         }
@@ -308,13 +322,13 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         uint256 _amount = scheduledWithdrawalAmount[asset][msg.sender];
         scheduledWithdrawalAmount[asset][msg.sender] = 0;
 
-        // check the stable is enough
+        // check the asset is enough
         if (IERC20(asset).balanceOf(address(this)) < _amount) {
-            revert SATTransferFail();
+            revert DebtTokenTransferFail();
         }
 
         IERC20Upgradeable(asset).safeTransfer(msg.sender, _amount);
-        emit WithdrawStable(asset, msg.sender, _amount);
+        emit Withdraw(asset, msg.sender, _amount);
     }
 
     /**
@@ -371,49 +385,49 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
      */
 
     /**
-     * @notice Calculates the amount of SAT that would be burnt from the user.
+     * @notice Calculates the amount of debtToken that would be burnt from the user.
      * @dev This calculation might be off with a bit, if the price of the oracle for this asset is not updated in the block this function is invoked.
-     * @param stableTknAmount The amount of stable tokens to be received after the swap.
-     * @return The amount of SAT that would be taken from the user.
+     * @param amount The amount of debt tokens used for swap.
+     * @return The amount of asset that would be taken from the user.
      */
-    function previewSwapSATForStable(address asset, uint256 stableTknAmount) external returns (uint256) {
-        _ensureNonzeroAmount(stableTknAmount);
+    function previewSwapOut(address asset, uint256 amount) external returns (uint256, uint256) {
+        _ensureNonzeroAmount(amount);
         _ensureAssetSupported(asset);
 
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
-        uint256 fee = _calculateFee(asset, stableTknAmountUSD, FeeDirection.OUT);
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
+        uint256 fee = _calculateFee(asset, amount, FeeDirection.OUT);
 
-        if (assetConfigs[asset].satMinted < stableTknAmountUSD) {
-            revert SATMintedUnderflow();
+        if (assetConfigs[asset].debtTokenMinted < amount) {
+            revert DebtTokenMintedUnderflow();
         }
 
-        return stableTknAmountUSD + fee;
+        return (assetAmount, fee);
     }
 
     /**
-     * @notice Calculates the amount of SAT that would be sent to the receiver.
+     * @notice Calculates the amount of debtToken that would be sent to the receiver.
      * @dev This calculation might be off with a bit, if the price of the oracle for this asset is not updated in the block this function is invoked.
-     * @param stableTknAmount The amount of stable tokens provided for the swap.
-     * @return The amount of SAT that would be sent to the receiver.
+     * @param assetAmount The amount of stable tokens provided for the swap.
+     * @return The amount of debtToken that would be sent to the receiver.
      */
-    function previewSwapStableForSAT(address asset, uint256 stableTknAmount) external returns (uint256) {
-        _ensureNonzeroAmount(stableTknAmount);
+    function previewSwapIn(address asset, uint256 assetAmount) external returns (uint256) {
+        _ensureNonzeroAmount(assetAmount);
         _ensureAssetSupported(asset);
 
-        uint256 stableTknAmountUSD = _previewTokenUSDAmount(asset, stableTknAmount);
+        uint256 assetAmountUSD = _previewTokenUSDAmount(asset, assetAmount, FeeDirection.IN);
 
         //calculate feeIn
-        uint256 fee = _calculateFee(asset, stableTknAmountUSD, FeeDirection.IN);
-        uint256 SATToMint = stableTknAmountUSD - fee;
+        uint256 fee = _calculateFee(asset, assetAmountUSD, FeeDirection.IN);
+        uint256 DebtTokenToMint = assetAmountUSD - fee;
 
-        if (assetConfigs[asset].satMinted + stableTknAmountUSD > assetConfigs[asset].satMintCap) {
-            revert SATMintCapReached();
+        if (assetConfigs[asset].debtTokenMinted + assetAmountUSD > assetConfigs[asset].debtTokenMintCap) {
+            revert DebtTokenMintCapReached();
         }
 
-        return SATToMint;
+        return DebtTokenToMint;
     }
 
-    function convertSATToStableAmount(address asset, uint256 amount) external view returns (uint256) {
+    function convertDebtTokenToAssetAmount(address asset, uint256 amount) public view returns (uint256) {
         uint256 scaledAmt;
         uint256 decimals = IERC20MetadataUpgradeable(asset).decimals();
         if (decimals == TARGET_DIGITS) {
@@ -427,16 +441,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return scaledAmt;
     }
 
-    /**
-     * @dev Calculates the USD value of the given amount of stable tokens depending on the swap direction.
-     * @param amount The amount of stable tokens.
-     * @return The USD value of the given amount of stable tokens scaled by 1e18 taking into account the direction of the swap
-     */
-    function _previewTokenUSDAmount(address asset, uint256 amount) internal returns (uint256) {
-        return (_getScaledAmt(asset, amount) * _getPriceInUSD(asset)) / MANTISSA_ONE;
-    }
-
-    function _getScaledAmt(address asset, uint256 amount) internal view returns (uint256) {
+    function convertAssetToDebtTokenAmount(address asset, uint256 amount) public view returns (uint256) {
         uint256 scaledAmt;
         uint256 decimals = IERC20MetadataUpgradeable(asset).decimals();
         if (decimals == TARGET_DIGITS) {
@@ -451,14 +456,46 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     }
 
     /**
-     * @notice Get the price of stable token in USD.
-     * @dev This function gets the price of the stable token in USD.
+     * @dev Calculates the USD value of the given amount of stable tokens depending on the swap direction.
+     * @param amount The amount of stable tokens.
+     * @return The USD value of the given amount of stable tokens scaled by 1e18 taking into account the direction of the swap
+     */
+    function _previewTokenUSDAmount(address asset, uint256 amount, FeeDirection direction) internal returns (uint256) {
+        return (convertAssetToDebtTokenAmount(asset, amount) * _getPriceInUSD(asset, direction)) / MANTISSA_ONE;
+    }
+
+    /**
+     * @dev Calculate the amount of assets from the given amount of debt tokens.
+     * @param asset The address of the asset.
+     * @param amount The amount of debt tokens.
+     */
+    function _previewAssetAmountFromDebtToken(address asset, uint256 amount, FeeDirection direction)
+        internal
+        returns (uint256)
+    {
+        return (convertDebtTokenToAssetAmount(asset, amount) * MANTISSA_ONE) / _getPriceInUSD(asset, direction);
+    }
+
+    /**
+     * @notice Get the price of asset in USD.
+     * @dev This function gets the price of the asset in USD.
      * @return The price in USD, adjusted based on the selected direction.
      */
-    function _getPriceInUSD(address asset) internal returns (uint256) {
-        // fetch price with decimal 18
+    function _getPriceInUSD(address asset, FeeDirection direction) internal returns (uint256) {
+        if (!assetConfigs[asset].usingOracle) {
+            return ONE_DOLLAR;
+        }
 
-        return assetConfigs[asset].usingOracle ? assetConfigs[asset].oracle.fetchPrice(IERC20(asset)) : ONE_DOLLAR;
+        // get price with decimals 18
+        uint256 price = assetConfigs[asset].oracle.fetchPrice(IERC20(asset));
+
+        if (direction == FeeDirection.IN) {
+            // MIN(1, price)
+            return price < ONE_DOLLAR ? price : ONE_DOLLAR;
+        } else {
+            // MAX(1, price)
+            return price > ONE_DOLLAR ? price : ONE_DOLLAR;
+        }
     }
 
     /**
@@ -520,16 +557,16 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return assetConfigs[asset].feeOut;
     }
 
-    function satMintCap(address asset) public view returns (uint256) {
-        return assetConfigs[asset].satMintCap;
+    function debtTokenMintCap(address asset) public view returns (uint256) {
+        return assetConfigs[asset].debtTokenMintCap;
     }
 
-    function dailySatMintCap(address asset) public view returns (uint256) {
-        return assetConfigs[asset].dailySatMintCap;
+    function dailyDebtTokenMintCap(address asset) public view returns (uint256) {
+        return assetConfigs[asset].dailyDebtTokenMintCap;
     }
 
-    function satMinted(address asset) public view returns (uint256) {
-        return assetConfigs[asset].satMinted;
+    function debtTokenMinted(address asset) public view returns (uint256) {
+        return assetConfigs[asset].debtTokenMinted;
     }
 
     function usingOracle(address asset) public view returns (bool) {
