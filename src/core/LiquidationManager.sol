@@ -133,7 +133,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
         }
         if (trovesRemaining > 0 && !troveManagerValues.sunsetting && troveCount > 1) {
             (uint256 entireSystemColl, uint256 entireSystemDebt) = borrowerOperations.getGlobalSystemBalances();
-            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price;
+            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price - totals.totalCollGasCompensation;
             entireSystemDebt -= totals.totalDebtToOffset;
             address nextAccount = sortedTrovesCached.getLast();
             ITroveManager _troveManager = troveManager; //stack too deep workaround
@@ -244,7 +244,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
         if (troveIter < length && troveCount > 1) {
             // second iteration round, if we receive a trove with ICR > MCR and need to track TCR
             (uint256 entireSystemColl, uint256 entireSystemDebt) = borrowerOperations.getGlobalSystemBalances();
-            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price;
+            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price - totals.totalCollGasCompensation;
             entireSystemDebt -= totals.totalDebtToOffset;
             while (troveIter < length && troveCount > 1) {
                 address account = _troveArray[troveIter];
@@ -252,7 +252,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
                 unchecked {
                     ++troveIter;
                 }
-                if (ICR <= _100pct) {
+                if (ICR <= _100pct && _inRecoveryMode()) {
                     singleLiquidation = _liquidateWithoutSP(troveManager, account);
                 } else if (ICR < troveManagerValues.MCR) {
                     singleLiquidation =

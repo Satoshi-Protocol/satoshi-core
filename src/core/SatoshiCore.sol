@@ -29,7 +29,7 @@ contract SatoshiCore is ISatoshiCore {
     // System-wide pause. When true, disables trove adjustments across all collaterals.
     bool public paused;
 
-    // System-wide start time, rounded down the nearest epoch week.
+    // System-wide start time.
     // Other contracts that require access to this should inherit `SystemStart`.
     uint256 public immutable startTime;
 

@@ -518,7 +518,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 timePassed = block.timestamp - lastFeeOperationTime;
 
         if (timePassed >= SECONDS_IN_ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
+            lastFeeOperationTime = lastFeeOperationTime + timePassed / SECONDS_IN_ONE_MINUTE * SECONDS_IN_ONE_MINUTE;
             emit LastFeeOpTimeUpdated(block.timestamp);
         }
     }

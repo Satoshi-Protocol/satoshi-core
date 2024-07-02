@@ -28,18 +28,22 @@ contract PriceFeedUniV2LPTest is Test {
     function test_UniV2fetchPrice() public {
         uint256 price = oracle.fetchPrice();
         (uint256 r0, uint256 r1,) = IUniswapV2Pair(pool).getReserves();
-        uint256 expectedPrice =
-            (r0 * priceFeed2.fetchPrice() + r1 * priceFeed1.fetchPrice()) / IUniswapV2Pair(pool).totalSupply();
+        uint256 expectedPrice = (
+            r0 * priceFeed2.fetchPrice() * 10 ** (18 - priceFeed2.decimals())
+                + r1 * priceFeed1.fetchPrice() * 10 ** (18 - priceFeed1.decimals())
+        ) / IUniswapV2Pair(pool).totalSupply();
 
-        assertApproxEqAbs(price, expectedPrice, 1e8);
+        assertApproxEqAbs(price, expectedPrice, 1e17);
     }
 
     function test_UniV2fetchPriceUnsafe() public {
         (uint256 price,) = oracle.fetchPriceUnsafe();
         (uint256 r0, uint256 r1,) = IUniswapV2Pair(pool).getReserves();
-        uint256 expectedPrice =
-            (r0 * priceFeed2.fetchPrice() + r1 * priceFeed1.fetchPrice()) / IUniswapV2Pair(pool).totalSupply();
+        uint256 expectedPrice = (
+            r0 * priceFeed2.fetchPrice() * 10 ** (18 - priceFeed2.decimals())
+                + r1 * priceFeed1.fetchPrice() * 10 ** (18 - priceFeed1.decimals())
+        ) / IUniswapV2Pair(pool).totalSupply();
 
-        assertApproxEqAbs(price, expectedPrice, 1e8);
+        assertApproxEqAbs(price, expectedPrice, 1e17);
     }
 }
