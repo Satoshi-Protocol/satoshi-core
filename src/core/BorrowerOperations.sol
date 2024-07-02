@@ -193,12 +193,8 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         _requireValidMaxFeePercentage(_maxFeePercentage);
 
-        vars.netDebt = _debtAmount;
+        vars.netDebt = _debtAmount + _triggerBorrowingFee(troveManager, collateralToken, account, _maxFeePercentage, _debtAmount);
 
-        if (!isRecoveryMode) {
-            vars.netDebt = vars.netDebt
-                + _triggerBorrowingFee(troveManager, collateralToken, account, _maxFeePercentage, _debtAmount);
-        }
         _requireAtLeastMinNetDebt(vars.netDebt);
 
         // ICR is based on the composite debt, i.e. the requested Debt amount + Debt borrowing fee + Debt gas comp.
@@ -369,11 +365,9 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         if (_isDebtIncrease) {
             require(_debtChange != 0, "BorrowerOps: Debt increase requires non-zero debtChange");
             _requireValidMaxFeePercentage(_maxFeePercentage);
-            if (!isRecoveryMode) {
-                // If the adjustment incorporates a debt increase and system is in Normal Mode, trigger a borrowing fee
-                vars.netDebtChange +=
+
+            vars.netDebtChange +=
                     _triggerBorrowingFee(troveManager, collateralToken, msg.sender, _maxFeePercentage, _debtChange);
-            }
         }
 
         // Calculate old and new ICRs and check if adjustment satisfies all conditions for the current system mode
