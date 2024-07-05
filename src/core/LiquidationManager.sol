@@ -244,7 +244,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
         if (troveIter < length && troveCount > 1) {
             // second iteration round, if we receive a trove with ICR > MCR and need to track TCR
             (uint256 entireSystemColl, uint256 entireSystemDebt) = borrowerOperations.getGlobalSystemBalances();
-            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price - totals.totalCollGasCompensation;
+            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price + totals.totalCollGasCompensation;
             entireSystemDebt -= totals.totalDebtToOffset;
             while (troveIter < length && troveCount > 1) {
                 address account = _troveArray[troveIter];
@@ -268,8 +268,8 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
                 }
 
                 debtInStabPool -= singleLiquidation.debtToOffset;
-                entireSystemColl -=
-                    (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus) * troveManagerValues.price;
+                entireSystemColl -= (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus)
+                    * troveManagerValues.price + totals.totalCollGasCompensation;
                 entireSystemDebt -= singleLiquidation.debtToOffset;
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
                 unchecked {

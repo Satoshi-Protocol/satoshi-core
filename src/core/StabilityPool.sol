@@ -262,6 +262,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
         uint256 debtToWithdraw = SatoshiMath._min(_amount, compoundedDebtDeposit);
 
+        _accrueRewards(msg.sender);
+
         if (debtToWithdraw > 0) {
             debtToken.returnFromPool(address(this), msg.sender, debtToWithdraw);
             _decreaseDebt(debtToWithdraw);

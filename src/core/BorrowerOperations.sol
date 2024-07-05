@@ -193,7 +193,8 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
 
         _requireValidMaxFeePercentage(_maxFeePercentage);
 
-        vars.netDebt = _debtAmount + _triggerBorrowingFee(troveManager, collateralToken, account, _maxFeePercentage, _debtAmount);
+        vars.netDebt =
+            _debtAmount + _triggerBorrowingFee(troveManager, collateralToken, account, _maxFeePercentage, _debtAmount);
 
         _requireAtLeastMinNetDebt(vars.netDebt);
 
@@ -367,7 +368,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
             _requireValidMaxFeePercentage(_maxFeePercentage);
 
             vars.netDebtChange +=
-                    _triggerBorrowingFee(troveManager, collateralToken, msg.sender, _maxFeePercentage, _debtChange);
+                _triggerBorrowingFee(troveManager, collateralToken, msg.sender, _maxFeePercentage, _debtChange);
         }
 
         // Calculate old and new ICRs and check if adjustment satisfies all conditions for the current system mode

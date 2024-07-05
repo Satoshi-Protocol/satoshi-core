@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /* Satoshi Core Address */
-address constant SATOSHI_CORE_ADDRESS = 0x6401446A7f9989158F8BD65aeed43332eeFd5216;
+address constant SATOSHI_CORE_ADDRESS = 0xBEDe6eb6234c0428150F1E55Bd3FCa7fa2dEc7C6;
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
@@ -28,7 +28,7 @@ bytes32 constant PYTH_ORACLE_PRICEID = 0x9b4503710cc8c53f75c30e6e4fda1a7064680ef
 uint256 constant PYTH_MAX_TIME_THRESHOLD = 1200;
 
 /* API3 Oracle Integration Config */
-address constant API3_ORACLE_PRICE_FEED_SOURCE_ADDRESS = 0x93050567495E5bA2a30D4592EBbD4EdDa136b893;
+address constant API3_ORACLE_PRICE_FEED_SOURCE_ADDRESS = 0xa47Fd122b11CdD7aad7c3e8B740FB91D83Ce43D1;
 uint8 constant API3_ORACLE_PRICE_FEED_DECIMAL = 18;
 
 uint256 constant API3_MAX_TIME_THRESHOLD = 86400;
