@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
@@ -16,9 +17,6 @@ import {IPriceFeed} from "../interfaces/dependencies/IPriceFeed.sol";
  *        Handles multiple types of price feeds and converts their prices to 18-digit precision uint.
  */
 contract PriceFeedAggregator is IPriceFeedAggregator, SatoshiOwnable, UUPSUpgradeable {
-    // Used to convert the raw price to an 18-digit precision uint
-    uint256 public constant TARGET_DIGITS = 18;
-
     // State ------------------------------------------------------------------------------------------------------------
 
     mapping(IERC20 => OracleRecord) public oracleRecords;
@@ -62,34 +60,36 @@ contract PriceFeedAggregator is IPriceFeedAggregator, SatoshiOwnable, UUPSUpgrad
 
     function fetchPrice(IERC20 _token) public returns (uint256) {
         OracleRecord memory oracle = oracleRecords[_token];
+        uint256 targetDigits = IERC20Metadata(address(_token)).decimals();
 
         uint256 rawPrice = oracle.priceFeed.fetchPrice();
         uint8 decimals = oracle.decimals;
 
         uint256 scaledPrice;
-        if (decimals == TARGET_DIGITS) {
+        if (decimals == targetDigits) {
             scaledPrice = rawPrice;
-        } else if (decimals < TARGET_DIGITS) {
-            scaledPrice = rawPrice * (10 ** (TARGET_DIGITS - decimals));
+        } else if (decimals < targetDigits) {
+            scaledPrice = rawPrice * (10 ** (targetDigits - decimals));
         } else {
-            scaledPrice = rawPrice / (10 ** (decimals - TARGET_DIGITS));
+            scaledPrice = rawPrice / (10 ** (decimals - targetDigits));
         }
         return scaledPrice;
     }
 
     function fetchPriceUnsafe(IERC20 _token) external returns (uint256, uint256) {
         OracleRecord memory oracle = oracleRecords[_token];
+        uint256 targetDigits = IERC20Metadata(address(_token)).decimals();
 
         (uint256 rawPrice, uint256 updatedAt) = oracle.priceFeed.fetchPriceUnsafe();
         uint8 decimals = oracle.decimals;
 
         uint256 scaledPrice;
-        if (decimals == TARGET_DIGITS) {
+        if (decimals == targetDigits) {
             scaledPrice = rawPrice;
-        } else if (decimals < TARGET_DIGITS) {
-            scaledPrice = rawPrice * (10 ** (TARGET_DIGITS - decimals));
+        } else if (decimals < targetDigits) {
+            scaledPrice = rawPrice * (10 ** (targetDigits - decimals));
         } else {
-            scaledPrice = rawPrice / (10 ** (decimals - TARGET_DIGITS));
+            scaledPrice = rawPrice / (10 ** (decimals - targetDigits));
         }
         return (scaledPrice, updatedAt);
     }
