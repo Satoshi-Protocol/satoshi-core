@@ -28,7 +28,7 @@ import {
 } from "../interfaces/core/ITroveManager.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
-
+import {console} from "forge-std/console.sol";
 /**
  * @title Trove Manager Contract (Upgradeable)
  *        Mutated from:
@@ -36,6 +36,7 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
  *
  */
+
 contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;
     using SafeERC20Upgradeable for IDebtToken;
@@ -603,6 +604,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             address nextUserToCheck = _sortedTrovesCached.getPrev(currentBorrower);
 
             _applyPendingRewards(currentBorrower);
+            console.log("---");
             SingleRedemptionValues memory singleRedemption = _redeemCollateralFromTrove(
                 _sortedTrovesCached,
                 currentBorrower,
@@ -670,7 +672,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         singleRedemption.debtLot = SatoshiMath._min(_maxDebtAmount, t.debt - DEBT_GAS_COMPENSATION);
 
         // Get the CollateralLot of equivalent value in USD
-        singleRedemption.collateralLot = (singleRedemption.debtLot * DECIMAL_PRECISION) / _price;
+        singleRedemption.collateralLot = _getOriginalCollateralAmount(
+            (singleRedemption.debtLot * DECIMAL_PRECISION) / _price, IERC20Metadata(address(collateralToken)).decimals()
+        );
 
         // Decrease the debt and collateral of the current Trove according to the debt lot and corresponding collateral to send
         uint256 newDebt = (t.debt) - singleRedemption.debtLot;
@@ -1324,5 +1328,25 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         }
 
         return scaledAmount;
+    }
+
+    function _getOriginalCollateralAmount(uint256 _scaledCollateralAmount, uint8 _decimals)
+        internal
+        pure
+        returns (uint256)
+    {
+        // Scale the collateral amount with decimals 18 to the target digits
+        uint256 originalAmount;
+        uint8 TARGET_DIGITS = 18;
+
+        if (_decimals == TARGET_DIGITS) {
+            originalAmount = _scaledCollateralAmount;
+        } else if (_decimals < TARGET_DIGITS) {
+            originalAmount = _scaledCollateralAmount / (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            originalAmount = _scaledCollateralAmount * (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return originalAmount;
     }
 }
