@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
@@ -386,7 +387,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     function getCurrentICR(address _borrower, uint256 _price) public view returns (uint256) {
         (uint256 currentCollateral, uint256 currentDebt) = getTroveCollAndDebt(_borrower);
 
-        uint256 ICR = SatoshiMath._computeCR(currentCollateral, currentDebt, _price);
+        uint256 scaledCollAmount =
+            _getScaledCollateralAmount(currentCollateral, IERC20Metadata(address(collateralToken)).decimals());
+        uint256 ICR = SatoshiMath._computeCR(scaledCollAmount, currentDebt, _price);
         return ICR;
     }
 
@@ -1305,5 +1308,21 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function _requireCallerIsLM() internal view {
         require(msg.sender == address(liquidationManager), "Not Liquidation Manager");
+    }
+
+    function _getScaledCollateralAmount(uint256 _collateralAmount, uint8 _decimals) internal pure returns (uint256) {
+        // Scale the collateral amount to the target digits
+        uint256 scaledAmount;
+        uint8 TARGET_DIGITS = 18;
+
+        if (_decimals == TARGET_DIGITS) {
+            scaledAmount = _collateralAmount;
+        } else if (_decimals < TARGET_DIGITS) {
+            scaledAmount = _collateralAmount * (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            scaledAmount = _collateralAmount / (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return scaledAmount;
     }
 }
