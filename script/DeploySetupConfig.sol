@@ -5,13 +5,13 @@ address constant SATOSHI_CORE_OWNER = 0xF734147AfC06AC1be8d218F390F9D34BaeB573ec
 address constant SATOSHI_CORE_GUARDIAN = 0xF734147AfC06AC1be8d218F390F9D34BaeB573ec;
 address constant SATOSHI_CORE_FEE_RECEIVER = 0xF734147AfC06AC1be8d218F390F9D34BaeB573ec;
 
-uint256 constant BO_MIN_NET_DEBT = 100e18; // 100 SAT
-uint256 constant GAS_COMPENSATION = 10e18; // 10 SAT
+uint256 constant BO_MIN_NET_DEBT = 10e18; // 100 SAT
+uint256 constant GAS_COMPENSATION = 2e18; // 10 SAT
 
 string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
 string constant DEBT_TOKEN_SYMBOL = "SAT";
 
-address constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
+address constant WETH_ADDRESS = 0x176409dc15e4C80cC3b9b84EF7599375E58eAcd0;
 // bitlayer testnet
 // address constant WETH_ADDRESS = 0x3e57d6946f893314324C975AA9CEBBdF3232967E;
 // @todo this is core pyth testnet address

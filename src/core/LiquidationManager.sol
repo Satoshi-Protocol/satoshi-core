@@ -133,7 +133,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
         }
         if (trovesRemaining > 0 && !troveManagerValues.sunsetting && troveCount > 1) {
             (uint256 entireSystemColl, uint256 entireSystemDebt) = borrowerOperations.getGlobalSystemBalances();
-            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price - totals.totalCollGasCompensation;
+            entireSystemColl -= totals.totalCollToSendToSP * troveManagerValues.price + totals.totalCollGasCompensation;
             entireSystemDebt -= totals.totalDebtToOffset;
             address nextAccount = sortedTrovesCached.getLast();
             ITroveManager _troveManager = troveManager; //stack too deep workaround
@@ -269,7 +269,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
 
                 debtInStabPool -= singleLiquidation.debtToOffset;
                 entireSystemColl -= (singleLiquidation.collToSendToSP + singleLiquidation.collSurplus)
-                    * troveManagerValues.price + totals.totalCollGasCompensation;
+                    * troveManagerValues.price + singleLiquidation.collGasCompensation;
                 entireSystemDebt -= singleLiquidation.debtToOffset;
                 _applyLiquidationValuesToTotals(totals, singleLiquidation);
                 unchecked {
