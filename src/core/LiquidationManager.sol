@@ -20,7 +20,6 @@ import {
     LiquidationValues,
     LiquidationTotals
 } from "../interfaces/core/ILiquidationManager.sol";
-import {console} from "forge-std/console.sol";
 /**
  * @title Liquidation Manager Contract (Upgradable)
  *        Mutated from:

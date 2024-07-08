@@ -12,7 +12,6 @@ import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
-import {console} from "forge-std/console.sol";
 /**
  * @title Stability Pool Contract (Upgradeable)
  *        Mutated from:

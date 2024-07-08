@@ -28,7 +28,6 @@ import {
 } from "../interfaces/core/ITroveManager.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
-import {console} from "forge-std/console.sol";
 /**
  * @title Trove Manager Contract (Upgradeable)
  *        Mutated from:
@@ -604,7 +603,6 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
             address nextUserToCheck = _sortedTrovesCached.getPrev(currentBorrower);
 
             _applyPendingRewards(currentBorrower);
-            console.log("---");
             SingleRedemptionValues memory singleRedemption = _redeemCollateralFromTrove(
                 _sortedTrovesCached,
                 currentBorrower,
