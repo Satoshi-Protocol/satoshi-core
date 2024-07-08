@@ -7,7 +7,7 @@ import {IStabilityPool} from "../src/interfaces/core/IStabilityPool.sol";
 
 contract UpgradeStabilityPoolScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
-    address stabilityPoolProxyAddr = 0x5C85670c52AC0B135C84747B16B1d845007a2437;
+    address stabilityPoolProxyAddr = 0x83f39bBC801a986671CBDE807a094A8937155B28;
 
     function setUp() public {
         OWNER_PRIVATE_KEY = uint256(vm.envBytes32("OWNER_PRIVATE_KEY"));

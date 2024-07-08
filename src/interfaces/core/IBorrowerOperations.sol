@@ -20,6 +20,7 @@ struct Balances {
     uint256[] collaterals;
     uint256[] debts;
     uint256[] prices;
+    uint8[] decimals;
 }
 
 struct TroveManagerData {

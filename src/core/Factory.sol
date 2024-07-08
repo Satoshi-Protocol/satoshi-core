@@ -28,7 +28,6 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *
  */
 contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
-    ISatoshiCore public satoshiCore;
     IDebtToken public debtToken;
     IGasPool public gasPool;
     IPriceFeedAggregator public priceFeedAggregatorProxy;
@@ -68,7 +67,6 @@ contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
     ) external initializer {
         __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
-        satoshiCore = _satoshiCore;
         debtToken = _debtToken;
         gasPool = _gasPool;
         priceFeedAggregatorProxy = _priceFeedAggregatorProxy;
@@ -121,7 +119,7 @@ contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
     }
 
     function _deploySortedTrovesBeaconProxy() internal returns (ISortedTroves) {
-        bytes memory data = abi.encodeCall(ISortedTroves.initialize, satoshiCore);
+        bytes memory data = abi.encodeCall(ISortedTroves.initialize, SATOSHI_CORE);
         return ISortedTroves(address(new BeaconProxy(address(sortedTrovesBeacon), data)));
     }
 
@@ -129,7 +127,7 @@ contract Factory is IFactory, SatoshiOwnable, UUPSUpgradeable {
         bytes memory data = abi.encodeCall(
             ITroveManager.initialize,
             (
-                satoshiCore,
+                SATOSHI_CORE,
                 gasPool,
                 debtToken,
                 borrowerOperationsProxy,

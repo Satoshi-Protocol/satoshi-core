@@ -23,7 +23,7 @@ import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant DECIMAL_PRECISION = 1e18;
+    uint256 public constant DECIMAL_PRECISION = 1e22;
     uint128 public constant SUNSET_DURATION = 180 days;
     uint256 public constant OSHI_EMISSION_DURATION = 5 * 365 days; // 5 years
     uint128 public constant MAX_REWARD_RATE = 63419583967529168; // 10_000_000e18 / (5 * 31536000)
@@ -225,6 +225,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
 
+        _accrueRewards(msg.sender);
+
         debtToken.sendToSP(msg.sender, _amount);
         uint256 newTotalDebtTokenDeposits = totalDebtTokenDeposits + _amount;
         totalDebtTokenDeposits = newTotalDebtTokenDeposits;
@@ -260,6 +262,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         uint256 compoundedDebtDeposit = getCompoundedDebtDeposit(msg.sender);
         uint256 debtToWithdraw = SatoshiMath._min(_amount, compoundedDebtDeposit);
 
+        _accrueRewards(msg.sender);
+
         if (debtToWithdraw > 0) {
             debtToken.returnFromPool(address(this), msg.sender, debtToWithdraw);
             _decreaseDebt(debtToWithdraw);
@@ -291,6 +295,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         if (totalDebt == 0 || _debtToOffset == 0) {
             return;
         }
+
+        _triggerOSHIIssuance();
 
         (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) =
             _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalDebt, idx);
@@ -471,17 +477,18 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
         uint256 initialDeposit = accountDeposits[_depositor].amount;
 
         if (totalDebt == 0 || initialDeposit == 0) {
-            return storedPendingReward[_depositor];
+            return storedPendingReward[_depositor] + _claimableReward(_depositor);
         }
-        uint256 oshiNumerator = (_OSHIIssuance() * DECIMAL_PRECISION) + lastOSHIError;
-        uint256 oshiPerUnitStaked = oshiNumerator / totalDebt;
-        uint256 marginalOSHIGain = oshiPerUnitStaked * P;
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
         uint128 epochSnapshot = snapshots.epoch;
         uint128 scaleSnapshot = snapshots.scale;
+        uint256 oshiNumerator = (_OSHIIssuance() * DECIMAL_PRECISION) + lastOSHIError;
+        uint256 oshiPerUnitStaked = oshiNumerator / totalDebt;
+        uint256 marginalOSHIGain = (epochSnapshot == currentEpoch) ? oshiPerUnitStaked * P : 0;
         uint256 firstPortion;
         uint256 secondPortion;
+
         if (scaleSnapshot == currentScale) {
             firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot] - snapshots.G + marginalOSHIGain;
             secondPortion = epochToScaleToG[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;

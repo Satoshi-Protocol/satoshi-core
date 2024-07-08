@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SatoshiBase} from "../dependencies/SatoshiBase.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
@@ -27,7 +28,6 @@ import {
 } from "../interfaces/core/ITroveManager.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
-
 /**
  * @title Trove Manager Contract (Upgradeable)
  *        Mutated from:
@@ -35,6 +35,7 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
  *
  */
+
 contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;
     using SafeERC20Upgradeable for IDebtToken;
@@ -386,7 +387,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     function getCurrentICR(address _borrower, uint256 _price) public view returns (uint256) {
         (uint256 currentCollateral, uint256 currentDebt) = getTroveCollAndDebt(_borrower);
 
-        uint256 ICR = SatoshiMath._computeCR(currentCollateral, currentDebt, _price);
+        uint256 scaledCollAmount =
+            _getScaledCollateralAmount(currentCollateral, IERC20Metadata(address(collateralToken)).decimals());
+        uint256 ICR = SatoshiMath._computeCR(scaledCollAmount, currentDebt, _price);
         return ICR;
     }
 
@@ -518,7 +521,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 timePassed = block.timestamp - lastFeeOperationTime;
 
         if (timePassed >= SECONDS_IN_ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
+            lastFeeOperationTime = lastFeeOperationTime + timePassed / SECONDS_IN_ONE_MINUTE * SECONDS_IN_ONE_MINUTE;
             emit LastFeeOpTimeUpdated(block.timestamp);
         }
     }
@@ -667,7 +670,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         singleRedemption.debtLot = SatoshiMath._min(_maxDebtAmount, t.debt - DEBT_GAS_COMPENSATION);
 
         // Get the CollateralLot of equivalent value in USD
-        singleRedemption.collateralLot = (singleRedemption.debtLot * DECIMAL_PRECISION) / _price;
+        singleRedemption.collateralLot = _getOriginalCollateralAmount(
+            (singleRedemption.debtLot * DECIMAL_PRECISION) / _price, IERC20Metadata(address(collateralToken)).decimals()
+        );
 
         // Decrease the debt and collateral of the current Trove according to the debt lot and corresponding collateral to send
         uint256 newDebt = (t.debt) - singleRedemption.debtLot;
@@ -1305,5 +1310,41 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function _requireCallerIsLM() internal view {
         require(msg.sender == address(liquidationManager), "Not Liquidation Manager");
+    }
+
+    function _getScaledCollateralAmount(uint256 _collateralAmount, uint8 _decimals) internal pure returns (uint256) {
+        // Scale the collateral amount to the target digits
+        uint256 scaledAmount;
+        uint8 TARGET_DIGITS = 18;
+
+        if (_decimals == TARGET_DIGITS) {
+            scaledAmount = _collateralAmount;
+        } else if (_decimals < TARGET_DIGITS) {
+            scaledAmount = _collateralAmount * (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            scaledAmount = _collateralAmount / (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return scaledAmount;
+    }
+
+    function _getOriginalCollateralAmount(uint256 _scaledCollateralAmount, uint8 _decimals)
+        internal
+        pure
+        returns (uint256)
+    {
+        // Scale the collateral amount with decimals 18 to the target digits
+        uint256 originalAmount;
+        uint8 TARGET_DIGITS = 18;
+
+        if (_decimals == TARGET_DIGITS) {
+            originalAmount = _scaledCollateralAmount;
+        } else if (_decimals < TARGET_DIGITS) {
+            originalAmount = _scaledCollateralAmount / (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            originalAmount = _scaledCollateralAmount * (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return originalAmount;
     }
 }
