@@ -95,14 +95,14 @@ contract DeployInstanceScript is Script {
         rewardManager.registerTroveManager(troveManagerBeaconProxy);
 
         // set community issuance allocation & addresses
-        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy), params.OSHIAllocation);
-        _setCommunityIssuanceAllocation(address(troveManagerBeaconProxyBTC), params.OSHIAllocation);
+        // _setCommunityIssuanceAllocation(address(troveManagerBeaconProxy), params.OSHIAllocation);
+        // _setCommunityIssuanceAllocation(address(troveManagerBeaconProxyBTC), params.OSHIAllocation);
 
-        require(communityIssuance.allocated(address(troveManagerBeaconProxy)) == params.OSHIAllocation);
-        require(communityIssuance.allocated(address(troveManagerBeaconProxyBTC)) == params.OSHIAllocation);
+        // require(communityIssuance.allocated(address(troveManagerBeaconProxy)) == params.OSHIAllocation);
+        // require(communityIssuance.allocated(address(troveManagerBeaconProxyBTC)) == params.OSHIAllocation);
 
-        console.log("SortedTrovesBeaconProxy: address:", address(sortedTrovesBeaconProxy));
-        console.log("TroveManagerBeaconProxy: address:", address(troveManagerBeaconProxy));
+        console.log("SortedTrovesBeaconProxy:", address(sortedTrovesBeaconProxy));
+        console.log("TroveManagerBeaconProxy:", address(troveManagerBeaconProxy));
 
         vm.stopBroadcast();
     }
