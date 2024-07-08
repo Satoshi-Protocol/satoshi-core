@@ -12,6 +12,7 @@ import {ILiquidationManager} from "../interfaces/core/ILiquidationManager.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IStabilityPool, AccountDeposit, Snapshots, SunsetIndex, Queue} from "../interfaces/core/IStabilityPool.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
+import {console} from "forge-std/console.sol";
 /**
  * @title Stability Pool Contract (Upgradeable)
  *        Mutated from:
@@ -23,7 +24,7 @@ import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant DECIMAL_PRECISION = 1e18;
+    uint256 public constant DECIMAL_PRECISION = 1e22;
     uint128 public constant SUNSET_DURATION = 180 days;
     uint256 public constant OSHI_EMISSION_DURATION = 5 * 365 days; // 5 years
     uint128 public constant MAX_REWARD_RATE = 63419583967529168; // 10_000_000e18 / (5 * 31536000)

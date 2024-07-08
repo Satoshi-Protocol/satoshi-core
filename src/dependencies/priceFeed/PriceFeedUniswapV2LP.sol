@@ -5,7 +5,6 @@ import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeed} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
-import {console} from "forge-std/console.sol";
 
 interface IERC20 {
     function decimals() external view returns (uint8);

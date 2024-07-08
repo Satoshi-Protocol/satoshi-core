@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISortedTroves} from "../src/interfaces/core/ISortedTroves.sol";
 import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITroveManager.sol";
@@ -14,13 +15,15 @@ import {DEPLOYER, OWNER, GAS_COMPENSATION, TestConfig, _1_MILLION} from "./TestC
 import {TroveBase} from "./utils/TroveBase.t.sol";
 import {Events} from "./utils/Events.sol";
 import {RoundData} from "../src/mocks/OracleMock.sol";
+import {Coll} from "../src/mocks/Coll.sol";
 
-contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
+contract StabilityPoolTestDecimals8 is Test, DeployBase, TroveBase, TestConfig, Events {
     using Math for uint256;
 
     ISortedTroves sortedTrovesBeaconProxy;
     ITroveManager troveManagerBeaconProxy;
     IMultiCollateralHintHelpers hintHelpers;
+    ERC20 collateral;
     address user1;
     address user2;
     address user3;
@@ -55,9 +58,13 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         user3 = vm.addr(3);
         user4 = vm.addr(4);
 
+        // deploy collateral token with decimals 8
+        collateral = new Coll();
+        assertEq(collateral.decimals(), 8);
+
         // setup contracts and deploy one instance
         (sortedTrovesBeaconProxy, troveManagerBeaconProxy) = _deploySetupAndInstance(
-            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateralMock, deploymentParams
+            DEPLOYER, OWNER, ORACLE_MOCK_DECIMALS, ORACLE_MOCK_VERSION, initRoundData, collateral, deploymentParams
         );
 
         // deploy hint helper contract
@@ -80,7 +87,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
             GAS_COMPENSATION,
             caller,
             caller,
-            collateralMock,
+            collateral,
             collateralAmt,
             debtAmt,
             maxFeePercentage
@@ -131,7 +138,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testProvideToSP() public {
         StabilityPoolVars memory vars;
         // open trove
-        _openTrove(user1, 1e18, 10000e18);
+        _openTrove(user1, 1e8, 10000e18);
         vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertEq(vars.stabilityPoolDebtBefore, 0);
 
@@ -145,7 +152,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testWithdrawFromSPFull() public {
         StabilityPoolVars memory vars;
         // open trove
-        _openTrove(user1, 1e18, 10000e18);
+        _openTrove(user1, 1e8, 10000e18);
 
         vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertEq(vars.stabilityPoolDebtBefore, 0);
@@ -164,11 +171,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testLiquidateInNormalModeICRLessThanMCR() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 100e18, 185000e18);
+        _openTrove(user1, 100e8, 185000e18);
         _provideToSP(user1, 100000e18);
         // 2 toves opened
-        _openTrove(user2, 1e18, 20000e18);
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         _recordUserStateBeforeToVar(vars);
 
@@ -207,11 +214,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testLiquidateInNormalModeICRLessThan100() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 100e18, 185000e18);
+        _openTrove(user1, 100e8, 185000e18);
         _provideToSP(user1, 100000e18);
         // 2 toves opened
-        _openTrove(user2, 1e18, 20000e18);
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         _recordUserStateBeforeToVar(vars);
 
@@ -245,13 +252,13 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testCorrectUpdateSnapshot() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 100e18, 185000e18);
+        _openTrove(user1, 100e8, 185000e18);
         _provideToSP(user1, 100000e18);
         // 2 toves opened
-        _openTrove(user2, 1e18, 20000e18);
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
-        _openTrove(user4, 1e18, 100e18);
+        _openTrove(user4, 1e8, 100e18);
 
         // price drops: user2's and user3's Troves fall below MCR, whale doesn't
         _updateRoundData(
@@ -287,7 +294,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function testTryToProvideMoreThanBlanace() public {
-        _openTrove(user1, 1e18, 100e18);
+        _openTrove(user1, 1e8, 100e18);
 
         // attempt to provide 1 wei more than his balance
         vm.expectRevert("ERC20: transfer amount exceeds balance");
@@ -295,7 +302,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function testTryToProvide0Blanace() public {
-        _openTrove(user1, 1e18, 100e18);
+        _openTrove(user1, 1e8, 100e18);
 
         // attempt to provide 0 balance
         vm.expectRevert("StabilityPool: Amount must be non-zero");
@@ -305,11 +312,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testClaimCollGain() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 10000e18, 185000e18);
+        _openTrove(user1, 10000e8, 185000e18);
         // 1 tove opened
-        _openTrove(user2, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
         // user3 opens trove
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         _provideToSP(user1, 70000e18);
         _provideToSP(user2, 20000e18);
@@ -333,6 +340,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
         assert(vars.collGainBefore > 0);
+
         uint256 expectedGain = vars.userCollBefore[1] * 995 * 2 / 1000 / 9;
         assertApproxEqAbs(vars.collGainBefore, expectedGain, 10);
 
@@ -340,7 +348,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _claimCollateralGains(user2);
 
         // check the collateral gain is as expected
-        assertEq(vars.collGainBefore, collateralMock.balanceOf(user2));
+        assertEq(vars.collGainBefore, collateral.balanceOf(user2));
 
         // check the gain is 0 after claiming
         vars.collGainAfter = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
@@ -370,13 +378,13 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testCompoundedDebt() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 10000e18, 185000e18);
+        _openTrove(user1, 10000e8, 185000e18);
         _provideToSP(user1, 20000e18);
         // 1 tove opened
-        _openTrove(user2, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
         _provideToSP(user2, 20000e18);
         // user3 opens trove
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         _recordUserStateBeforeToVar(vars);
 
@@ -427,11 +435,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_2lquidateAndProvide() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 10000e18, 185000e18);
+        _openTrove(user1, 10000e8, 185000e18);
         // 1 tove opened
-        _openTrove(user2, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
         // user3 opens trove
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         // provide to SP
         _provideToSP(user1, 50000e18);
@@ -473,7 +481,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testOSHIEmissionWhenEmissionEnd() public {
         StabilityPoolVars memory vars;
         // open trove
-        _openTrove(user1, 10000e18, 20000000e18);
+        _openTrove(user1, 1000e8, 20000000e18);
         vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertEq(vars.stabilityPoolDebtBefore, 0);
 
@@ -494,7 +502,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.prank(OWNER);
         stabilityPoolProxy.setRewardRate(0);
 
-        _openTrove(user1, 1e18, 1000e18);
+        _openTrove(user1, 1e8, 1000e18);
         _provideToSP(user1, 1000e18);
         // check no oshi reward in SP
         assertEq(stabilityPoolProxy.claimableReward(user1), 0);
@@ -515,11 +523,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_normalAfteremptySP() public {
         // StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 10000e18, 185000e18);
+        _openTrove(user1, 10000e8, 185000e18);
         // 1 tove opened
-        _openTrove(user2, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
         // user3 opens trove
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         // provide to SP
         _provideToSP(user1, 50000e18);
@@ -529,11 +537,11 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_liquidateAndWithdrawFromSP() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 10000e18, 185000e18);
+        _openTrove(user1, 10000e8, 185000e18);
         // 1 tove opened
-        _openTrove(user2, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
         // user3 opens trove
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         // provide to SP
         _provideToSP(user1, 50000e18);
@@ -566,17 +574,17 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         _claimCollateralGains(user1);
 
-        assertEq(collGainAfter, collateralMock.balanceOf(user1));
+        assertEq(collGainAfter, collateral.balanceOf(user1));
     }
 
     function test_liquidateAndWithdrawFromSPAll() public {
         StabilityPoolVars memory vars;
         // whale opens trove
-        _openTrove(user1, 10000e18, 185000e18);
+        _openTrove(user1, 10000e8, 185000e18);
         // 1 tove opened
-        _openTrove(user2, 1e18, 20000e18);
+        _openTrove(user2, 1e8, 20000e18);
         // user3 opens trove
-        _openTrove(user3, 1e18, 20000e18);
+        _openTrove(user3, 1e8, 20000e18);
 
         // provide to SP
         _provideToSP(user1, 50000e18);
@@ -607,17 +615,17 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         assertEq(collGainBefore, collGainAfter);
 
-        assertEq(collateralMock.balanceOf(user1), 0);
+        assertEq(collateral.balanceOf(user1), 0);
 
         _claimCollateralGains(user1);
 
-        assertEq(collGainBefore, collateralMock.balanceOf(user1));
+        assertEq(collGainBefore, collateral.balanceOf(user1));
     }
 
     function test_startCollateralSunset() public {
         vm.startPrank(OWNER);
-        stabilityPoolProxy.startCollateralSunset(collateralMock);
+        stabilityPoolProxy.startCollateralSunset(collateral);
 
-        assertEq(stabilityPoolProxy.indexByCollateral(collateralMock), 0);
+        assertEq(stabilityPoolProxy.indexByCollateral(collateral), 0);
     }
 }
