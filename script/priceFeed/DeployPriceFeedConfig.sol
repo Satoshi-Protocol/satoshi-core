@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /* Satoshi Core Address */
-address constant SATOSHI_CORE_ADDRESS = 0xA8480eBe583D597C34a8B4B831EFDbe2fe0a10B3;
+address constant SATOSHI_CORE_ADDRESS = 0x2BC0882e96CB34984984344a777a749462A51783;
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
