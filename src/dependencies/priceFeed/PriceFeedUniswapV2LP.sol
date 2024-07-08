@@ -5,6 +5,7 @@ import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeed} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {console} from "forge-std/console.sol";
 
 interface IERC20 {
     function decimals() external view returns (uint8);
@@ -50,16 +51,16 @@ contract PriceFeedUniswapV2LPOracle is SatoshiOwnable {
             uint256 decimals0 = IERC20(token0).decimals();
             uint256 decimals1 = IERC20(token1).decimals();
 
-            if (decimals0 <= 18) {
-                r0 = r0 * 10 ** (18 - decimals0);
+            if (decimals0 <= TARGET_DIGITS) {
+                r0 = r0 * 10 ** (TARGET_DIGITS - decimals0);
             } else {
-                r0 = r0 / 10 ** (decimals0 - 18);
+                r0 = r0 / 10 ** (decimals0 - TARGET_DIGITS);
             }
 
-            if (decimals1 <= 18) {
-                r1 = r1 * 10 ** (18 - decimals1);
+            if (decimals1 <= TARGET_DIGITS) {
+                r1 = r1 * 10 ** (TARGET_DIGITS - decimals1);
             } else {
-                r1 = r1 / 10 ** (decimals1 - 18);
+                r1 = r1 / 10 ** (decimals1 - TARGET_DIGITS);
             }
         }
 
@@ -81,16 +82,16 @@ contract PriceFeedUniswapV2LPOracle is SatoshiOwnable {
             uint256 decimals0 = IERC20(token0).decimals();
             uint256 decimals1 = IERC20(token1).decimals();
 
-            if (decimals0 <= 18) {
-                r0 = r0 * 10 ** (18 - decimals0);
+            if (decimals0 <= TARGET_DIGITS) {
+                r0 = r0 * 10 ** (TARGET_DIGITS - decimals0);
             } else {
-                r0 = r0 / 10 ** (decimals0 - 18);
+                r0 = r0 / 10 ** (decimals0 - TARGET_DIGITS);
             }
 
-            if (decimals1 <= 18) {
-                r1 = r1 * 10 ** (18 - decimals1);
+            if (decimals1 <= TARGET_DIGITS) {
+                r1 = r1 * 10 ** (TARGET_DIGITS - decimals1);
             } else {
-                r1 = r1 / 10 ** (decimals1 - 18);
+                r1 = r1 / 10 ** (decimals1 - TARGET_DIGITS);
             }
         }
 
