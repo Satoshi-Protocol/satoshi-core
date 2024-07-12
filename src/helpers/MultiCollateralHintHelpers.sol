@@ -75,7 +75,7 @@ contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase 
                     uint256 maxRedeemableDebt = SatoshiMath._min(remainingDebt, netDebt - minNetDebt);
 
                     uint256 newColl = coll
-                        - _getOriginalCollateralAmount(((maxRedeemableDebt * DECIMAL_PRECISION) / _price), info.decimals);
+                        - SatoshiMath._getOriginalCollateralAmount(((maxRedeemableDebt * DECIMAL_PRECISION) / _price), info.decimals);
                     uint256 newDebt = netDebt - maxRedeemableDebt;
 
                     uint256 compositeDebt = _getCompositeDebt(newDebt);
@@ -145,25 +145,5 @@ contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase 
 
     function computeCR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {
         return SatoshiMath._computeCR(_coll, _debt, _price);
-    }
-
-    function _getOriginalCollateralAmount(uint256 _scaledCollateralAmount, uint8 _decimals)
-        internal
-        pure
-        returns (uint256)
-    {
-        // Scale the collateral amount with decimals 18 to the target digits
-        uint256 originalAmount;
-        uint8 TARGET_DIGITS = 18;
-
-        if (_decimals == TARGET_DIGITS) {
-            originalAmount = _scaledCollateralAmount;
-        } else if (_decimals < TARGET_DIGITS) {
-            originalAmount = _scaledCollateralAmount / (10 ** (TARGET_DIGITS - _decimals));
-        } else {
-            originalAmount = _scaledCollateralAmount * (10 ** (_decimals - TARGET_DIGITS));
-        }
-
-        return originalAmount;
     }
 }

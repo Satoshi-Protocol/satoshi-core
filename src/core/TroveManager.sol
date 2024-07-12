@@ -388,7 +388,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         (uint256 currentCollateral, uint256 currentDebt) = getTroveCollAndDebt(_borrower);
 
         uint256 scaledCollAmount =
-            _getScaledCollateralAmount(currentCollateral, IERC20Metadata(address(collateralToken)).decimals());
+            SatoshiMath._getScaledCollateralAmount(currentCollateral, IERC20Metadata(address(collateralToken)).decimals());
         uint256 ICR = SatoshiMath._computeCR(scaledCollAmount, currentDebt, _price);
         return ICR;
     }
@@ -670,7 +670,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         singleRedemption.debtLot = SatoshiMath._min(_maxDebtAmount, t.debt - DEBT_GAS_COMPENSATION);
 
         // Get the CollateralLot of equivalent value in USD
-        singleRedemption.collateralLot = _getOriginalCollateralAmount(
+        singleRedemption.collateralLot = SatoshiMath._getOriginalCollateralAmount(
             (singleRedemption.debtLot * DECIMAL_PRECISION) / _price, IERC20Metadata(address(collateralToken)).decimals()
         );
 
@@ -1310,41 +1310,5 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function _requireCallerIsLM() internal view {
         require(msg.sender == address(liquidationManager), "Not Liquidation Manager");
-    }
-
-    function _getScaledCollateralAmount(uint256 _collateralAmount, uint8 _decimals) internal pure returns (uint256) {
-        // Scale the collateral amount to the target digits
-        uint256 scaledAmount;
-        uint8 TARGET_DIGITS = 18;
-
-        if (_decimals == TARGET_DIGITS) {
-            scaledAmount = _collateralAmount;
-        } else if (_decimals < TARGET_DIGITS) {
-            scaledAmount = _collateralAmount * (10 ** (TARGET_DIGITS - _decimals));
-        } else {
-            scaledAmount = _collateralAmount / (10 ** (_decimals - TARGET_DIGITS));
-        }
-
-        return scaledAmount;
-    }
-
-    function _getOriginalCollateralAmount(uint256 _scaledCollateralAmount, uint8 _decimals)
-        internal
-        pure
-        returns (uint256)
-    {
-        // Scale the collateral amount with decimals 18 to the target digits
-        uint256 originalAmount;
-        uint8 TARGET_DIGITS = 18;
-
-        if (_decimals == TARGET_DIGITS) {
-            originalAmount = _scaledCollateralAmount;
-        } else if (_decimals < TARGET_DIGITS) {
-            originalAmount = _scaledCollateralAmount / (10 ** (TARGET_DIGITS - _decimals));
-        } else {
-            originalAmount = _scaledCollateralAmount * (10 ** (_decimals - TARGET_DIGITS));
-        }
-
-        return originalAmount;
     }
 }
