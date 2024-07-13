@@ -205,4 +205,13 @@ contract OSHITokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         assertEq(oshiToken.allowance(owner, user2), amount);
     }
+
+    function testBurnToken() public {
+        vm.startPrank(OWNER);
+        oshiToken.mint(user1, 150);
+        oshiToken.burn(user1, 150);
+        assertEq(oshiToken.balanceOf(user1), 150);
+        assertEq(oshiToken.totalSupply(), 300);
+        vm.stopPrank();
+    }
 }

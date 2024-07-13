@@ -333,6 +333,8 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
         assert(vars.collGainBefore > 0);
+        uint256 expectedGain = vars.userCollBefore[1] * 995 * 2 / 1000 / 9;
+        assertApproxEqAbs(vars.collGainBefore, expectedGain, 100000);
 
         // user2 claim collateral gain
         _claimCollateralGains(user2);
@@ -471,14 +473,14 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function testOSHIEmissionWhenEmissionEnd() public {
         StabilityPoolVars memory vars;
         // open trove
-        _openTrove(user1, 1e18, 10000e18);
+        _openTrove(user1, 10000e18, 20000000e18);
         vars.stabilityPoolDebtBefore = stabilityPoolProxy.getTotalDebtTokenDeposits();
         assertEq(vars.stabilityPoolDebtBefore, 0);
 
         // deposit to SP
-        _provideToSP(user1, 200e18);
+        _provideToSP(user1, 20000000e18);
         vars.stabilityPoolDebtAfter = stabilityPoolProxy.getTotalDebtTokenDeposits();
-        assertEq(vars.stabilityPoolDebtAfter, 200e18);
+        assertEq(vars.stabilityPoolDebtAfter, 20000000e18);
         // 5 years later
         vm.warp(block.timestamp + 365 days * 6);
         uint256 oshiReward = stabilityPoolProxy.claimableReward(user1);
@@ -610,5 +612,12 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _claimCollateralGains(user1);
 
         assertEq(collGainBefore, collateralMock.balanceOf(user1));
+    }
+
+    function test_startCollateralSunset() public {
+        vm.startPrank(OWNER);
+        stabilityPoolProxy.startCollateralSunset(collateralMock);
+
+        assertEq(stabilityPoolProxy.indexByCollateral(collateralMock), 0);
     }
 }

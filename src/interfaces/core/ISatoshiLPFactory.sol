@@ -12,4 +12,6 @@ interface ISatoshiLPFactory is ISatoshiOwnable {
         returns (address);
     function satoshiLPTokens(uint256) external view returns (address);
     function initialize(ISatoshiCore _satoshiCore, ICommunityIssuance _communityIssuance) external;
+    function setCommunityIssuance(ICommunityIssuance _communityIssuance) external;
+    function communityIssuance() external view returns (ICommunityIssuance);
 }

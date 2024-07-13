@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IBorrowerOperations} from "../interfaces/core/IBorrowerOperations.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
 import {ISortedTroves} from "../interfaces/core/ISortedTroves.sol";
@@ -46,13 +47,15 @@ contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase 
         view
         returns (address firstRedemptionHint, uint256 partialRedemptionHintNICR, uint256 truncatedDebtAmount)
     {
+        TroveManagerInfo memory info;
         ISortedTroves sortedTrovesCached = ISortedTroves(troveManager.sortedTroves());
 
         uint256 remainingDebt = _debtAmount;
         address currentTroveuser = sortedTrovesCached.getLast();
-        uint256 MCR = troveManager.MCR();
+        info.MCR = troveManager.MCR();
+        info.decimals = IERC20Metadata(address(troveManager.collateralToken())).decimals();
 
-        while (currentTroveuser != address(0) && troveManager.getCurrentICR(currentTroveuser, _price) < MCR) {
+        while (currentTroveuser != address(0) && troveManager.getCurrentICR(currentTroveuser, _price) < info.MCR) {
             currentTroveuser = sortedTrovesCached.getPrev(currentTroveuser);
         }
 
@@ -71,7 +74,8 @@ contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase 
                 if (netDebt > minNetDebt) {
                     uint256 maxRedeemableDebt = SatoshiMath._min(remainingDebt, netDebt - minNetDebt);
 
-                    uint256 newColl = coll - ((maxRedeemableDebt * DECIMAL_PRECISION) / _price);
+                    uint256 newColl = coll
+                        - SatoshiMath._getOriginalCollateralAmount(((maxRedeemableDebt * DECIMAL_PRECISION) / _price), info.decimals);
                     uint256 newDebt = netDebt - maxRedeemableDebt;
 
                     uint256 compositeDebt = _getCompositeDebt(newDebt);

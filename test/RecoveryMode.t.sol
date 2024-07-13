@@ -102,4 +102,104 @@ contract RecoveryModeTest is Test, DeployBase, TroveBase, TestConfig, Events {
         bool isRecoveryMode = borrowerOperationsProxy.checkRecoveryMode(TCR);
         assertTrue(isRecoveryMode);
     }
+
+    // top up and borrow
+    function test_adjustTorveInRecoveryMode() public {
+        LocalVars memory vars;
+        vars.maxFeePercentage = 0.05e18; // 5%
+
+        // open troves
+        _openTrove(user1, 1e18, 10000e18);
+        _openTrove(user2, 1e18, 10000e18);
+        _openTrove(user3, 1e18, 10000e18);
+
+        // reducing TCR below 150%, and all Troves below 100% ICR
+        _updateRoundData(
+            RoundData({
+                answer: 10000_00_000_000, // 10000
+                startedAt: block.timestamp,
+                updatedAt: block.timestamp,
+                answeredInRound: 1
+            })
+        );
+
+        // user 1 top up and borrow
+        vars.addCollAmt = 0.5e18;
+        vars.withdrawDebtAmt = 1000e18;
+
+        vm.startPrank(user1);
+        deal(address(collateralMock), user1, vars.addCollAmt);
+        collateralMock.approve(address(borrowerOperationsProxy), vars.addCollAmt);
+
+        // calc hint
+        (vars.upperHint, vars.lowerHint) = HintLib.getHint(
+            hintHelpers,
+            sortedTrovesBeaconProxy,
+            troveManagerBeaconProxy,
+            vars.totalCollAmt,
+            vars.totalNetDebtAmt,
+            GAS_COMPENSATION
+        );
+
+        vm.expectRevert("BorrowerOps: Operation must leave trove with ICR >= CCR");
+        // tx execution
+        borrowerOperationsProxy.adjustTrove(
+            troveManagerBeaconProxy,
+            user1,
+            vars.maxFeePercentage,
+            vars.addCollAmt,
+            0, /* collWithdrawalAmt */
+            vars.withdrawDebtAmt,
+            true, /* debtIncrease */
+            vars.upperHint,
+            vars.lowerHint
+        );
+
+        vars.addCollAmt = 5e18;
+        vars.withdrawDebtAmt = 10e18;
+        deal(address(collateralMock), user1, vars.addCollAmt);
+        collateralMock.approve(address(borrowerOperationsProxy), vars.addCollAmt);
+
+        // state before
+        vars.userCollAmtBefore = collateralMock.balanceOf(user1);
+        vars.troveManagerCollateralAmtBefore = collateralMock.balanceOf(address(troveManagerBeaconProxy));
+        vars.userDebtAmtBefore = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyBefore = debtTokenProxy.totalSupply();
+
+        // calc hint
+        (vars.upperHint, vars.lowerHint) = HintLib.getHint(
+            hintHelpers,
+            sortedTrovesBeaconProxy,
+            troveManagerBeaconProxy,
+            vars.totalCollAmt,
+            vars.totalNetDebtAmt,
+            GAS_COMPENSATION
+        );
+
+        // tx execution
+        borrowerOperationsProxy.adjustTrove(
+            troveManagerBeaconProxy,
+            user1,
+            vars.maxFeePercentage,
+            vars.addCollAmt,
+            0, /* collWithdrawalAmt */
+            vars.withdrawDebtAmt,
+            true, /* debtIncrease */
+            vars.upperHint,
+            vars.lowerHint
+        );
+
+        // state after
+        vars.userCollAmtAfter = collateralMock.balanceOf(user1);
+        vars.troveManagerCollateralAmtAfter = collateralMock.balanceOf(address(troveManagerBeaconProxy));
+        vars.userDebtAmtAfter = debtTokenProxy.balanceOf(user1);
+        vars.debtTokenTotalSupplyAfter = debtTokenProxy.totalSupply();
+
+        // check state
+        assertEq(vars.userCollAmtAfter, vars.userCollAmtBefore - vars.addCollAmt);
+        assertEq(vars.troveManagerCollateralAmtAfter, vars.troveManagerCollateralAmtBefore + vars.addCollAmt);
+        assertEq(vars.userDebtAmtAfter, vars.userDebtAmtBefore + vars.withdrawDebtAmt);
+
+        vm.stopPrank();
+    }
 }

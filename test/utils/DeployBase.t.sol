@@ -28,9 +28,13 @@ import {Factory, DeploymentParams} from "../../src/core/Factory.sol";
 import {CommunityIssuance} from "../../src/OSHI/CommunityIssuance.sol";
 import {RoundData, OracleMock} from "../../src/mocks/OracleMock.sol";
 import {PriceFeedChainlink} from "../../src/dependencies/priceFeed/PriceFeedChainlink.sol";
+import {PriceFeedDIAOracle} from "../../src/dependencies/priceFeed/PriceFeedDIAOracle.sol";
+import {PriceFeedAPI3Oracle} from "../../src/dependencies/priceFeed/PriceFeedAPI3Oracle.sol";
+import {PriceFeedPythOracle} from "../../src/dependencies/priceFeed/PriceFeedPythOracle.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
+import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -48,6 +52,10 @@ import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiPeriphery} from "../../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
+import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.sol";
+import {IDIAOracleV2} from "../../src/interfaces/dependencies/priceFeed/IDIAOracleV2.sol";
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import {IProxy} from "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -98,6 +106,13 @@ struct LocalVars {
     uint256 userDebtAmtAfter;
     uint256 troveManagerCollateralAmtAfter;
     uint256 debtTokenTotalSupplyAfter;
+    // hints
+    uint256 truncatedDebtAmount;
+    address firstRedemptionHint;
+    address upperPartialRedemptionHint;
+    address lowerPartialRedemptionHint;
+    uint256 partialRedemptionHintNICR;
+    uint256 price;
 }
 
 abstract contract DeployBase is Test {
@@ -122,6 +137,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuanceImpl;
     IOSHIToken oshiTokenImpl;
     ISatoshiLPFactory satoshiLPFactoryImpl;
+    INexusYieldManager nexusYieldImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
@@ -136,6 +152,7 @@ abstract contract DeployBase is Test {
     ICommunityIssuance communityIssuanceProxy;
     IOSHIToken oshiTokenProxy;
     ISatoshiLPFactory satoshiLPFactoryProxy;
+    INexusYieldManager nexusYieldProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
@@ -457,7 +474,6 @@ abstract contract DeployBase is Test {
                 IBeacon(cpSortedTrovesBeaconAddr),
                 IBeacon(cpTroveManagerBeaconAddr),
                 ICommunityIssuance(cpCommunityIssuanceProxyAddr),
-                IRewardManager(cpRewardManagerProxyAddr),
                 GAS_COMPENSATION
             )
         );
@@ -499,6 +515,16 @@ abstract contract DeployBase is Test {
             (ISatoshiCore(cpSatoshiCoreAddr), ICommunityIssuance(cpCommunityIssuanceProxyAddr))
         );
         satoshiLPFactoryProxy = ISatoshiLPFactory(address(new ERC1967Proxy(address(satoshiLPFactoryImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployNexusYieldProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        nexusYieldImpl = new NexusYieldManager(cpDebtTokenProxyAddr);
+        assert(nexusYieldImpl != INexusYieldManager(address(0)));
+        assert(nexusYieldProxy == INexusYieldManager(address(0)));
+        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, address(rewardManagerProxy)));
+        nexusYieldProxy = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         vm.stopPrank();
     }
 
@@ -545,6 +571,35 @@ abstract contract DeployBase is Test {
         address priceFeedChainlinkAddr = address(new PriceFeedChainlink(oracle, _satoshiCore));
         vm.stopPrank();
         return priceFeedChainlinkAddr;
+    }
+
+    function _deployPriceFeedDIA(
+        address deployer,
+        IDIAOracleV2 oracle,
+        ISatoshiCore _satoshiCore,
+        uint8 _decimals,
+        string memory _key,
+        uint256 _maxTimeThreshold
+    ) internal returns (address) {
+        vm.startPrank(deployer);
+        address priceFeedDIAAddr =
+            address(new PriceFeedDIAOracle(oracle, _decimals, _key, _satoshiCore, _maxTimeThreshold));
+        vm.stopPrank();
+        return priceFeedDIAAddr;
+    }
+
+    function _deployPriceFeedAPI3(
+        address deployer,
+        IProxy _oracle,
+        uint8 _decimals,
+        ISatoshiCore _satoshiCore,
+        uint256 _maxTimeThreshold
+    ) internal returns (address) {
+        vm.startPrank(deployer);
+        address priceFeedAPI3Addr =
+            address(new PriceFeedAPI3Oracle(_oracle, _decimals, _satoshiCore, _maxTimeThreshold));
+        vm.stopPrank();
+        return priceFeedAPI3Addr;
     }
 
     function _setPriceFeedToPriceFeedAggregatorProxy(address owner, IERC20 collateral, IPriceFeed priceFeed) internal {

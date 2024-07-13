@@ -23,6 +23,8 @@ interface IPriceFeedAggregator is ISatoshiOwnable {
 
     function fetchPrice(IERC20 _token) external returns (uint256);
 
+    function fetchPriceUnsafe(IERC20 _token) external returns (uint256, uint256);
+
     function setPriceFeed(IERC20 _token, IPriceFeed _priceFeed) external;
 
     function oracleRecords(IERC20) external view returns (IPriceFeed priceFeed, uint8 decimals);

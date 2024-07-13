@@ -163,4 +163,11 @@ contract SLPDepositTest is Test, DeployBase, TroveBase, TestConfig, Events {
         slpToken.withdraw(1);
         vm.stopPrank();
     }
+
+    function test_setCommunityIssuance() public {
+        vm.startPrank(OWNER);
+        satoshiLPFactoryProxy.setCommunityIssuance(communityIssuanceProxy);
+        assertEq(address(satoshiLPFactoryProxy.communityIssuance()), address(communityIssuanceProxy));
+        vm.stopPrank();
+    }
 }
