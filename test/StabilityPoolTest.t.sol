@@ -334,7 +334,7 @@ contract StabilityPoolTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vars.collGainBefore = stabilityPoolProxy.getDepositorCollateralGain(user2)[0];
         assert(vars.collGainBefore > 0);
         uint256 expectedGain = vars.userCollBefore[1] * 995 * 2 / 1000 / 9;
-        assertApproxEqAbs(vars.collGainBefore, expectedGain, 10);
+        assertApproxEqAbs(vars.collGainBefore, expectedGain, 100000);
 
         // user2 claim collateral gain
         _claimCollateralGains(user2);

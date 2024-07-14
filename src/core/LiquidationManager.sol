@@ -376,7 +376,7 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
 
         singleLiquidation.entireTroveDebt = entireTroveDebt;
         singleLiquidation.entireTroveColl = entireTroveColl;
-        uint256 collToOffset = _getOriginalCollateralAmount(
+        uint256 collToOffset = SatoshiMath._getOriginalCollateralAmount(
             (entireTroveDebt * _MCR) / _price, IERC20Metadata(address(troveManager.collateralToken())).decimals()
         );
 
@@ -481,25 +481,5 @@ contract LiquidationManager is SatoshiOwnable, SatoshiBase, ILiquidationManager,
         (uint256 _entireSystemColl, uint256 _entireSystemDebt) = borrowerOperations.getGlobalSystemBalances();
         uint256 TCR = SatoshiMath._computeCR(_entireSystemColl, _entireSystemDebt);
         return borrowerOperations.checkRecoveryMode(TCR);
-    }
-
-    function _getOriginalCollateralAmount(uint256 _scaledCollateralAmount, uint8 _decimals)
-        internal
-        pure
-        returns (uint256)
-    {
-        // Scale the collateral amount with decimals 18 to the target digits
-        uint256 originalAmount;
-        uint8 TARGET_DIGITS = 18;
-
-        if (_decimals == TARGET_DIGITS) {
-            originalAmount = _scaledCollateralAmount;
-        } else if (_decimals < TARGET_DIGITS) {
-            originalAmount = _scaledCollateralAmount / (10 ** (TARGET_DIGITS - _decimals));
-        } else {
-            originalAmount = _scaledCollateralAmount * (10 ** (_decimals - TARGET_DIGITS));
-        }
-
-        return originalAmount;
     }
 }

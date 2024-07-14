@@ -203,7 +203,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         _requireAtLeastMinNetDebt(vars.netDebt);
 
         uint8 decimals = IERC20Metadata(address(collateralToken)).decimals();
-        uint256 scaledCollateralAmount = _getScaledCollateralAmount(_collateralAmount, decimals);
+        uint256 scaledCollateralAmount = SatoshiMath._getScaledCollateralAmount(_collateralAmount, decimals);
 
         // ICR is based on the composite debt, i.e. the requested Debt amount + Debt borrowing fee + Debt gas comp.
         vars.compositeDebt = _getCompositeDebt(vars.netDebt);
@@ -494,7 +494,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
          */
 
         // Get the trove's old ICR before the adjustment
-        uint256 scaledCollAmount = _getScaledCollateralAmount(_vars.coll, decimals);
+        uint256 scaledCollAmount = SatoshiMath._getScaledCollateralAmount(_vars.coll, decimals);
         uint256 oldICR = SatoshiMath._computeCR(scaledCollAmount, _vars.debt, _vars.price);
 
         // Get the trove's new ICR after the adjustment
@@ -569,7 +569,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         (uint256 newColl, uint256 newDebt) =
             _getNewTroveAmounts(_coll, _debt, _collChange, _isCollIncrease, _debtChange, _isDebtIncrease);
 
-        uint256 scaledCollAmount = _getScaledCollateralAmount(newColl, decimals);
+        uint256 scaledCollAmount = SatoshiMath._getScaledCollateralAmount(newColl, decimals);
         uint256 newICR = SatoshiMath._computeCR(scaledCollAmount, newDebt, _price);
         return newICR;
     }
@@ -603,7 +603,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         totalDebt = _isDebtIncrease ? totalDebt + _debtChange : totalDebt - _debtChange;
         totalColl = _isCollIncrease ? totalColl + _collChange : totalColl - _collChange;
 
-        uint256 scaledCollAmount = _getScaledCollateralAmount(totalColl, decimals);
+        uint256 scaledCollAmount = SatoshiMath._getScaledCollateralAmount(totalColl, decimals);
         uint256 newTCR = SatoshiMath._computeCR(scaledCollAmount, totalDebt);
         return newTCR;
     }
@@ -616,7 +616,7 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         uint256 loopEnd = balances.collaterals.length;
         for (uint256 i; i < loopEnd;) {
             totalPricedCollateral +=
-                (_getScaledCollateralAmount(balances.collaterals[i], balances.decimals[i]) * balances.prices[i]);
+                (SatoshiMath._getScaledCollateralAmount(balances.collaterals[i], balances.decimals[i]) * balances.prices[i]);
             totalDebt += balances.debts[i];
             unchecked {
                 ++i;
@@ -654,21 +654,5 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     function getGlobalSystemBalances() external returns (uint256 totalPricedCollateral, uint256 totalDebt) {
         Balances memory balances = fetchBalances();
         (, totalPricedCollateral, totalDebt) = _getTCRData(balances);
-    }
-
-    function _getScaledCollateralAmount(uint256 _collateralAmount, uint8 _decimals) internal pure returns (uint256) {
-        // Scale the collateral amount to the target digits
-        uint256 scaledAmount;
-        uint8 TARGET_DIGITS = 18;
-
-        if (_decimals == TARGET_DIGITS) {
-            scaledAmount = _collateralAmount;
-        } else if (_decimals < TARGET_DIGITS) {
-            scaledAmount = _collateralAmount * (10 ** (TARGET_DIGITS - _decimals));
-        } else {
-            scaledAmount = _collateralAmount / (10 ** (_decimals - TARGET_DIGITS));
-        }
-
-        return scaledAmount;
     }
 }

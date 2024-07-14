@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {SatoshiMath} from "../dependencies/SatoshiMath.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
@@ -23,7 +24,7 @@ import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant DECIMAL_PRECISION = 1e22;
+    uint256 public constant DECIMAL_PRECISION = 1e18;
     uint128 public constant SUNSET_DURATION = 180 days;
     uint256 public constant OSHI_EMISSION_DURATION = 5 * 365 days; // 5 years
     uint128 public constant MAX_REWARD_RATE = 63419583967529168; // 10_000_000e18 / (5 * 31536000)
@@ -298,8 +299,11 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
 
         _triggerOSHIIssuance();
 
+        uint8 _decimals = IERC20Metadata(address(collateral)).decimals();
+        uint256 scaledCollToAdd = SatoshiMath._getScaledCollateralAmount(_collToAdd, _decimals);
+
         (uint256 collateralGainPerUnitStaked, uint256 debtLossPerUnitStaked) =
-            _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalDebt, idx);
+            _computeRewardsPerUnitStaked(scaledCollToAdd, _debtToOffset, totalDebt, idx);
 
         _updateRewardSumAndProduct(collateralGainPerUnitStaked, debtLossPerUnitStaked, idx); // updates S and P
 
@@ -433,7 +437,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
             if (sums[i] == 0) continue; // Collateral was overwritten or not gains
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;
-            collateralGains[i] += (initialDeposit * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION;
+            uint8 _decimals = IERC20Metadata(address(collateralTokens[i])).decimals();
+            collateralGains[i] += initialDeposit * SatoshiMath._getOriginalCollateralAmount(firstPortion + secondPortion, _decimals) / P_Snapshot / DECIMAL_PRECISION;
         }
         return collateralGains;
     }
@@ -460,8 +465,8 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
             hasGains = true;
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;
-            depositorGains[i] +=
-                uint80((initialDeposit * (firstPortion + secondPortion)) / P_Snapshot / DECIMAL_PRECISION);
+            uint8 _decimals = IERC20Metadata(address(collateralTokens[i])).decimals();
+            depositorGains[i] += uint80((initialDeposit * SatoshiMath._getOriginalCollateralAmount(firstPortion + secondPortion, _decimals) / P_Snapshot / DECIMAL_PRECISION));
         }
         return (hasGains);
     }
