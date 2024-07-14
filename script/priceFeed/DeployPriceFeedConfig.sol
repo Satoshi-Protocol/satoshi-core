@@ -6,7 +6,7 @@ address constant SATOSHI_CORE_ADDRESS = 0xA8480eBe583D597C34a8B4B831EFDbe2fe0a10
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
-address constant CHAINLINK_PRICE_FEED_SOURCE_ADDRESS = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512;
+address constant CHAINLINK_PRICE_FEED_SOURCE_ADDRESS = 0xde245C947CfE8303590D2136aDb1E6919Bc13758;
 
 /* DIA Oracle Integration Config */
 //NOTE: DIA oracle source address
