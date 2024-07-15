@@ -6,7 +6,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {NexusYieldManager} from "../src/core/NexusYieldManager.sol";
 import {INexusYieldManager} from "../src/interfaces/core/INexusYieldManager.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
-import {ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, ORACLE, USING_ORACLE, SWAP_WAIT_TIME} from "./DeployNYMConfig.sol";
+import {ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME} from "./DeployNYMConfig.sol";
 
 contract DeployNYMScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
@@ -37,11 +37,12 @@ contract DeployNYMScript is Script {
         vm.startBroadcast(OWNER_PRIVATE_KEY);
         
         _setAssetConfig();
+        assert(nym.usingOracle(ASSET) == true);
 
         vm.stopBroadcast();
     }
 
     function _setAssetConfig() internal {
-        nym.setAssetConfig(ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, ORACLE, USING_ORACLE, SWAP_WAIT_TIME);
+        nym.setAssetConfig(ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME);
     }
 }
