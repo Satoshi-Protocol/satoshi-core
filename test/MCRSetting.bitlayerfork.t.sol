@@ -28,6 +28,7 @@ import {
 struct TMParams {
     uint256 getEntireSystemColl;
     uint256 getEntireSystemDebt;
+    uint256 price;
 }
 
 contract MCRSettingTest is Test {
@@ -47,9 +48,9 @@ contract MCRSettingTest is Test {
     function test_troveDataRemainSame() public {
         TMParams memory tmParams;
 
-        tmParams.MCR = troveManager.MCR();
         tmParams.getEntireSystemColl = troveManager.getEntireSystemColl();
         tmParams.getEntireSystemDebt = troveManager.getEntireSystemDebt();
+        tmParams.price = troveManager.fetchPrice();
 
         address account = sortedTrovesBeaconProxy.getLast();
 
@@ -94,5 +95,17 @@ contract MCRSettingTest is Test {
         // account should not be liquidated
         vm.expectRevert("TroveManager: nothing to liquidate");
         liquidationManager.liquidate(troveManager, account);
+
+        uint256 maxBorrow = collBefore * tmParams.price * 100 / 120 / 1e18;
+        uint256 withdrawAmount = maxBorrow - debtBefore + 1e18;
+
+        // calc hint
+        (address upperHint, address lowerHint) = HintLib.getHint(
+            hintHelpers, sortedTrovesBeaconProxy, troveManager, collBefore, debtBefore + withdrawAmount, 0.05e18
+        );
+
+        vm.startPrank(account);
+        vm.expectRevert("BorrowerOps: An operation that would result in ICR < MCR is not permitted");
+        satoshiPeriphery.withdrawDebt(troveManager, 0.05e18, withdrawAmount, upperHint, lowerHint);
     }
 }
