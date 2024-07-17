@@ -6,6 +6,8 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {NexusYieldManager} from "../src/core/NexusYieldManager.sol";
 import {INexusYieldManager} from "../src/interfaces/core/INexusYieldManager.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
+import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
+import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
 import {
     ASSET,
     FEE_IN,
@@ -54,5 +56,9 @@ contract DeployNYMScript is Script {
         nym.setAssetConfig(
             ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME
         );
+
+        // add whitelist
+        IDebtToken(debtTokenAddr).rely(address(nym));
+        IRewardManager(rewardManagerProxy).setWhitelistCaller(address(nym), true);
     }
 }
