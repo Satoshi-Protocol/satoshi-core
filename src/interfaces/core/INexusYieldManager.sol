@@ -160,7 +160,7 @@ interface INexusYieldManager {
 
     function previewSwapOut(address asset, uint256 stableTknAmount) external returns (uint256, uint256);
 
-    function previewSwapIn(address asset, uint256 stableTknAmount) external returns (uint256);
+    function previewSwapIn(address asset, uint256 stableTknAmount) external returns (uint256, uint256);
 
     function swapOutPrivileged(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
 
