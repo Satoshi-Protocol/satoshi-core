@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20MetadataUpgradeable} from
@@ -20,7 +21,7 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
  * https://github.com/VenusProtocol/venus-protocol/blob/develop/contracts/PegStability/PegStability.sol
  * @notice Contract for swapping stable token for debtToken token and vice versa to maintain the peg stability between them.
  */
-contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable {
+contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     uint256 public constant TARGET_DIGITS = 18;
@@ -79,12 +80,19 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         _disableInitializers();
     }
 
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
     /**
      * @notice Initializes the contract via Proxy Contract with the required parameters.
      * @param rewardManagerAddr_ The address where fees will be sent.
      */
     function initialize(ISatoshiCore satoshiCore_, address rewardManagerAddr_) external initializer {
         __SatoshiOwnable_init(satoshiCore_);
+        __UUPSUpgradeable_init_unchained();
         __ReentrancyGuard_init();
         rewardManagerAddr = rewardManagerAddr_;
     }

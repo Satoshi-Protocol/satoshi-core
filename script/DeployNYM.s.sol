@@ -12,7 +12,7 @@ import {
     FEE_OUT,
     MINT_CAP,
     DAILY_MINT_CAP,
-    ORACLE,
+    PRICE_AGGREGATOR_PROXY,
     USING_ORACLE,
     SWAP_WAIT_TIME
 } from "./DeployNYMConfig.sol";
@@ -51,6 +51,8 @@ contract DeployNYMScript is Script {
     }
 
     function _setAssetConfig() internal {
-        nym.setAssetConfig(ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, ORACLE, USING_ORACLE, SWAP_WAIT_TIME);
+        nym.setAssetConfig(
+            ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME
+        );
     }
 }
