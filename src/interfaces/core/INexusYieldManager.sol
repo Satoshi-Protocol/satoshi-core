@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 import {IDebtToken} from "./IDebtToken.sol";
 import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "./ISatoshiCore.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 
 struct AssetConfig {
     /// The address of ResilientOracle contract wrapped in its interface.
@@ -23,7 +24,7 @@ struct AssetConfig {
     uint256 swapWaitingPeriod;
 }
 
-interface INexusYieldManager {
+interface INexusYieldManager is ISatoshiOwnable {
     // Helper enum for calculation of the fee.
     enum FeeDirection {
         IN,
