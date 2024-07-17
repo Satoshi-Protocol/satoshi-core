@@ -15,11 +15,16 @@ import {
 
 contract DeployPriceFeedChainlinkScript is Script {
     PriceFeedDIAOracle internal priceFeedDIAOracle;
+    uint256 internal DEPLOYMENT_PRIVATE_KEY;
+    address public deployer;
 
-    function setUp() public {}
+    function setUp() public {
+        DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
+        deployer = vm.addr(DEPLOYMENT_PRIVATE_KEY);
+    }
 
     function run() public {
-        vm.startBroadcast();
+        vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
         IDIAOracleV2 source = IDIAOracleV2(DIA_ORACLE_PRICE_FEED_SOURCE_ADDRESS);
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);

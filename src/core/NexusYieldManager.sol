@@ -410,7 +410,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
      * @param assetAmount The amount of stable tokens provided for the swap.
      * @return The amount of debtToken that would be sent to the receiver.
      */
-    function previewSwapIn(address asset, uint256 assetAmount) external returns (uint256) {
+    function previewSwapIn(address asset, uint256 assetAmount) external returns (uint256, uint256) {
         _ensureNonzeroAmount(assetAmount);
         _ensureAssetSupported(asset);
 
@@ -424,7 +424,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             revert DebtTokenMintCapReached();
         }
 
-        return DebtTokenToMint;
+        return (DebtTokenToMint, fee);
     }
 
     function convertDebtTokenToAssetAmount(address asset, uint256 amount) public view returns (uint256) {

@@ -150,7 +150,8 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
     function test_previewSwapStableForSAT() public {
         uint256 amount = 1e18;
         uint256 fee = amount * nexusYieldProxy.feeIn(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
-        assertEq(nexusYieldProxy.previewSwapIn(address(collateralMock), amount), amount - fee);
+        (uint256 previewAmount, ) = nexusYieldProxy.previewSwapIn(address(collateralMock), amount);
+        assertEq(previewAmount, amount - fee);
     }
 
     function test_scheduleSwapSATForStable() public {
