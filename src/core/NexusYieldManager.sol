@@ -295,18 +295,18 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         withdrawalTime[asset][msg.sender] = uint32(block.timestamp + assetConfigs[asset].swapWaitingPeriod);
 
-        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
         uint256 fee = _calculateFee(asset, amount, FeeDirection.OUT);
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount - fee, FeeDirection.OUT);
 
-        if (debtToken.balanceOf(msg.sender) < amount + fee) {
+        if (debtToken.balanceOf(msg.sender) < amount) {
             revert NotEnoughDebtToken();
         }
-        if (assetConfigs[asset].debtTokenMinted < amount) {
+        if (assetConfigs[asset].debtTokenMinted < amount - fee) {
             revert DebtTokenMintedUnderflow();
         }
 
         unchecked {
-            assetConfigs[asset].debtTokenMinted -= amount;
+            assetConfigs[asset].debtTokenMinted -= amount - fee;
         }
 
         if (fee != 0) {
@@ -315,7 +315,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        debtToken.burn(msg.sender, amount);
+        debtToken.burn(msg.sender, amount - fee);
         scheduledWithdrawalAmount[asset][msg.sender] = assetAmount;
         emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee);
         return assetAmount;
@@ -402,12 +402,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         _ensureNonzeroAmount(amount);
         _ensureAssetSupported(asset);
 
-        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
         uint256 fee = _calculateFee(asset, amount, FeeDirection.OUT);
-
-        if (assetConfigs[asset].debtTokenMinted < amount) {
-            revert DebtTokenMintedUnderflow();
-        }
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount - fee, FeeDirection.OUT);
 
         return (assetAmount, fee);
     }
@@ -427,10 +423,6 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         //calculate feeIn
         uint256 fee = _calculateFee(asset, assetAmountUSD, FeeDirection.IN);
         uint256 DebtTokenToMint = assetAmountUSD - fee;
-
-        if (assetConfigs[asset].debtTokenMinted + assetAmountUSD > assetConfigs[asset].debtTokenMintCap) {
-            revert DebtTokenMintCapReached();
-        }
 
         return (DebtTokenToMint, fee);
     }
