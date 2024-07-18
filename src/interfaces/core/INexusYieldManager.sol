@@ -188,4 +188,8 @@ interface INexusYieldManager is ISatoshiOwnable {
     function usingOracle(address asset) external view returns (bool);
 
     function swapWaitingPeriod(address asset) external view returns (uint256);
+
+    function debtTokenDailyMintCapRemain(address asset) external view returns (uint256);
+
+    function dailyMintCount(address asset) external view returns (uint256);
 }
