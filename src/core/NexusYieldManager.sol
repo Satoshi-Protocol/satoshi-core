@@ -585,7 +585,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return (scheduledWithdrawalAmount[asset][account], withdrawalTime[asset][account]);
     }
 
-    function pendingWithdrawal(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory) {
+    function pendingWithdrawals(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory) {
         uint256[] memory amounts = new uint256[](assets.length);
         uint32[] memory times = new uint32[](assets.length);
         for (uint256 i; i < assets.length; ++i) {

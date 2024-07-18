@@ -195,5 +195,5 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     function pendingWithdrawal(address asset, address account) external view returns (uint256, uint32);
 
-    function pendingWithdrawal(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory);
+    function pendingWithdrawals(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory);
 }
