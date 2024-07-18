@@ -7,4 +7,4 @@ uint256 constant MINT_CAP = 1e24; // 1e6 * 1e18 = 1e24
 uint256 constant DAILY_MINT_CAP = 10000e18;
 address constant PRICE_AGGREGATOR_PROXY = 0xB8954C4e7EBCEEF6F00e3003d5B376A78BF7321F;
 bool constant USING_ORACLE = true;
-uint256 constant SWAP_WAIT_TIME = 3600;
+uint256 constant SWAP_WAIT_TIME = 300;
