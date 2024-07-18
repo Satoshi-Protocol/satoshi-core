@@ -192,4 +192,8 @@ interface INexusYieldManager is ISatoshiOwnable {
     function debtTokenDailyMintCapRemain(address asset) external view returns (uint256);
 
     function dailyMintCount(address asset) external view returns (uint256);
+
+    function pendingWithdrawal(address asset, address account) external view returns (uint256, uint32);
+
+    function pendingWithdrawal(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory);
 }
