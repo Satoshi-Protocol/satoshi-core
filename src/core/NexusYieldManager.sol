@@ -584,4 +584,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     function swapWaitingPeriod(address asset) public view returns (uint256) {
         return assetConfigs[asset].swapWaitingPeriod;
     }
+
+    function debtTokenDailyMintCapRemain(address asset) external view returns (uint256) {
+        return assetConfigs[asset].dailyDebtTokenMintCap - dailyMintCount[asset];
+    }
 }
