@@ -317,7 +317,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         debtToken.burn(msg.sender, amount - fee);
         scheduledWithdrawalAmount[asset][msg.sender] = assetAmount;
-        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee);
+        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee, block.timestamp);
         return assetAmount;
     }
 

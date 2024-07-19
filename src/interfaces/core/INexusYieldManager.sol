@@ -66,7 +66,7 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     event SwapWaitingPeriodSet(uint256 swapWaitingPeriod);
 
-    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee);
+    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint256 time);
 
     event Withdraw(address asset, address user, uint256 amount);
 
