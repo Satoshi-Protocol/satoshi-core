@@ -37,20 +37,8 @@ interface INexusYieldManager is ISatoshiOwnable {
     /// @notice Event emitted when the contract is resumed after pause.
     event NYMResumed(address indexed admin);
 
-    /// @notice Event emitted when feeIn state var is modified.
-    event FeeInChanged(uint256 oldFeeIn, uint256 newFeeIn);
-
-    /// @notice Event emitted when feeOut state var is modified.
-    event FeeOutChanged(uint256 oldFeeOut, uint256 newFeeOut);
-
-    /// @notice Event emitted when MintCap state var is modified.
-    event DebtTokenMintCapChanged(uint256 oldCap, uint256 newCap);
-
     /// @notice Event emitted when RewardManager state var is modified.
     event RewardManagerChanged(address indexed oldTreasury, address indexed newTreasury);
-
-    /// @notice Event emitted when oracle state var is modified.
-    event OracleChanged(address indexed oldOracle, address indexed newOracle);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
     event AssetForDebtTokenSwapped(address caller, address receiver, address asset, uint256 stableIn, uint256 tokenOut, uint256 fee);
@@ -60,11 +48,7 @@ interface INexusYieldManager is ISatoshiOwnable {
         address caller, address receiver, address asset, uint256 debtTokenBurnt, uint256 stableOut, uint256 fee
     );
 
-    event UsingOracleSet(bool isUsingOracle);
-
     event PrivilegedSet(address privileged, bool isPrivileged);
-
-    event SwapWaitingPeriodSet(uint256 swapWaitingPeriod);
 
     event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint32 time);
 
