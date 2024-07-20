@@ -19,7 +19,7 @@ struct AssetConfig {
     /// The total amount of debtToken minted through this asset.
     uint256 debtTokenMinted;
     /// A flag indicating whether the contract is using an oracle or not.
-    bool usingOracle;
+    bool isUsingOracle;
     /// The time used to
     uint256 swapWaitingPeriod;
 }
@@ -43,7 +43,7 @@ interface INexusYieldManager is ISatoshiOwnable {
     /// @notice Event emitted when feeOut state var is modified.
     event FeeOutChanged(uint256 oldFeeOut, uint256 newFeeOut);
 
-    /// @notice Event emitted when SATMintCap state var is modified.
+    /// @notice Event emitted when MintCap state var is modified.
     event DebtTokenMintCapChanged(uint256 oldCap, uint256 newCap);
 
     /// @notice Event emitted when RewardManager state var is modified.
@@ -53,14 +53,14 @@ interface INexusYieldManager is ISatoshiOwnable {
     event OracleChanged(address indexed oldOracle, address indexed newOracle);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
-    event AssetForDebtTokenSwapped(address caller, address receiver, address asset, uint256 stableIn, uint256 SATOut, uint256 fee);
+    event AssetForDebtTokenSwapped(address caller, address receiver, address asset, uint256 stableIn, uint256 tokenOut, uint256 fee);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
     event DebtTokenForAssetSwapped(
         address caller, address receiver, address asset, uint256 debtTokenBurnt, uint256 stableOut, uint256 fee
     );
 
-    event UsingOracleSet(bool usingOracle);
+    event UsingOracleSet(bool isUsingOracle);
 
     event PrivilegedSet(address privileged, bool isPrivileged);
 
@@ -72,7 +72,7 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
 
-    event AssetConfigSetting(address asset, uint256 feeIn, uint256 feeOut, uint256 debtTokenMintCap, uint256 dailyMintCap, address oracle, bool usingOracle, uint256 swapWaitingPeriod);
+    event AssetConfigSetting(address asset, uint256 feeIn, uint256 feeOut, uint256 debtTokenMintCap, uint256 dailyMintCap, address oracle, bool isUsingOracle, uint256 swapWaitingPeriod);
 
     event AssetSunset(address asset);
 
@@ -145,7 +145,7 @@ interface INexusYieldManager is ISatoshiOwnable {
         uint256 debtTokenMintCap_,
         uint256 dailyMintCap_,
         address oracle_,
-        bool usingOracle_,
+        bool isUsingOracle_,
         uint256 swapWaitingPeriod_
     ) external;
 
@@ -189,7 +189,7 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     function debtTokenMinted(address asset) external view returns (uint256);
 
-    function usingOracle(address asset) external view returns (bool);
+    function isUsingOracle(address asset) external view returns (bool);
 
     function swapWaitingPeriod(address asset) external view returns (uint256);
 

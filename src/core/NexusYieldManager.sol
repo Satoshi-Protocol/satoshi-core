@@ -104,7 +104,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         uint256 debtTokenMintCap_,
         uint256 dailyDebtTokenMintCap_,
         address oracle_,
-        bool usingOracle_,
+        bool isUsingOracle_,
         uint256 swapWaitingPeriod_
     ) external onlyOwner {
         if (feeIn_ >= BASIS_POINTS_DIVISOR || feeOut_ >= BASIS_POINTS_DIVISOR) {
@@ -116,11 +116,11 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         config.debtTokenMintCap = debtTokenMintCap_;
         config.dailyDebtTokenMintCap = dailyDebtTokenMintCap_;
         config.oracle = IPriceFeedAggregator(oracle_);
-        config.usingOracle = usingOracle_;
+        config.isUsingOracle = isUsingOracle_;
         config.swapWaitingPeriod = swapWaitingPeriod_;
         isAssetSupported[asset] = true;
 
-        emit AssetConfigSetting(asset, feeIn_, feeOut_, debtTokenMintCap_, dailyDebtTokenMintCap_, oracle_, usingOracle_, swapWaitingPeriod_);
+        emit AssetConfigSetting(asset, feeIn_, feeOut_, debtTokenMintCap_, dailyDebtTokenMintCap_, oracle_, isUsingOracle_, swapWaitingPeriod_);
     }
 
     function sunsetAsset(address asset) external onlyOwner {
@@ -426,9 +426,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         //calculate feeIn
         uint256 fee = _calculateFee(asset, assetAmountUSD, FeeDirection.IN);
-        uint256 DebtTokenToMint = assetAmountUSD - fee;
+        uint256 debtTokenToMint = assetAmountUSD - fee;
 
-        return (DebtTokenToMint, fee);
+        return (debtTokenToMint, fee);
     }
 
     function convertDebtTokenToAssetAmount(address asset, uint256 amount) public view returns (uint256) {
@@ -486,7 +486,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
      * @return The price in USD, adjusted based on the selected direction.
      */
     function _getPriceInUSD(address asset, FeeDirection direction) internal returns (uint256) {
-        if (!assetConfigs[asset].usingOracle) {
+        if (!assetConfigs[asset].isUsingOracle) {
             return ONE_DOLLAR;
         }
 
@@ -573,8 +573,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return assetConfigs[asset].debtTokenMinted;
     }
 
-    function usingOracle(address asset) public view returns (bool) {
-        return assetConfigs[asset].usingOracle;
+    function isUsingOracle(address asset) public view returns (bool) {
+        return assetConfigs[asset].isUsingOracle;
     }
 
     function swapWaitingPeriod(address asset) public view returns (uint256) {
