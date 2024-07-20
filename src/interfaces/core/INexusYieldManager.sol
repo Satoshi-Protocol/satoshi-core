@@ -53,7 +53,7 @@ interface INexusYieldManager is ISatoshiOwnable {
     event OracleChanged(address indexed oldOracle, address indexed newOracle);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
-    event AssetForDebtTokenSwapped(address caller, address receiver, uint256 stableIn, uint256 SATOut, uint256 fee);
+    event AssetForDebtTokenSwapped(address caller, address receiver, address asset, uint256 stableIn, uint256 SATOut, uint256 fee);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
     event DebtTokenForAssetSwapped(
@@ -66,11 +66,15 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     event SwapWaitingPeriodSet(uint256 swapWaitingPeriod);
 
-    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint256 time);
+    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint32 time);
 
     event Withdraw(address asset, address user, uint256 amount);
 
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
+
+    event AssetConfigSetting(address asset, uint256 feeIn, uint256 feeOut, uint256 debtTokenMintCap, uint256 dailyMintCap, address oracle, bool usingOracle, uint256 swapWaitingPeriod);
+
+    event AssetSunset(address asset);
 
     /// @notice thrown when contract is in paused state
     error Paused();

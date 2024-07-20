@@ -119,10 +119,14 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         config.usingOracle = usingOracle_;
         config.swapWaitingPeriod = swapWaitingPeriod_;
         isAssetSupported[asset] = true;
+
+        emit AssetConfigSetting(asset, feeIn_, feeOut_, debtTokenMintCap_, dailyDebtTokenMintCap_, oracle_, usingOracle_, swapWaitingPeriod_);
     }
 
     function sunsetAsset(address asset) external onlyOwner {
         isAssetSupported[asset] = false;
+
+        emit AssetSunset(asset);
     }
 
     /**
@@ -191,7 +195,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        emit AssetForDebtTokenSwapped(msg.sender, receiver, actualTransferAmt, debtTokenToMint, fee);
+        emit AssetForDebtTokenSwapped(msg.sender, receiver, asset, actualTransferAmt, debtTokenToMint, fee);
         return debtTokenToMint;
     }
 
@@ -276,7 +280,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         // mint debtToken to receiver
         debtToken.mint(receiver, actualTransferAmtInUSD);
 
-        emit AssetForDebtTokenSwapped(msg.sender, receiver, actualTransferAmt, actualTransferAmtInUSD, 0);
+        emit AssetForDebtTokenSwapped(msg.sender, receiver, asset, actualTransferAmt, actualTransferAmtInUSD, 0);
         return actualTransferAmtInUSD;
     }
 
@@ -317,7 +321,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         debtToken.burn(msg.sender, amount - fee);
         scheduledWithdrawalAmount[asset][msg.sender] = assetAmount;
-        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee, block.timestamp);
+        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee, withdrawalTime[asset][msg.sender]);
         return assetAmount;
     }
 
