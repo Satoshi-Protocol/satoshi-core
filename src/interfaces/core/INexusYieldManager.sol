@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 import {IDebtToken} from "./IDebtToken.sol";
 import {IPriceFeedAggregator} from "./IPriceFeedAggregator.sol";
 import {ISatoshiCore} from "./ISatoshiCore.sol";
+import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 
 struct AssetConfig {
     /// The address of ResilientOracle contract wrapped in its interface.
@@ -18,12 +19,12 @@ struct AssetConfig {
     /// The total amount of debtToken minted through this asset.
     uint256 debtTokenMinted;
     /// A flag indicating whether the contract is using an oracle or not.
-    bool usingOracle;
+    bool isUsingOracle;
     /// The time used to
     uint256 swapWaitingPeriod;
 }
 
-interface INexusYieldManager {
+interface INexusYieldManager is ISatoshiOwnable {
     // Helper enum for calculation of the fee.
     enum FeeDirection {
         IN,
@@ -36,40 +37,28 @@ interface INexusYieldManager {
     /// @notice Event emitted when the contract is resumed after pause.
     event NYMResumed(address indexed admin);
 
-    /// @notice Event emitted when feeIn state var is modified.
-    event FeeInChanged(uint256 oldFeeIn, uint256 newFeeIn);
-
-    /// @notice Event emitted when feeOut state var is modified.
-    event FeeOutChanged(uint256 oldFeeOut, uint256 newFeeOut);
-
-    /// @notice Event emitted when SATMintCap state var is modified.
-    event DebtTokenMintCapChanged(uint256 oldCap, uint256 newCap);
-
     /// @notice Event emitted when RewardManager state var is modified.
     event RewardManagerChanged(address indexed oldTreasury, address indexed newTreasury);
 
-    /// @notice Event emitted when oracle state var is modified.
-    event OracleChanged(address indexed oldOracle, address indexed newOracle);
-
     /// @notice Event emitted when stable token is swapped for debtToken.
-    event AssetForDebtTokenSwapped(address caller, address receiver, uint256 stableIn, uint256 SATOut, uint256 fee);
+    event AssetForDebtTokenSwapped(address caller, address receiver, address asset, uint256 stableIn, uint256 tokenOut, uint256 fee);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
     event DebtTokenForAssetSwapped(
         address caller, address receiver, address asset, uint256 debtTokenBurnt, uint256 stableOut, uint256 fee
     );
 
-    event UsingOracleSet(bool usingOracle);
-
     event PrivilegedSet(address privileged, bool isPrivileged);
 
-    event SwapWaitingPeriodSet(uint256 swapWaitingPeriod);
-
-    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee);
+    event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint32 time);
 
     event Withdraw(address asset, address user, uint256 amount);
 
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
+
+    event AssetConfigSetting(address asset, uint256 feeIn, uint256 feeOut, uint256 debtTokenMintCap, uint256 dailyMintCap, address oracle, bool isUsingOracle, uint256 swapWaitingPeriod);
+
+    event AssetSunset(address asset);
 
     /// @notice thrown when contract is in paused state
     error Paused();
@@ -140,7 +129,7 @@ interface INexusYieldManager {
         uint256 debtTokenMintCap_,
         uint256 dailyMintCap_,
         address oracle_,
-        bool usingOracle_,
+        bool isUsingOracle_,
         uint256 swapWaitingPeriod_
     ) external;
 
@@ -160,7 +149,7 @@ interface INexusYieldManager {
 
     function previewSwapOut(address asset, uint256 stableTknAmount) external returns (uint256, uint256);
 
-    function previewSwapIn(address asset, uint256 stableTknAmount) external returns (uint256);
+    function previewSwapIn(address asset, uint256 stableTknAmount) external returns (uint256, uint256);
 
     function swapOutPrivileged(address asset, address receiver, uint256 stableTknAmount) external returns (uint256);
 
@@ -184,7 +173,15 @@ interface INexusYieldManager {
 
     function debtTokenMinted(address asset) external view returns (uint256);
 
-    function usingOracle(address asset) external view returns (bool);
+    function isUsingOracle(address asset) external view returns (bool);
 
     function swapWaitingPeriod(address asset) external view returns (uint256);
+
+    function debtTokenDailyMintCapRemain(address asset) external view returns (uint256);
+
+    function dailyMintCount(address asset) external view returns (uint256);
+
+    function pendingWithdrawal(address asset, address account) external view returns (uint256, uint32);
+
+    function pendingWithdrawals(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory);
 }

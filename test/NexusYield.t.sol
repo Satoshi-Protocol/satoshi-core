@@ -143,14 +143,15 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         uint256 fee = amount * nexusYieldProxy.feeOut(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
         (uint256 assetOut, uint256 feeOut) = nexusYieldProxy.previewSwapOut(address(collateralMock), amount);
         assertEq(fee, feeOut);
-        assertEq(assetOut, amount);
+        assertEq(assetOut + feeOut, amount);
         vm.stopPrank();
     }
 
     function test_previewSwapStableForSAT() public {
         uint256 amount = 1e18;
         uint256 fee = amount * nexusYieldProxy.feeIn(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
-        assertEq(nexusYieldProxy.previewSwapIn(address(collateralMock), amount), amount - fee);
+        (uint256 previewAmount,) = nexusYieldProxy.previewSwapIn(address(collateralMock), amount);
+        assertEq(previewAmount, amount - fee);
     }
 
     function test_scheduleSwapSATForStable() public {
@@ -161,7 +162,7 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         uint256 amount = 1e18;
         uint256 fee = amount * nexusYieldProxy.feeOut(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
-        debtTokenProxy.approve(address(nexusYieldProxy), amount + fee);
+        debtTokenProxy.approve(address(nexusYieldProxy), amount);
         nexusYieldProxy.scheduleSwapOut(address(collateralMock), amount);
         // try to withdraw => should fail
         vm.expectRevert(INexusYieldManager.WithdrawalNotAvailable.selector);
@@ -169,7 +170,7 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vm.warp(block.timestamp + nexusYieldProxy.swapWaitingPeriod(address(collateralMock)));
         nexusYieldProxy.withdraw(address(collateralMock));
-        assertEq(collateralMock.balanceOf(user1), amount);
+        assertEq(collateralMock.balanceOf(user1), amount - fee);
         vm.stopPrank();
     }
 

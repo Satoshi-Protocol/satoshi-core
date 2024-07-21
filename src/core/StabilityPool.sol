@@ -438,7 +438,9 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;
             uint8 _decimals = IERC20Metadata(address(collateralTokens[i])).decimals();
-            collateralGains[i] += initialDeposit * SatoshiMath._getOriginalCollateralAmount(firstPortion + secondPortion, _decimals) / P_Snapshot / DECIMAL_PRECISION;
+            collateralGains[i] += initialDeposit
+                * SatoshiMath._getOriginalCollateralAmount(firstPortion + secondPortion, _decimals) / P_Snapshot
+                / DECIMAL_PRECISION;
         }
         return collateralGains;
     }
@@ -466,7 +468,12 @@ contract StabilityPool is IStabilityPool, SatoshiOwnable, UUPSUpgradeable {
             uint256 firstPortion = sums[i] - depSums[i];
             uint256 secondPortion = nextSums[i] / SCALE_FACTOR;
             uint8 _decimals = IERC20Metadata(address(collateralTokens[i])).decimals();
-            depositorGains[i] += uint80((initialDeposit * SatoshiMath._getOriginalCollateralAmount(firstPortion + secondPortion, _decimals) / P_Snapshot / DECIMAL_PRECISION));
+            depositorGains[i] += uint80(
+                (
+                    initialDeposit * SatoshiMath._getOriginalCollateralAmount(firstPortion + secondPortion, _decimals)
+                        / P_Snapshot / DECIMAL_PRECISION
+                )
+            );
         }
         return (hasGains);
     }

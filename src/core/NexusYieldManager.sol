@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IERC20MetadataUpgradeable} from
@@ -20,7 +21,7 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
  * https://github.com/VenusProtocol/venus-protocol/blob/develop/contracts/PegStability/PegStability.sol
  * @notice Contract for swapping stable token for debtToken token and vice versa to maintain the peg stability between them.
  */
-contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable {
+contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     uint256 public constant TARGET_DIGITS = 18;
@@ -79,12 +80,19 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         _disableInitializers();
     }
 
+    /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        // No additional authorization logic is needed for this contract
+    }
+
     /**
      * @notice Initializes the contract via Proxy Contract with the required parameters.
      * @param rewardManagerAddr_ The address where fees will be sent.
      */
     function initialize(ISatoshiCore satoshiCore_, address rewardManagerAddr_) external initializer {
         __SatoshiOwnable_init(satoshiCore_);
+        __UUPSUpgradeable_init_unchained();
         __ReentrancyGuard_init();
         rewardManagerAddr = rewardManagerAddr_;
     }
@@ -96,7 +104,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         uint256 debtTokenMintCap_,
         uint256 dailyDebtTokenMintCap_,
         address oracle_,
-        bool usingOracle_,
+        bool isUsingOracle_,
         uint256 swapWaitingPeriod_
     ) external onlyOwner {
         if (feeIn_ >= BASIS_POINTS_DIVISOR || feeOut_ >= BASIS_POINTS_DIVISOR) {
@@ -108,13 +116,17 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         config.debtTokenMintCap = debtTokenMintCap_;
         config.dailyDebtTokenMintCap = dailyDebtTokenMintCap_;
         config.oracle = IPriceFeedAggregator(oracle_);
-        config.usingOracle = usingOracle_;
+        config.isUsingOracle = isUsingOracle_;
         config.swapWaitingPeriod = swapWaitingPeriod_;
         isAssetSupported[asset] = true;
+
+        emit AssetConfigSetting(asset, feeIn_, feeOut_, debtTokenMintCap_, dailyDebtTokenMintCap_, oracle_, isUsingOracle_, swapWaitingPeriod_);
     }
 
     function sunsetAsset(address asset) external onlyOwner {
         isAssetSupported[asset] = false;
+
+        emit AssetSunset(asset);
     }
 
     /**
@@ -183,7 +195,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        emit AssetForDebtTokenSwapped(msg.sender, receiver, actualTransferAmt, debtTokenToMint, fee);
+        emit AssetForDebtTokenSwapped(msg.sender, receiver, asset, actualTransferAmt, debtTokenToMint, fee);
         return debtTokenToMint;
     }
 
@@ -268,7 +280,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         // mint debtToken to receiver
         debtToken.mint(receiver, actualTransferAmtInUSD);
 
-        emit AssetForDebtTokenSwapped(msg.sender, receiver, actualTransferAmt, actualTransferAmtInUSD, 0);
+        emit AssetForDebtTokenSwapped(msg.sender, receiver, asset, actualTransferAmt, actualTransferAmtInUSD, 0);
         return actualTransferAmtInUSD;
     }
 
@@ -287,18 +299,18 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         withdrawalTime[asset][msg.sender] = uint32(block.timestamp + assetConfigs[asset].swapWaitingPeriod);
 
-        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
         uint256 fee = _calculateFee(asset, amount, FeeDirection.OUT);
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount - fee, FeeDirection.OUT);
 
-        if (debtToken.balanceOf(msg.sender) < amount + fee) {
+        if (debtToken.balanceOf(msg.sender) < amount) {
             revert NotEnoughDebtToken();
         }
-        if (assetConfigs[asset].debtTokenMinted < amount) {
+        if (assetConfigs[asset].debtTokenMinted < amount - fee) {
             revert DebtTokenMintedUnderflow();
         }
 
         unchecked {
-            assetConfigs[asset].debtTokenMinted -= amount;
+            assetConfigs[asset].debtTokenMinted -= amount - fee;
         }
 
         if (fee != 0) {
@@ -307,9 +319,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             IRewardManager(rewardManagerAddr).increaseSATPerUintStaked(fee);
         }
 
-        debtToken.burn(msg.sender, amount);
+        debtToken.burn(msg.sender, amount - fee);
         scheduledWithdrawalAmount[asset][msg.sender] = assetAmount;
-        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee);
+        emit WithdrawalScheduled(asset, msg.sender, assetAmount, fee, withdrawalTime[asset][msg.sender]);
         return assetAmount;
     }
 
@@ -394,12 +406,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         _ensureNonzeroAmount(amount);
         _ensureAssetSupported(asset);
 
-        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount, FeeDirection.OUT);
         uint256 fee = _calculateFee(asset, amount, FeeDirection.OUT);
-
-        if (assetConfigs[asset].debtTokenMinted < amount) {
-            revert DebtTokenMintedUnderflow();
-        }
+        uint256 assetAmount = _previewAssetAmountFromDebtToken(asset, amount - fee, FeeDirection.OUT);
 
         return (assetAmount, fee);
     }
@@ -410,7 +418,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
      * @param assetAmount The amount of stable tokens provided for the swap.
      * @return The amount of debtToken that would be sent to the receiver.
      */
-    function previewSwapIn(address asset, uint256 assetAmount) external returns (uint256) {
+    function previewSwapIn(address asset, uint256 assetAmount) external returns (uint256, uint256) {
         _ensureNonzeroAmount(assetAmount);
         _ensureAssetSupported(asset);
 
@@ -418,13 +426,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         //calculate feeIn
         uint256 fee = _calculateFee(asset, assetAmountUSD, FeeDirection.IN);
-        uint256 DebtTokenToMint = assetAmountUSD - fee;
+        uint256 debtTokenToMint = assetAmountUSD - fee;
 
-        if (assetConfigs[asset].debtTokenMinted + assetAmountUSD > assetConfigs[asset].debtTokenMintCap) {
-            revert DebtTokenMintCapReached();
-        }
-
-        return DebtTokenToMint;
+        return (debtTokenToMint, fee);
     }
 
     function convertDebtTokenToAssetAmount(address asset, uint256 amount) public view returns (uint256) {
@@ -482,7 +486,7 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
      * @return The price in USD, adjusted based on the selected direction.
      */
     function _getPriceInUSD(address asset, FeeDirection direction) internal returns (uint256) {
-        if (!assetConfigs[asset].usingOracle) {
+        if (!assetConfigs[asset].isUsingOracle) {
             return ONE_DOLLAR;
         }
 
@@ -569,11 +573,30 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return assetConfigs[asset].debtTokenMinted;
     }
 
-    function usingOracle(address asset) public view returns (bool) {
-        return assetConfigs[asset].usingOracle;
+    function isUsingOracle(address asset) public view returns (bool) {
+        return assetConfigs[asset].isUsingOracle;
     }
 
     function swapWaitingPeriod(address asset) public view returns (uint256) {
         return assetConfigs[asset].swapWaitingPeriod;
+    }
+
+    function debtTokenDailyMintCapRemain(address asset) external view returns (uint256) {
+        return assetConfigs[asset].dailyDebtTokenMintCap - dailyMintCount[asset];
+    }
+
+    function pendingWithdrawal(address asset, address account) external view returns (uint256, uint32) {
+        return (scheduledWithdrawalAmount[asset][account], withdrawalTime[asset][account]);
+    }
+
+    function pendingWithdrawals(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory) {
+        uint256[] memory amounts = new uint256[](assets.length);
+        uint32[] memory times = new uint32[](assets.length);
+        for (uint256 i; i < assets.length; ++i) {
+            amounts[i] = scheduledWithdrawalAmount[assets[i]][account];
+            times[i] = withdrawalTime[assets[i]][account];
+        }
+
+        return (amounts, times);
     }
 }

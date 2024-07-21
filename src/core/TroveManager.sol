@@ -387,8 +387,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     function getCurrentICR(address _borrower, uint256 _price) public view returns (uint256) {
         (uint256 currentCollateral, uint256 currentDebt) = getTroveCollAndDebt(_borrower);
 
-        uint256 scaledCollAmount =
-            SatoshiMath._getScaledCollateralAmount(currentCollateral, IERC20Metadata(address(collateralToken)).decimals());
+        uint256 scaledCollAmount = SatoshiMath._getScaledCollateralAmount(
+            currentCollateral, IERC20Metadata(address(collateralToken)).decimals()
+        );
         uint256 ICR = SatoshiMath._computeCR(scaledCollAmount, currentDebt, _price);
         return ICR;
     }

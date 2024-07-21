@@ -75,7 +75,9 @@ contract MultiCollateralHintHelpers is IMultiCollateralHintHelpers, SatoshiBase 
                     uint256 maxRedeemableDebt = SatoshiMath._min(remainingDebt, netDebt - minNetDebt);
 
                     uint256 newColl = coll
-                        - SatoshiMath._getOriginalCollateralAmount(((maxRedeemableDebt * DECIMAL_PRECISION) / _price), info.decimals);
+                        - SatoshiMath._getOriginalCollateralAmount(
+                            ((maxRedeemableDebt * DECIMAL_PRECISION) / _price), info.decimals
+                        );
                     uint256 newDebt = netDebt - maxRedeemableDebt;
 
                     uint256 compositeDebt = _getCompositeDebt(newDebt);
