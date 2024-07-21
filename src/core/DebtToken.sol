@@ -18,7 +18,7 @@ import {IGasPool} from "../interfaces/core/IGasPool.sol";
 import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 /**
- * @title Debt Token Contract (Non-upgradeable)
+ * @title Debt Token Contract
  *        Mutated from:
  *        https://github.com/prisma-fi/prisma-contracts/blob/main/contracts/core/DebtToken.sol
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/LUSDToken.sol
