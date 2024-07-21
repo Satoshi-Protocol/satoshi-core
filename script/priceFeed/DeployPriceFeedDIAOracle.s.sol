@@ -32,7 +32,7 @@ contract DeployPriceFeedChainlinkScript is Script {
             source, DIA_ORACLE_PRICE_FEED_DECIMALS, DIA_ORACLE_PRICE_FEED_KEY, satoshiCore, DIA_MAX_TIME_THRESHOLD
         );
         assert(priceFeedDIAOracle.fetchPrice() > 0);
-        console.log("PriceFeedDIAOracle deployed at:", address(priceFeedDIAOracle));
+        console.log("PriceFeedDIAOracle:", address(priceFeedDIAOracle));
 
         vm.stopBroadcast();
     }

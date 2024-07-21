@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /* Satoshi Core Address */
-address constant SATOSHI_CORE_ADDRESS = 0x2BC0882e96CB34984984344a777a749462A51783;
+address constant SATOSHI_CORE_ADDRESS = 0xd6dBF24f3516844b02Ad8d7DaC9656F2EC556639;
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
@@ -10,9 +10,9 @@ address constant CHAINLINK_PRICE_FEED_SOURCE_ADDRESS = 0xe7f1725E7734CE288F8367e
 
 /* DIA Oracle Integration Config */
 //NOTE: DIA oracle source address
-address constant DIA_ORACLE_PRICE_FEED_SOURCE_ADDRESS = 0x9a9a5113b853b394E9BA5FdB7e72bC5797C85191;
+address constant DIA_ORACLE_PRICE_FEED_SOURCE_ADDRESS = 0x4d24E7c1cF0ed63bc8c6cB5a795af31FD8127C6B;
 uint8 constant DIA_ORACLE_PRICE_FEED_DECIMALS = 8;
-string constant DIA_ORACLE_PRICE_FEED_KEY = "BTC/USD";
+string constant DIA_ORACLE_PRICE_FEED_KEY = "USDC/USD";
 
 uint256 constant DIA_MAX_TIME_THRESHOLD = 86400;
 

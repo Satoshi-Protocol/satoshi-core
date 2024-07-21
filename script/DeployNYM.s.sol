@@ -16,15 +16,15 @@ import {
     DAILY_MINT_CAP,
     PRICE_AGGREGATOR_PROXY,
     USING_ORACLE,
-    SWAP_WAIT_TIME
+    SWAP_WAIT_TIME,
+    DEBT_TOKEN_ADDRESS,
+    SATOSHI_CORE_ADDRESS,
+    REWARD_MANAGER_PROXY_ADDRESS
 } from "./DeployNYMConfig.sol";
 
 contract DeployNYMScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
-    address constant debtTokenAddr = 0x942f2071a9A567c5b153b6fbAEB2deAf5cE76208;
-    ISatoshiCore satoshiCore = ISatoshiCore(0xA8f683335A38048a82739cd5a996150f1c91B8C1);
-    address constant rewardManagerProxy = 0x269EeCEa5E9304fA1bc9361461798134e9AE4A60;
     INexusYieldManager nym;
 
     function setUp() public {
@@ -35,9 +35,10 @@ contract DeployNYMScript is Script {
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
-        INexusYieldManager nexusYieldImpl = new NexusYieldManager(debtTokenAddr);
+        INexusYieldManager nexusYieldImpl = new NexusYieldManager(DEBT_TOKEN_ADDRESS);
+        ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
 
-        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, address(rewardManagerProxy)));
+        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, address(REWARD_MANAGER_PROXY_ADDRESS)));
 
         nym = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         console.log("NexusYieldManagerImpl:", address(nexusYieldImpl));
@@ -47,6 +48,7 @@ contract DeployNYMScript is Script {
 
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
+        _addWhitelist();
         _setAssetConfig();
 
         vm.stopBroadcast();
@@ -56,9 +58,10 @@ contract DeployNYMScript is Script {
         nym.setAssetConfig(
             ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME
         );
+    }
 
-        // add whitelist
-        IDebtToken(debtTokenAddr).rely(address(nym));
-        IRewardManager(rewardManagerProxy).setWhitelistCaller(address(nym), true);
+    function _addWhitelist() internal {
+        IDebtToken(DEBT_TOKEN_ADDRESS).rely(address(nym));
+        IRewardManager(REWARD_MANAGER_PROXY_ADDRESS).setWhitelistCaller(address(nym), true);
     }
 }
