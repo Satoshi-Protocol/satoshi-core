@@ -41,7 +41,9 @@ interface INexusYieldManager is ISatoshiOwnable {
     event RewardManagerChanged(address indexed oldTreasury, address indexed newTreasury);
 
     /// @notice Event emitted when stable token is swapped for debtToken.
-    event AssetForDebtTokenSwapped(address caller, address receiver, address asset, uint256 stableIn, uint256 tokenOut, uint256 fee);
+    event AssetForDebtTokenSwapped(
+        address caller, address receiver, address asset, uint256 stableIn, uint256 tokenOut, uint256 fee
+    );
 
     /// @notice Event emitted when stable token is swapped for debtToken.
     event DebtTokenForAssetSwapped(
@@ -56,7 +58,16 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
 
-    event AssetConfigSetting(address asset, uint256 feeIn, uint256 feeOut, uint256 debtTokenMintCap, uint256 dailyMintCap, address oracle, bool isUsingOracle, uint256 swapWaitingPeriod);
+    event AssetConfigSetting(
+        address asset,
+        uint256 feeIn,
+        uint256 feeOut,
+        uint256 debtTokenMintCap,
+        uint256 dailyMintCap,
+        address oracle,
+        bool isUsingOracle,
+        uint256 swapWaitingPeriod
+    );
 
     event AssetSunset(address asset);
 
@@ -161,6 +172,8 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     function convertDebtTokenToAssetAmount(address asset, uint256 amount) external view returns (uint256);
 
+    function convertAssetToDebtTokenAmount(address asset, uint256 amount) external view returns (uint256);
+
     function oracle(address asset) external view returns (IPriceFeedAggregator);
 
     function feeIn(address asset) external view returns (uint256);
@@ -183,5 +196,10 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     function pendingWithdrawal(address asset, address account) external view returns (uint256, uint32);
 
-    function pendingWithdrawals(address[] memory assets, address account) external view returns (uint256[] memory, uint32[] memory);
+    function pendingWithdrawals(address[] memory assets, address account)
+        external
+        view
+        returns (uint256[] memory, uint32[] memory);
+
+    function isAssetSupported(address asset) external view returns (bool);
 }
