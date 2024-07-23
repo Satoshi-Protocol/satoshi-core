@@ -22,7 +22,7 @@ import {
 } from "../script/DeployInstanceConfig.sol";
 
 contract TMSetParamtersScript is Script {
-    ITroveManager troveManagerstBTC = ITroveManager(0xe9897fe6C8bf96D5ef8B0ECC7cBfEdef9818232c);
+    ITroveManager troveManagerstBTC = ITroveManager(0xa794a7Fd668FE378E095849caafA8C8dC7E84780);
     DeploymentParams internal params;
     uint256 internal OWNER_PRIVATE_KEY;
 
@@ -58,6 +58,8 @@ contract TMSetParamtersScript is Script {
             params.rewardRate,
             params.claimStartTime
         );
+
+        assert(troveManagerstBTC.MCR() == 12 * 1e17);
         vm.stopBroadcast();
     }
 }
