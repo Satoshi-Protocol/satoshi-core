@@ -171,9 +171,30 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.expectRevert(INexusYieldManager.DebtTokenDailyMintCapReached.selector);
         nexusYieldProxy.swapIn(address(collateralMock), user1, 1001e18);
 
+        nexusYieldProxy.swapIn(address(collateralMock), user1, 1e18);
+
+        // the next day
+        vm.warp(block.timestamp + 1 days);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, 2e18);
+        assertEq(nexusYieldProxy.dailyMintCount(address(collateralMock)), 2e18);
+
         // swapIn 0
         vm.expectRevert(INexusYieldManager.ZeroAmount.selector);
         nexusYieldProxy.swapIn(address(collateralMock), user1, 0);
+
+        vm.stopPrank();
+    }
+
+    function test_swapInZeroFee() public {
+        vm.prank(OWNER);
+        nexusYieldProxy.setAssetConfig(address(collateralMock), 0, 0, 10000e18, 1000e18, address(0), false, 3 days);
+
+        deal(address(collateralMock), user1, 1000e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), 1e18);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, 1e18);
+        assertEq(debtTokenProxy.balanceOf(user1), 1e18);
+        vm.stopPrank();
     }
 
     function test_previewSwapSATForStable() public {
@@ -248,12 +269,41 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         nexusYieldProxy.scheduleSwapOut(address(collateralMock), amount);
     }
 
+    function test_swapOutBalanceNotEnough() public {
+        vm.prank(OWNER);
+        nexusYieldProxy.setPrivileged(user2, true);
+        deal(address(collateralMock), user1, 100e18);
+        deal(address(collateralMock), user2, 100e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), 100e18);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, 100e18);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        collateralMock.approve(address(nexusYieldProxy), 100e18);
+        nexusYieldProxy.swapIn(address(collateralMock), user2, 100e18);
+
+        uint256 amount = 101e18;
+        debtTokenProxy.approve(address(nexusYieldProxy), amount);
+        vm.expectRevert(INexusYieldManager.NotEnoughDebtToken.selector);
+        nexusYieldProxy.scheduleSwapOut(address(collateralMock), amount);
+
+        vm.expectRevert(INexusYieldManager.NotEnoughDebtToken.selector);
+        nexusYieldProxy.swapOutPrivileged(address(collateralMock), user2, amount);
+
+        vm.stopPrank();
+    }
+
     function test_mintCapReached() public {
+        vm.prank(OWNER);
+        nexusYieldProxy.setPrivileged(user1, true);
         deal(address(collateralMock), user1, 1000000e18);
         vm.startPrank(user1);
         collateralMock.approve(address(nexusYieldProxy), 1000000e18);
         vm.expectRevert(INexusYieldManager.DebtTokenMintCapReached.selector);
         nexusYieldProxy.swapIn(address(collateralMock), user1, 1000000e18);
+        vm.expectRevert(INexusYieldManager.DebtTokenMintCapReached.selector);
+        nexusYieldProxy.swapInPrivileged(address(collateralMock), user1, 1000000e18);
         vm.stopPrank();
     }
 
@@ -287,7 +337,11 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function test_setAssetConfig() public {
-        vm.prank(OWNER);
+        vm.startPrank(OWNER);
+        vm.expectRevert(INexusYieldManager.InvalidFee.selector);
+        nexusYieldProxy.setAssetConfig(
+            address(collateralMock), 100000, 10, 10000e18, 1000e18, address(0), false, 3 days
+        );
         nexusYieldProxy.setAssetConfig(address(collateralMock), 10, 10, 10000e18, 1000e18, address(0), false, 3 days);
         assertEq(nexusYieldProxy.feeIn(address(collateralMock)), 10);
         assertEq(nexusYieldProxy.feeOut(address(collateralMock)), 10);
@@ -296,11 +350,73 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(address(nexusYieldProxy.oracle(address(collateralMock))), address(0));
         assertFalse(nexusYieldProxy.isUsingOracle(address(collateralMock)));
         assertEq(nexusYieldProxy.swapWaitingPeriod(address(collateralMock)), 3 days);
+        vm.stopPrank();
     }
 
     function test_setRewardManager() public {
         vm.prank(OWNER);
         nexusYieldProxy.setRewardManager(user1);
         assertEq(nexusYieldProxy.rewardManagerAddr(), user1);
+    }
+
+    function test_isNotActive() public {
+        vm.prank(OWNER);
+        nexusYieldProxy.pause();
+
+        deal(address(collateralMock), user1, 1000e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), 100e18);
+        vm.expectRevert(INexusYieldManager.Paused.selector);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, 100e18);
+    }
+
+    function test_isNotPriviledge() public {
+        deal(address(collateralMock), user1, 1000e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), 100e18);
+        vm.expectRevert("NexusYieldManager: caller is not privileged");
+        nexusYieldProxy.swapInPrivileged(address(collateralMock), user1, 100e18);
+    }
+
+    function test_assetNotSupport() public {
+        ERC20 coll = new mock6();
+        vm.expectRevert(INexusYieldManager.AssetNotSupported.selector);
+        nexusYieldProxy.swapIn(address(coll), user1, 1e18);
+    }
+
+    function test_zeroAddress() public {
+        vm.expectRevert(INexusYieldManager.ZeroAddress.selector);
+        nexusYieldProxy.swapIn(address(collateralMock), address(0), 100e18);
+    }
+
+    function test_amountTooSmall() public {
+        deal(address(collateralMock), user1, 100e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), 100e18);
+        vm.expectRevert(INexusYieldManager.AmountTooSmall.selector);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, 1);
+    }
+
+    function test_oraclePriceLessThan1() public {
+        _updateRoundData(
+            RoundData({answer: 0.9e8, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
+        assertEq(priceFeedAggregatorProxy.fetchPrice(collateralMock), 0.9e18);
+
+        vm.prank(OWNER);
+        nexusYieldProxy.setAssetConfig(
+            address(collateralMock), 10, 10, 10000e18, 1000e18, address(priceFeedAggregatorProxy), true, 3 days
+        );
+
+        uint256 amount = 100e18;
+        deal(address(collateralMock), user1, 1000e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), amount);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, amount);
+        (uint256 previewAmount, uint256 previewFee) = nexusYieldProxy.previewSwapIn(address(collateralMock), amount);
+        uint256 fee =
+            amount * 9 / 10 * nexusYieldProxy.feeIn(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
+        assertEq(previewFee, fee);
+        assertEq(debtTokenProxy.balanceOf(user1), 90e18 - fee);
     }
 }
