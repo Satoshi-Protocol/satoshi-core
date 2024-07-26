@@ -86,11 +86,8 @@ interface INexusYieldManager is ISatoshiOwnable {
     /// @notice thrown when attempted to resume the contract if it is already resumed
     error NotPaused();
 
-    /// @notice thrown when stable token has more than 18 decimals
-    error TooManyDecimals();
-
-    /// @notice thrown when fee is >= 100%
-    error InvalidFee();
+    /// @notice thrown when fee in or fee out is invalid
+    error InvalidFee(uint256 feeIn, uint256 feeOut);
 
     /// @notice thrown when a zero address is passed as a function parameter
     error ZeroAddress();
@@ -99,31 +96,32 @@ interface INexusYieldManager is ISatoshiOwnable {
     error ZeroAmount();
 
     /// @notice thrown when the user doesn't have enough debtToken balance to provide for the amount of stable tokens he wishes to get
-    error NotEnoughDebtToken();
+    error NotEnoughDebtToken(uint256 debtBalance, uint256 stableTknAmount);
 
     /// @notice thrown when the amount of debtToken to be burnt exceeds the debtTokenMinted amount
-    error DebtTokenMintedUnderflow();
+    error DebtTokenMintedUnderflow(uint256 debtTokenMinted, uint256 stableTknAmount);
 
-    /// @notice thrown when the debtToken transfer to treasury fails
-    error DebtTokenTransferFail();
+    /// @notice thrown when the debtToken is not enough to transfer
+    error DebtTokenNotEnough(uint256 debtTokenAmount, uint256 transferAmount);
 
     /// @notice thrown when debtToken to be minted will go beyond the mintCap threshold
-    error DebtTokenMintCapReached();
+    error DebtTokenMintCapReached(uint256 debtTokenMinted, uint256 amountToMint, uint256 debtTokenMintCap);
 
-    error DebtTokenDailyMintCapReached();
+    /// @notice thrown when debtToken to be minted will go beyond the daily mintCap threshold
+    error DebtTokenDailyMintCapReached(uint256 dailyMinted, uint256 amountToMint, uint256 dailyDebtTokenMintCap);
 
     /// @notice thrown when fee calculation will result in rounding down to 0 due to stable token amount being a too small number
-    error AmountTooSmall();
+    error AmountTooSmall(uint256 feeAmount);
 
-    error WithdrawalAlreadyScheduled();
+    error WithdrawalAlreadyScheduled(uint32 withdrawalTime);
 
-    error WithdrawalNotAvailable();
+    error WithdrawalNotAvailable(uint32 withdrawalTime);
 
-    error NotPrivileged();
+    error NotPrivileged(address addr);
 
-    error AssetNotSupported();
+    error AssetNotSupported(address asset);
 
-    error InvalidPrice();
+    error InvalidPrice(uint256 price);
 
     function TARGET_DIGITS() external view returns (uint256);
 
@@ -139,7 +137,7 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     function isPaused() external view returns (bool);
 
-    function initialize(ISatoshiCore satoshiCore_, address rewardManagerAddr) external;
+    function initialize(ISatoshiCore satoshiCore_, address debtTokenAddress_, address rewardManagerAddr_) external;
 
     function setAssetConfig(
         address asset,
