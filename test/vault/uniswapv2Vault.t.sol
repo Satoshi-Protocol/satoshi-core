@@ -65,7 +65,9 @@ contract UniswapV2VaultTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _deployNexusYieldProxy(DEPLOYER);
 
         vm.startPrank(OWNER);
-        nexusYieldProxy.setAssetConfig(stableTokenAddress, 10, 10, 1000000e18, 100000e18, address(0), false, 3 days);
+        nexusYieldProxy.setAssetConfig(
+            stableTokenAddress, 10, 10, 1000000e18, 100000e18, address(0), false, 3 days, 1.05e18, 0.95e18
+        );
         debtTokenProxy.rely(address(nexusYieldProxy));
         rewardManagerProxy.setWhitelistCaller(address(nexusYieldProxy), true);
         vm.stopPrank();

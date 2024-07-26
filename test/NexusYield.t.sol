@@ -69,7 +69,9 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         _deployNexusYieldProxy(DEPLOYER);
 
         vm.startPrank(OWNER);
-        nexusYieldProxy.setAssetConfig(address(collateralMock), 10, 10, 10000e18, 1000e18, address(0), false, 3 days);
+        nexusYieldProxy.setAssetConfig(
+            address(collateralMock), 10, 10, 10000e18, 1000e18, address(0), false, 3 days, 1.1e18, 0.9e18
+        );
         debtTokenProxy.rely(address(nexusYieldProxy));
         rewardManagerProxy.setWhitelistCaller(address(nexusYieldProxy), true);
         vm.stopPrank();
@@ -187,7 +189,9 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
     function test_swapInZeroFee() public {
         vm.prank(OWNER);
-        nexusYieldProxy.setAssetConfig(address(collateralMock), 0, 0, 10000e18, 1000e18, address(0), false, 3 days);
+        nexusYieldProxy.setAssetConfig(
+            address(collateralMock), 0, 0, 10000e18, 1000e18, address(0), false, 3 days, 1.1e18, 0.9e18
+        );
 
         deal(address(collateralMock), user1, 1000e18);
         vm.startPrank(user1);
@@ -340,9 +344,11 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.startPrank(OWNER);
         vm.expectRevert(INexusYieldManager.InvalidFee.selector);
         nexusYieldProxy.setAssetConfig(
-            address(collateralMock), 100000, 10, 10000e18, 1000e18, address(0), false, 3 days
+            address(collateralMock), 100000, 10, 10000e18, 1000e18, address(0), false, 3 days, 1.1e18, 0.9e18
         );
-        nexusYieldProxy.setAssetConfig(address(collateralMock), 10, 10, 10000e18, 1000e18, address(0), false, 3 days);
+        nexusYieldProxy.setAssetConfig(
+            address(collateralMock), 10, 10, 10000e18, 1000e18, address(0), false, 3 days, 1.1e18, 0.9e18
+        );
         assertEq(nexusYieldProxy.feeIn(address(collateralMock)), 10);
         assertEq(nexusYieldProxy.feeOut(address(collateralMock)), 10);
         assertEq(nexusYieldProxy.debtTokenMintCap(address(collateralMock)), 10000e18);
@@ -405,7 +411,16 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vm.prank(OWNER);
         nexusYieldProxy.setAssetConfig(
-            address(collateralMock), 10, 10, 10000e18, 1000e18, address(priceFeedAggregatorProxy), true, 3 days
+            address(collateralMock),
+            10,
+            10,
+            10000e18,
+            1000e18,
+            address(priceFeedAggregatorProxy),
+            true,
+            3 days,
+            1.1e18,
+            0.9e18
         );
 
         uint256 amount = 100e18;
@@ -413,10 +428,50 @@ contract NexusYieldTest is Test, DeployBase, TroveBase, TestConfig, Events {
         vm.startPrank(user1);
         collateralMock.approve(address(nexusYieldProxy), amount);
         nexusYieldProxy.swapIn(address(collateralMock), user1, amount);
-        (uint256 previewAmount, uint256 previewFee) = nexusYieldProxy.previewSwapIn(address(collateralMock), amount);
+        (, uint256 previewFee) = nexusYieldProxy.previewSwapIn(address(collateralMock), amount);
         uint256 fee =
             amount * 9 / 10 * nexusYieldProxy.feeIn(address(collateralMock)) / nexusYieldProxy.BASIS_POINTS_DIVISOR();
         assertEq(previewFee, fee);
         assertEq(debtTokenProxy.balanceOf(user1), 90e18 - fee);
+    }
+
+    function test_priceOutOfRange() public {
+        _updateRoundData(
+            RoundData({answer: 0.8e8, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
+        assertEq(priceFeedAggregatorProxy.fetchPrice(collateralMock), 0.8e18);
+
+        vm.prank(OWNER);
+        nexusYieldProxy.setAssetConfig(
+            address(collateralMock),
+            10,
+            10,
+            10000e18,
+            1000e18,
+            address(priceFeedAggregatorProxy),
+            true,
+            3 days,
+            1.1e18,
+            0.9e18
+        );
+
+        uint256 amount = 100e18;
+        deal(address(collateralMock), user1, 1000e18);
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), amount);
+        vm.expectRevert(INexusYieldManager.InvalidPrice.selector);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, amount);
+
+        // price > 1.1
+        _updateRoundData(
+            RoundData({answer: 1.2e8, startedAt: block.timestamp, updatedAt: block.timestamp, answeredInRound: 1})
+        );
+        assertEq(priceFeedAggregatorProxy.fetchPrice(collateralMock), 1.2e18);
+
+        amount = 100e18;
+        vm.startPrank(user1);
+        collateralMock.approve(address(nexusYieldProxy), amount);
+        vm.expectRevert(INexusYieldManager.InvalidPrice.selector);
+        nexusYieldProxy.swapIn(address(collateralMock), user1, amount);
     }
 }

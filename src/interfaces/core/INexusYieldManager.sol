@@ -22,6 +22,10 @@ struct AssetConfig {
     bool isUsingOracle;
     /// The time used to
     uint256 swapWaitingPeriod;
+    /// The maximum price of the asset. If the price of the asset exceeds this value, the operation will revert.
+    uint256 maxPrice;
+    /// The minimum price of the asset. If the price of the asset is less than this value, the operation will revert.
+    uint256 minPrice;
 }
 
 interface INexusYieldManager is ISatoshiOwnable {
@@ -66,7 +70,9 @@ interface INexusYieldManager is ISatoshiOwnable {
         uint256 dailyMintCap,
         address oracle,
         bool isUsingOracle,
-        uint256 swapWaitingPeriod
+        uint256 swapWaitingPeriod,
+        uint256 maxPrice,
+        uint256 minPrice
     );
 
     event AssetSunset(address asset);
@@ -117,6 +123,8 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     error AssetNotSupported();
 
+    error InvalidPrice();
+
     function TARGET_DIGITS() external view returns (uint256);
 
     function BASIS_POINTS_DIVISOR() external view returns (uint256);
@@ -141,7 +149,9 @@ interface INexusYieldManager is ISatoshiOwnable {
         uint256 dailyMintCap_,
         address oracle_,
         bool isUsingOracle_,
-        uint256 swapWaitingPeriod_
+        uint256 swapWaitingPeriod_,
+        uint256 maxPrice,
+        uint256 minPrice
     ) external;
 
     function sunsetAsset(address asset) external;

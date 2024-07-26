@@ -16,7 +16,9 @@ import {
     DAILY_MINT_CAP,
     PRICE_AGGREGATOR_PROXY,
     USING_ORACLE,
-    SWAP_WAIT_TIME
+    SWAP_WAIT_TIME,
+    MAX_PRICE,
+    MIN_PRICE
 } from "./DeployNYMConfig.sol";
 
 contract DeployNYMScript is Script {
@@ -54,7 +56,16 @@ contract DeployNYMScript is Script {
 
     function _setAssetConfig() internal {
         nym.setAssetConfig(
-            ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME
+            ASSET,
+            FEE_IN,
+            FEE_OUT,
+            MINT_CAP,
+            DAILY_MINT_CAP,
+            PRICE_AGGREGATOR_PROXY,
+            USING_ORACLE,
+            SWAP_WAIT_TIME,
+            MAX_PRICE,
+            MIN_PRICE
         );
 
         // add whitelist

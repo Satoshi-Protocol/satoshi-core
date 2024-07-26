@@ -105,7 +105,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         uint256 dailyDebtTokenMintCap_,
         address oracle_,
         bool isUsingOracle_,
-        uint256 swapWaitingPeriod_
+        uint256 swapWaitingPeriod_,
+        uint256 maxPrice_,
+        uint256 minPrice_
     ) external onlyOwner {
         if (feeIn_ >= BASIS_POINTS_DIVISOR || feeOut_ >= BASIS_POINTS_DIVISOR) {
             revert InvalidFee();
@@ -118,6 +120,8 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         config.oracle = IPriceFeedAggregator(oracle_);
         config.isUsingOracle = isUsingOracle_;
         config.swapWaitingPeriod = swapWaitingPeriod_;
+        config.maxPrice = maxPrice_;
+        config.minPrice = minPrice_;
         isAssetSupported[asset] = true;
 
         emit AssetConfigSetting(
@@ -128,7 +132,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
             dailyDebtTokenMintCap_,
             oracle_,
             isUsingOracle_,
-            swapWaitingPeriod_
+            swapWaitingPeriod_,
+            maxPrice_,
+            minPrice_
         );
     }
 
@@ -501,6 +507,10 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
 
         // get price with decimals 18
         uint256 price = assetConfigs[asset].oracle.fetchPrice(IERC20(asset));
+
+        if (price > assetConfigs[asset].maxPrice || price < assetConfigs[asset].minPrice) {
+            revert InvalidPrice();
+        }
 
         if (direction == FeeDirection.IN) {
             // MIN(1, price)
