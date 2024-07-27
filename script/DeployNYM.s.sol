@@ -17,9 +17,8 @@ import {
     PRICE_AGGREGATOR_PROXY,
     USING_ORACLE,
     SWAP_WAIT_TIME,
-    DEBT_TOKEN_ADDRESS,
-    SATOSHI_CORE_ADDRESS,
-    REWARD_MANAGER_PROXY_ADDRESS
+    MAX_PRICE,
+    MIN_PRICE
 } from "./DeployNYMConfig.sol";
 
 contract DeployNYMScript is Script {
@@ -35,10 +34,10 @@ contract DeployNYMScript is Script {
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
-        INexusYieldManager nexusYieldImpl = new NexusYieldManager(DEBT_TOKEN_ADDRESS);
-        ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
+        INexusYieldManager nexusYieldImpl = new NexusYieldManager();
 
-        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, address(REWARD_MANAGER_PROXY_ADDRESS)));
+        bytes memory data =
+            abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, debtTokenAddr, address(rewardManagerProxy)));
 
         nym = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         console.log("NexusYieldManagerImpl:", address(nexusYieldImpl));
@@ -56,7 +55,16 @@ contract DeployNYMScript is Script {
 
     function _setAssetConfig() internal {
         nym.setAssetConfig(
-            ASSET, FEE_IN, FEE_OUT, MINT_CAP, DAILY_MINT_CAP, PRICE_AGGREGATOR_PROXY, USING_ORACLE, SWAP_WAIT_TIME
+            ASSET,
+            FEE_IN,
+            FEE_OUT,
+            MINT_CAP,
+            DAILY_MINT_CAP,
+            PRICE_AGGREGATOR_PROXY,
+            USING_ORACLE,
+            SWAP_WAIT_TIME,
+            MAX_PRICE,
+            MIN_PRICE
         );
     }
 
