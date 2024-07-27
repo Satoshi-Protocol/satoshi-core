@@ -24,6 +24,7 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /// @notice The target digits for the token.
     uint256 public constant TARGET_DIGITS = 18;
 
     /// @notice The divisor used to convert fees to basis points.
@@ -33,11 +34,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     uint256 public constant MANTISSA_ONE = 1e18;
 
     /// @notice The value representing one dollar in the stable token.
-    /// @dev Our oracle is returning amount depending on the number of decimals of the asset. (36 - asset_decimals) E.g. 8 decimal asset = 1e28.
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     uint256 public constant ONE_DOLLAR = 1e18;
 
-    /// @notice The debt token contract
+    /// @notice The debt token contract.
     IDebtToken public debtToken;
 
     /// @notice The address of the Reward Manager.
@@ -46,18 +45,25 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
     /// @notice A flag indicating whether the contract is currently paused or not.
     bool public isPaused;
 
+    /// @notice The current day.
     uint256 public day;
 
+    /// @notice The mapping of privileged addresses.
     mapping(address => bool) public isPrivileged;
 
+    /// @notice The mapping of a user's withdrawal time.
     mapping(address => mapping(address => uint32)) public withdrawalTime;
 
+    /// @notice The mapping of a user's scheduled withdrawal amount.
     mapping(address => mapping(address => uint256)) public scheduledWithdrawalAmount;
 
+    /// @notice The mapping of asset configurations.
     mapping(address => AssetConfig) public assetConfigs;
 
+    /// @notice The mapping of supported assets.
     mapping(address => bool) public isAssetSupported;
 
+    /// @notice The mapping of daily minted debtToken of different assets.
     mapping(address => uint256) public dailyMintCount;
 
     /**
@@ -68,6 +74,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         _;
     }
 
+    /**
+     * @dev Prevents functions to execute when msg.sender is not a privileged address.
+     */
     modifier onlyPrivileged() {
         require(isPrivileged[msg.sender], "NexusYieldManager: caller is not privileged");
         _;
@@ -102,6 +111,19 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         debtToken = IDebtToken(debtTokenAddress_);
     }
 
+    /**
+     * @notice Sets the configuration for an asset.
+     * @param asset The address of the asset.
+     * @param feeIn_ The fee for swapIn.
+     * @param feeOut_ The fee for swapOut.
+     * @param debtTokenMintCap_ The maximum amount of debtToken that can be minted for the asset.
+     * @param dailyDebtTokenMintCap_ The maximum amount of debtToken that can be minted daily for the asset.
+     * @param oracle_ The address of the price feed oracle for the asset.
+     * @param isUsingOracle_ A flag indicating whether the asset is using an oracle for price feed.
+     * @param swapWaitingPeriod_ The waiting period in seconds before withdrawing the asset after a swap out.
+     * @param maxPrice_ The maximum price in USD with decimals 18 for the asset.
+     * @param minPrice_ The minimum price in USD with decimals 18 for the asset.
+     */
     function setAssetConfig(
         address asset,
         uint256 feeIn_,
@@ -143,6 +165,10 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         );
     }
 
+    /**
+     * @notice Removes support for an asset and marks it as sunset.
+     * @param asset The address of the asset to sunset.
+     */
     function sunsetAsset(address asset) external onlyOwner {
         isAssetSupported[asset] = false;
 
@@ -359,6 +385,10 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return assetAmount;
     }
 
+    /**
+     * @dev Withdraw a specific asset after scheduling a swapOut.
+     * @param asset The address of the asset to be withdrawn.
+     */
     function withdraw(address asset) external {
         uint32 withdrawalTimeCatched = withdrawalTime[asset][msg.sender];
         if (withdrawalTimeCatched == 0 || block.timestamp < withdrawalTimeCatched) {
@@ -409,17 +439,32 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         emit NYMResumed(msg.sender);
     }
 
+    /**
+     * @notice Set the address of the Reward Manager.
+     * @param rewardManager_ The address of the Reward Manager.
+     */
     function setRewardManager(address rewardManager_) external onlyOwner {
         address oldTreasuryAddress = rewardManagerAddr;
         rewardManagerAddr = rewardManager_;
         emit RewardManagerChanged(oldTreasuryAddress, rewardManager_);
     }
 
+    /**
+     * @notice Set the privileged status of an address.
+     * @param account The address to set the privileged status.
+     * @param isPrivileged_ The privileged status to set.
+     */
     function setPrivileged(address account, bool isPrivileged_) external onlyOwner {
         isPrivileged[account] = isPrivileged_;
         emit PrivilegedSet(account, isPrivileged_);
     }
 
+    /**
+     * @notice Transfer the token to the privileged vault.
+     * @param token The address of the token to transfer.
+     * @param vault The address of the privileged vault.
+     * @param amount The amount of token to transfer.
+     */
     function transerTokenToPrivilegedVault(address token, address vault, uint256 amount) external onlyOwner {
         if (!isPrivileged[vault]) {
             revert NotPrivileged(vault);
@@ -467,6 +512,10 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return (debtTokenToMint, fee);
     }
 
+    // @notice Converts the given amount of debtToken to asset amount based on the asset's decimals.
+    // @param asset The address of the asset.
+    // @param amount The amount of debtToken.
+    // @return The converted asset amount.
     function convertDebtTokenToAssetAmount(address asset, uint256 amount) public view returns (uint256) {
         uint256 scaledAmt;
         uint256 decimals = IERC20MetadataUpgradeable(asset).decimals();
@@ -481,6 +530,12 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         return scaledAmt;
     }
 
+    /**
+     * @notice Converts the given amount of asset to debtToken amount based on the asset's decimals.
+     * @param asset The address of the asset.
+     * @param amount The amount of asset.
+     * @return The converted debtToken amount.
+     */
     function convertAssetToDebtTokenAmount(address asset, uint256 amount) public view returns (uint256) {
         uint256 scaledAmt;
         uint256 decimals = IERC20MetadataUpgradeable(asset).decimals();
@@ -586,52 +641,67 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         if (amount == 0) revert ZeroAmount();
     }
 
+    /**
+     * @notice Ensures that the given asset is supported.
+     * @param asset The address of the asset.
+     */
     function _ensureAssetSupported(address asset) private view {
         if (!isAssetSupported[asset]) {
             revert AssetNotSupported(asset);
         }
     }
 
+    // @notice Get the oracle for the given asset.
     function oracle(address asset) public view returns (IPriceFeedAggregator) {
         return assetConfigs[asset].oracle;
     }
 
+    // @notice Get the feeIn for the given asset.
     function feeIn(address asset) public view returns (uint256) {
         return assetConfigs[asset].feeIn;
     }
 
+    // @notice Get the feeOut for the given asset.
     function feeOut(address asset) public view returns (uint256) {
         return assetConfigs[asset].feeOut;
     }
 
+    // @notice Get the debt token mint cap for the given asset.
     function debtTokenMintCap(address asset) public view returns (uint256) {
         return assetConfigs[asset].debtTokenMintCap;
     }
 
+    // @notice Get the daily debt token mint cap for the given asset.
     function dailyDebtTokenMintCap(address asset) public view returns (uint256) {
         return assetConfigs[asset].dailyDebtTokenMintCap;
     }
 
+    // @notice Get the debt token minted amount for the given asset.
     function debtTokenMinted(address asset) public view returns (uint256) {
         return assetConfigs[asset].debtTokenMinted;
     }
 
+    // @notice Check if the given asset is using an oracle.
     function isUsingOracle(address asset) public view returns (bool) {
         return assetConfigs[asset].isUsingOracle;
     }
 
+    // @notice Get the swap waiting period for the given asset.
     function swapWaitingPeriod(address asset) public view returns (uint256) {
         return assetConfigs[asset].swapWaitingPeriod;
     }
 
+    // @notice Get the remaining daily debt token mint cap for the given asset.
     function debtTokenDailyMintCapRemain(address asset) external view returns (uint256) {
         return assetConfigs[asset].dailyDebtTokenMintCap - dailyMintCount[asset];
     }
 
+    // @notice Get the pending withdrawal amount and time for the given asset and account.
     function pendingWithdrawal(address asset, address account) external view returns (uint256, uint32) {
         return (scheduledWithdrawalAmount[asset][account], withdrawalTime[asset][account]);
     }
 
+    // @notice Get the pending withdrawals for the given assets and account.
     function pendingWithdrawals(address[] memory assets, address account)
         external
         view

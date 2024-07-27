@@ -20,7 +20,7 @@ struct AssetConfig {
     uint256 debtTokenMinted;
     /// A flag indicating whether the contract is using an oracle or not.
     bool isUsingOracle;
-    /// The time used to
+    /// The time used to wait after schedule the withdrawal.
     uint256 swapWaitingPeriod;
     /// The maximum price of the asset. If the price of the asset exceeds this value, the operation will revert.
     uint256 maxPrice;
@@ -54,14 +54,19 @@ interface INexusYieldManager is ISatoshiOwnable {
         address caller, address receiver, address asset, uint256 debtTokenBurnt, uint256 stableOut, uint256 fee
     );
 
+    /// @notice Event emitted when the status of a privileged user is changed.
     event PrivilegedSet(address privileged, bool isPrivileged);
 
+    /// @notice Event emitted when a user schedules a swapOut.
     event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint32 time);
 
+    /// @notice Event emitted when a user withdraws the scheduled swapOut.
     event Withdraw(address asset, address user, uint256 amount);
 
+    /// @notice Event emitted when the token is transferred.
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
 
+    /// @notice Event emitted when the asset configuration is set.
     event AssetConfigSetting(
         address asset,
         uint256 feeIn,
@@ -75,6 +80,7 @@ interface INexusYieldManager is ISatoshiOwnable {
         uint256 minPrice
     );
 
+    /// @notice Event emitted when an asset is sunset.
     event AssetSunset(address asset);
 
     /// @notice thrown when contract is in paused state
@@ -113,14 +119,19 @@ interface INexusYieldManager is ISatoshiOwnable {
     /// @notice thrown when fee calculation will result in rounding down to 0 due to stable token amount being a too small number
     error AmountTooSmall(uint256 feeAmount);
 
+    /// @notice thrown when a user has already scheduled a swapOut
     error WithdrawalAlreadyScheduled(uint32 withdrawalTime);
 
+    /// @notice thrown when a user tries to withdraw before the scheduled time or a user does not have a scheduled swapOut
     error WithdrawalNotAvailable(uint32 withdrawalTime);
 
+    /// @notice thrown when the address is not privileged
     error NotPrivileged(address addr);
 
+    /// @notice thrown when the asset is not supported
     error AssetNotSupported(address asset);
 
+    /// @notice thrown when the price of the asset is greater than the max price or less than the min price
     error InvalidPrice(uint256 price);
 
     function TARGET_DIGITS() external view returns (uint256);

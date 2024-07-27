@@ -39,7 +39,8 @@ contract DeployNYMScript is Script {
 
         INexusYieldManager nexusYieldImpl = new NexusYieldManager();
 
-        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, debtTokenAddr, address(rewardManagerProxy)));
+        bytes memory data =
+            abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, debtTokenAddr, address(rewardManagerProxy)));
 
         nym = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         console.log("NexusYieldManagerImpl:", address(nexusYieldImpl));
