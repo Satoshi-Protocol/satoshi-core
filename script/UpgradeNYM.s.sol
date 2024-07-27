@@ -17,7 +17,7 @@ contract UpgradeNYMScript is Script {
     function run() public {
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
-        NexusYieldManager nymImpl = new NexusYieldManager(debtTokenAddr);
+        NexusYieldManager nymImpl = new NexusYieldManager();
 
         NexusYieldManager nymProxy = NexusYieldManager(nymProxyAddr);
         nymProxy.upgradeTo(address(nymImpl));

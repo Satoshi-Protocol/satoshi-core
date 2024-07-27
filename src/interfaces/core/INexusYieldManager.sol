@@ -20,7 +20,7 @@ struct AssetConfig {
     uint256 debtTokenMinted;
     /// A flag indicating whether the contract is using an oracle or not.
     bool isUsingOracle;
-    /// The time used to
+    /// The time used to wait after schedule the withdrawal.
     uint256 swapWaitingPeriod;
     /// The maximum price of the asset. If the price of the asset exceeds this value, the operation will revert.
     uint256 maxPrice;
@@ -54,14 +54,19 @@ interface INexusYieldManager is ISatoshiOwnable {
         address caller, address receiver, address asset, uint256 debtTokenBurnt, uint256 stableOut, uint256 fee
     );
 
+    /// @notice Event emitted when the status of a privileged user is changed.
     event PrivilegedSet(address privileged, bool isPrivileged);
 
+    /// @notice Event emitted when a user schedules a swapOut.
     event WithdrawalScheduled(address asset, address user, uint256 amount, uint256 fee, uint32 time);
 
+    /// @notice Event emitted when a user withdraws the scheduled swapOut.
     event Withdraw(address asset, address user, uint256 amount);
 
+    /// @notice Event emitted when the token is transferred.
     event TokenTransferred(address indexed token, address indexed to, uint256 amount);
 
+    /// @notice Event emitted when the asset configuration is set.
     event AssetConfigSetting(
         address asset,
         uint256 feeIn,
@@ -75,6 +80,7 @@ interface INexusYieldManager is ISatoshiOwnable {
         uint256 minPrice
     );
 
+    /// @notice Event emitted when an asset is sunset.
     event AssetSunset(address asset);
 
     /// @notice thrown when contract is in paused state
@@ -86,11 +92,8 @@ interface INexusYieldManager is ISatoshiOwnable {
     /// @notice thrown when attempted to resume the contract if it is already resumed
     error NotPaused();
 
-    /// @notice thrown when stable token has more than 18 decimals
-    error TooManyDecimals();
-
-    /// @notice thrown when fee is >= 100%
-    error InvalidFee();
+    /// @notice thrown when fee in or fee out is invalid
+    error InvalidFee(uint256 feeIn, uint256 feeOut);
 
     /// @notice thrown when a zero address is passed as a function parameter
     error ZeroAddress();
@@ -99,31 +102,37 @@ interface INexusYieldManager is ISatoshiOwnable {
     error ZeroAmount();
 
     /// @notice thrown when the user doesn't have enough debtToken balance to provide for the amount of stable tokens he wishes to get
-    error NotEnoughDebtToken();
+    error NotEnoughDebtToken(uint256 debtBalance, uint256 stableTknAmount);
 
     /// @notice thrown when the amount of debtToken to be burnt exceeds the debtTokenMinted amount
-    error DebtTokenMintedUnderflow();
+    error DebtTokenMintedUnderflow(uint256 debtTokenMinted, uint256 stableTknAmount);
 
-    /// @notice thrown when the debtToken transfer to treasury fails
-    error DebtTokenTransferFail();
+    /// @notice thrown when the debtToken is not enough to transfer
+    error DebtTokenNotEnough(uint256 debtTokenAmount, uint256 transferAmount);
 
     /// @notice thrown when debtToken to be minted will go beyond the mintCap threshold
-    error DebtTokenMintCapReached();
+    error DebtTokenMintCapReached(uint256 debtTokenMinted, uint256 amountToMint, uint256 debtTokenMintCap);
 
-    error DebtTokenDailyMintCapReached();
+    /// @notice thrown when debtToken to be minted will go beyond the daily mintCap threshold
+    error DebtTokenDailyMintCapReached(uint256 dailyMinted, uint256 amountToMint, uint256 dailyDebtTokenMintCap);
 
     /// @notice thrown when fee calculation will result in rounding down to 0 due to stable token amount being a too small number
-    error AmountTooSmall();
+    error AmountTooSmall(uint256 feeAmount);
 
-    error WithdrawalAlreadyScheduled();
+    /// @notice thrown when a user has already scheduled a swapOut
+    error WithdrawalAlreadyScheduled(uint32 withdrawalTime);
 
-    error WithdrawalNotAvailable();
+    /// @notice thrown when a user tries to withdraw before the scheduled time or a user does not have a scheduled swapOut
+    error WithdrawalNotAvailable(uint32 withdrawalTime);
 
-    error NotPrivileged();
+    /// @notice thrown when the address is not privileged
+    error NotPrivileged(address addr);
 
-    error AssetNotSupported();
+    /// @notice thrown when the asset is not supported
+    error AssetNotSupported(address asset);
 
-    error InvalidPrice();
+    /// @notice thrown when the price of the asset is greater than the max price or less than the min price
+    error InvalidPrice(uint256 price);
 
     function TARGET_DIGITS() external view returns (uint256);
 
@@ -139,7 +148,7 @@ interface INexusYieldManager is ISatoshiOwnable {
 
     function isPaused() external view returns (bool);
 
-    function initialize(ISatoshiCore satoshiCore_, address rewardManagerAddr) external;
+    function initialize(ISatoshiCore satoshiCore_, address debtTokenAddress_, address rewardManagerAddr_) external;
 
     function setAssetConfig(
         address asset,

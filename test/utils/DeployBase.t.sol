@@ -520,10 +520,11 @@ abstract contract DeployBase is Test {
 
     function _deployNexusYieldProxy(address deployer) internal {
         vm.startPrank(deployer);
-        nexusYieldImpl = new NexusYieldManager(cpDebtTokenProxyAddr);
-        assert(nexusYieldImpl != INexusYieldManager(address(0)));
+        nexusYieldImpl = new NexusYieldManager();
         assert(nexusYieldProxy == INexusYieldManager(address(0)));
-        bytes memory data = abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, address(rewardManagerProxy)));
+        bytes memory data = abi.encodeCall(
+            INexusYieldManager.initialize, (satoshiCore, cpDebtTokenProxyAddr, address(rewardManagerProxy))
+        );
         nexusYieldProxy = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         vm.stopPrank();
     }
