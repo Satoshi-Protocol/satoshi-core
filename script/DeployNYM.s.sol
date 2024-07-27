@@ -17,6 +17,9 @@ import {
     PRICE_AGGREGATOR_PROXY,
     USING_ORACLE,
     SWAP_WAIT_TIME,
+    SATOSHI_CORE_ADDRESS,
+    DEBT_TOKEN_ADDRESS,
+    REWARD_MANAGER_PROXY_ADDRESS,
     MAX_PRICE,
     MIN_PRICE
 } from "./DeployNYMConfig.sol";
@@ -24,9 +27,6 @@ import {
 contract DeployNYMScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
-    address constant debtTokenAddr = 0x942f2071a9A567c5b153b6fbAEB2deAf5cE76208;
-    ISatoshiCore satoshiCore = ISatoshiCore(0xA8f683335A38048a82739cd5a996150f1c91B8C1);
-    address constant rewardManagerProxy = 0x269EeCEa5E9304fA1bc9361461798134e9AE4A60;
     INexusYieldManager nym;
 
     function setUp() public {
@@ -40,7 +40,7 @@ contract DeployNYMScript is Script {
         INexusYieldManager nexusYieldImpl = new NexusYieldManager();
 
         bytes memory data =
-            abi.encodeCall(INexusYieldManager.initialize, (satoshiCore, debtTokenAddr, address(rewardManagerProxy)));
+            abi.encodeCall(INexusYieldManager.initialize, (ISatoshiCore(SATOSHI_CORE_ADDRESS), DEBT_TOKEN_ADDRESS, REWARD_MANAGER_PROXY_ADDRESS));
 
         nym = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         console.log("NexusYieldManagerImpl:", address(nexusYieldImpl));
@@ -70,7 +70,7 @@ contract DeployNYMScript is Script {
         );
 
         // add whitelist
-        IDebtToken(debtTokenAddr).rely(address(nym));
-        IRewardManager(rewardManagerProxy).setWhitelistCaller(address(nym), true);
+        IDebtToken(DEBT_TOKEN_ADDRESS).rely(address(nym));
+        IRewardManager(REWARD_MANAGER_PROXY_ADDRESS).setWhitelistCaller(address(nym), true);
     }
 }
