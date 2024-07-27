@@ -35,7 +35,7 @@ contract TMSetParamters is Test {
     address constant _borrower = 0xc47A90C57577d46Edf788Ad15eD79A69969b6F7F;
 
     function setUp() public {
-        vm.createSelectFork("https://rpc.bitlayer.org");
+        vm.createSelectFork("https://rpc.bitlayer.org", 2163424);
         params = DeploymentParams({
             minuteDecayFactor: MINUTE_DECAY_FACTOR,
             redemptionFeeFloor: REDEMPTION_FEE_FLOOR,
