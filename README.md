@@ -10,6 +10,16 @@ For documentation and guides, visit [docs.satoshiprotocol.org](https://docs.sato
 
 - [Audit Reports](https://docs.satoshiprotocol.org/outro/audit-reports)
 
+## Build
+```
+forge build
+```
+
+## Test
+```
+forge test
+```
+
 ## Community
 
 For help, discussion about best practices, or any other conversation that would benefit from being searchable:
