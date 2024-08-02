@@ -39,8 +39,6 @@ interface IFactory is ISatoshiOwnable {
 
     function deployNewInstance(IERC20 collateralToken, IPriceFeed priceFeed, DeploymentParams memory params) external;
 
-    function satoshiCore() external view returns (ISatoshiCore);
-
     function debtToken() external view returns (IDebtToken);
 
     function gasPool() external view returns (IGasPool);

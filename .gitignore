@@ -27,3 +27,6 @@ lib/solidity-examples
 *.info
 
 node_modules/
+
+.DS_Store
+src/.DS_Store

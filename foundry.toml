@@ -12,6 +12,7 @@ remappings = [
   "@layerzerolabs/solidity-examples=lib/solidity-examples",
   "@pythnetwork/pyth-sdk-solidity/=lib/pyth-sdk-solidity",
   "@api3/contracts=lib/contracts/contracts",
+  "solmate=lib/solmate/src",
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

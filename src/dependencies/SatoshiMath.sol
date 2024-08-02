@@ -134,4 +134,40 @@ library SatoshiMath {
     function _approximatelyEqual(uint256 _a, uint256 _b, uint256 _tolerance) internal pure returns (bool) {
         return _getAbsoluteDifference(_a, _b) <= _tolerance;
     }
+
+    function _getScaledCollateralAmount(uint256 _collateralAmount, uint8 _decimals) internal pure returns (uint256) {
+        // Scale the collateral amount to the target digits
+        uint256 scaledAmount;
+        uint8 TARGET_DIGITS = 18;
+
+        if (_decimals == TARGET_DIGITS) {
+            scaledAmount = _collateralAmount;
+        } else if (_decimals < TARGET_DIGITS) {
+            scaledAmount = _collateralAmount * (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            scaledAmount = _collateralAmount / (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return scaledAmount;
+    }
+
+    function _getOriginalCollateralAmount(uint256 _scaledCollateralAmount, uint8 _decimals)
+        internal
+        pure
+        returns (uint256)
+    {
+        // Scale the collateral amount with decimals 18 to the target digits
+        uint256 originalAmount;
+        uint8 TARGET_DIGITS = 18;
+
+        if (_decimals == TARGET_DIGITS) {
+            originalAmount = _scaledCollateralAmount;
+        } else if (_decimals < TARGET_DIGITS) {
+            originalAmount = _scaledCollateralAmount / (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            originalAmount = _scaledCollateralAmount * (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return originalAmount;
+    }
 }

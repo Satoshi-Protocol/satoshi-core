@@ -5,12 +5,15 @@ import {Script, console} from "forge-std/Script.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {ISupraSValueFeed} from "../../src/interfaces/dependencies/priceFeed/ISupraSValueFeed.sol";
 import {PriceFeedSupraOracle} from "../../src/dependencies/priceFeed/PriceFeedSupraOracle.sol";
+import {ISupraOraclePull} from "../../src/interfaces/dependencies/priceFeed/ISupraOraclePull.sol";
+
 import {
     SATOSHI_CORE_ADDRESS,
     SUPRA_MAX_TIME_THRESHOLD,
     SUPRA_ORACLE_PAIR_INDEX,
     SUPRA_ORACLE_PRICE_FEED_DECIMAL,
-    SUPRA_ORACLE_PRICE_FEED_SOURCE_ADDRESS
+    SUPRA_ORACLE_PRICE_FEED_SOURCE_ADDRESS,
+    SUPRA_ORACLE_PRICE_FEED_PULL_SOURCE_ADDRESS
 } from "./DeployPriceFeedConfig.sol";
 
 contract DeployPriceFeedSupraScript is Script {
@@ -27,9 +30,15 @@ contract DeployPriceFeedSupraScript is Script {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
 
         ISupraSValueFeed source = ISupraSValueFeed(SUPRA_ORACLE_PRICE_FEED_SOURCE_ADDRESS);
+        ISupraOraclePull pullSource = ISupraOraclePull(SUPRA_ORACLE_PRICE_FEED_PULL_SOURCE_ADDRESS);
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
         priceFeedSupraOracle = new PriceFeedSupraOracle(
-            satoshiCore, source, SUPRA_ORACLE_PRICE_FEED_DECIMAL, SUPRA_MAX_TIME_THRESHOLD, SUPRA_ORACLE_PAIR_INDEX
+            satoshiCore,
+            source,
+            pullSource,
+            SUPRA_ORACLE_PRICE_FEED_DECIMAL,
+            SUPRA_MAX_TIME_THRESHOLD,
+            SUPRA_ORACLE_PAIR_INDEX
         );
         assert(priceFeedSupraOracle.fetchPrice() > 0);
         console.log("PriceFeedSupraOracle deployed at:", address(priceFeedSupraOracle));

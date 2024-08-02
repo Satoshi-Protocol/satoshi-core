@@ -6,6 +6,12 @@ import {ITroveManager} from "../../interfaces/core/ITroveManager.sol";
 import {ISatoshiBase} from "../../interfaces/dependencies/ISatoshiBase.sol";
 
 interface IMultiCollateralHintHelpers is ISatoshiBase {
+    struct TroveManagerInfo {
+        uint256 MCR;
+        uint256 price;
+        uint8 decimals;
+    }
+
     function borrowerOperations() external view returns (IBorrowerOperations);
 
     function getRedemptionHints(ITroveManager troveManager, uint256 _debtAmount, uint256 _price, uint256 _maxIterations)

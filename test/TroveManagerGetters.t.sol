@@ -71,7 +71,9 @@ contract TroveManagerGettersTest is Test, DeployBase, TroveBase, TestConfig, Eve
 
     function test_getActiveTroveManagersForAccount() public {
         _openTrove(OWNER, 1e18, 1000e18);
-        ITroveManager[] memory troveManagers = troveManagerGetters.getActiveTroveManagersForAccount(OWNER);
+        (ITroveManager[] memory troveManagers, uint256 tmCount) =
+            troveManagerGetters.getActiveTroveManagersForAccount(OWNER);
         assertEq(address(troveManagers[0]), address(troveManagerBeaconProxy));
+        assertEq(tmCount, 1);
     }
 }
