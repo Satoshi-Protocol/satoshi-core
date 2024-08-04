@@ -175,7 +175,6 @@ contract RedeemCollDecimals8Test is Test, DeployBase, TroveBase, TestConfig, Eve
 
         uint256 redemptionAmount = 30e18;
         uint256 entrieSystemDebt = troveManagerBeaconProxy.getEntireSystemDebt();
-        uint256 redemptionRateBefore = troveManagerBeaconProxy.getRedemptionRate();
         uint256 expectedRate = 5e15 + redemptionAmount * 1e18 / 2 / entrieSystemDebt;
 
         _redeemCollateral(user1, redemptionAmount);

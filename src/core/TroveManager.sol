@@ -450,7 +450,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         /* Convert the drawn collateral back to debt at face value rate (1 debt:1 USD), in order to get
          * the fraction of total supply that was redeemed at face value. */
-        uint256 redeemedDebtFraction = (_collateralDrawn * _price) / _totalDebtSupply;
+        uint256 _scaledCollateralDrawn = SatoshiMath._getScaledCollateralAmount(
+            _collateralDrawn, IERC20Metadata(address(collateralToken)).decimals()
+        );
+        uint256 redeemedDebtFraction = (_scaledCollateralDrawn * _price) / _totalDebtSupply;
 
         uint256 newBaseRate = decayedBaseRate + (redeemedDebtFraction / BETA);
         newBaseRate = SatoshiMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
@@ -627,9 +630,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
         // Use the saved total debt supply value, from before it was reduced by the redemption.
         _updateBaseRateFromRedemption(
-            SatoshiMath._getScaledCollateralAmount(
-                totals.totalCollateralDrawn, IERC20Metadata(address(collateralToken)).decimals()
-            ),
+            totals.totalCollateralDrawn,
             totals.price,
             totals.totalDebtSupplyAtStart
         );
