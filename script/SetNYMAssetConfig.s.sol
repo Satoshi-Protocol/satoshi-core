@@ -21,13 +21,14 @@ import {
     DEBT_TOKEN_ADDRESS,
     REWARD_MANAGER_PROXY_ADDRESS,
     MAX_PRICE,
-    MIN_PRICE
+    MIN_PRICE,
+    NYM_ADDRESS
 } from "./DeployNYMConfig.sol";
 
-contract DeployNYMScript is Script {
+contract SetNYMAssetConfigcript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
-    INexusYieldManager nym;
+    INexusYieldManager nym = INexusYieldManager(NYM_ADDRESS);
 
     function setUp() public {
         OWNER_PRIVATE_KEY = uint256(vm.envBytes32("OWNER_PRIVATE_KEY"));
@@ -35,22 +36,8 @@ contract DeployNYMScript is Script {
     }
 
     function run() public {
-        vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
-
-        INexusYieldManager nexusYieldImpl = new NexusYieldManager();
-
-        bytes memory data =
-            abi.encodeCall(INexusYieldManager.initialize, (ISatoshiCore(SATOSHI_CORE_ADDRESS), DEBT_TOKEN_ADDRESS, REWARD_MANAGER_PROXY_ADDRESS));
-
-        nym = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
-        console.log("NexusYieldManagerImpl:", address(nexusYieldImpl));
-        console.log("NexusYieldManager:", address(nym));
-
-        vm.stopBroadcast();
-
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
-        _addWhitelist();
         _setAssetConfig();
 
         vm.stopBroadcast();
@@ -69,10 +56,5 @@ contract DeployNYMScript is Script {
             MAX_PRICE,
             MIN_PRICE
         );
-    }
-
-    function _addWhitelist() internal {
-        IDebtToken(DEBT_TOKEN_ADDRESS).rely(address(nym));
-        IRewardManager(REWARD_MANAGER_PROXY_ADDRESS).setWhitelistCaller(address(nym), true);
     }
 }
