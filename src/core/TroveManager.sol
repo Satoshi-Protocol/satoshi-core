@@ -626,7 +626,13 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
         // Use the saved total debt supply value, from before it was reduced by the redemption.
-        _updateBaseRateFromRedemption(totals.totalCollateralDrawn, totals.price, totals.totalDebtSupplyAtStart);
+        _updateBaseRateFromRedemption(
+            SatoshiMath._getScaledCollateralAmount(
+                totals.totalCollateralDrawn, IERC20Metadata(address(collateralToken)).decimals()
+            ),
+            totals.price,
+            totals.totalDebtSupplyAtStart
+        );
 
         // Calculate the collateral fee
         totals.collateralFee = sunsetting ? 0 : _calcRedemptionFee(getRedemptionRate(), totals.totalCollateralDrawn);

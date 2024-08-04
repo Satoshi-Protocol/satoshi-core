@@ -174,10 +174,17 @@ contract RedeemCollDecimals8Test is Test, DeployBase, TroveBase, TestConfig, Eve
         _openTrove(user3, 1e8, 80e18);
 
         uint256 redemptionAmount = 30e18;
+        uint256 entrieSystemDebt = troveManagerBeaconProxy.getEntireSystemDebt();
+        uint256 redemptionRateBefore = troveManagerBeaconProxy.getRedemptionRate();
+        uint256 expectedRate = 5e15 + redemptionAmount * 1e18 / 2 / entrieSystemDebt;
 
         _redeemCollateral(user1, redemptionAmount);
         (, uint256 debt3) = troveManagerBeaconProxy.getTroveCollAndDebt(user3);
         assertEq(debt3, 554e17);
+
+        uint256 redemptionRateAfter = troveManagerBeaconProxy.getRedemptionRate();
+
+        assertEq(redemptionRateAfter, expectedRate);
     }
 
     function test_redeem() public {
