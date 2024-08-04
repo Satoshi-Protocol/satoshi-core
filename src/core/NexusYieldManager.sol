@@ -400,9 +400,9 @@ contract NexusYieldManager is INexusYieldManager, SatoshiOwnable, ReentrancyGuar
         scheduledWithdrawalAmount[asset][msg.sender] = 0;
 
         // check the asset is enough
-        uint256 debtTokenAmount = IERC20(asset).balanceOf(address(this));
-        if (debtTokenAmount < _amount) {
-            revert DebtTokenNotEnough(debtTokenAmount, _amount);
+        uint256 assetAmount = IERC20(asset).balanceOf(address(this));
+        if (assetAmount < _amount) {
+            revert AssetNotEnough(assetAmount, _amount);
         }
 
         IERC20Upgradeable(asset).safeTransfer(msg.sender, _amount);

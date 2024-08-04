@@ -110,6 +110,8 @@ interface INexusYieldManager is ISatoshiOwnable {
     /// @notice thrown when the debtToken is not enough to transfer
     error DebtTokenNotEnough(uint256 debtTokenAmount, uint256 transferAmount);
 
+    error AssetNotEnough(uint256 assetAmount, uint256 transferAmount);
+
     /// @notice thrown when debtToken to be minted will go beyond the mintCap threshold
     error DebtTokenMintCapReached(uint256 debtTokenMinted, uint256 amountToMint, uint256 debtTokenMintCap);
 
