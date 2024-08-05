@@ -54,6 +54,9 @@ contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
     mapping(address => mapping(uint256 => Stake[])) internal userStakes;
     mapping(address => StakeData) internal stakeData;
 
+    // for valid caller
+    mapping(address => bool) public whitelistCaller;
+
     constructor() {
         _disableInitializers();
     }
@@ -320,6 +323,12 @@ contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
         }
     }
 
+    function setWhitelistCaller(address _caller, bool _status) external onlyOwner {
+        whitelistCaller[_caller] = _status;
+
+        emit WhitelistCallerSet(_caller, _status);
+    }
+
     // --- Internal Functions ---
     function _updateUserSnapshots(address _user) internal {
         uint256 length = collToken.length;
@@ -363,7 +372,7 @@ contract RewardManager is IRewardManager, SatoshiOwnable, UUPSUpgradeable {
         if (
             msg.sender == SATOSHI_CORE.owner() || msg.sender == address(borrowerOperations)
                 || msg.sender == address(debtToken) || msg.sender == SATOSHI_CORE.feeReceiver()
-                || isTroveManagerRegistered[msg.sender]
+                || isTroveManagerRegistered[msg.sender] || whitelistCaller[msg.sender]
         ) isRegistered = true;
         require(isRegistered, "RewardManager: Caller is not Valid");
     }

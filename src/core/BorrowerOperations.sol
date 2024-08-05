@@ -38,6 +38,22 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     mapping(ITroveManager => TroveManagerData) public troveManagersData;
     ITroveManager[] internal _troveManagers;
 
+    // --- Auth ---
+    mapping(address => bool) public wards;
+
+    function rely(address usr) external onlyOwner {
+        wards[usr] = true;
+    }
+
+    function deny(address usr) external onlyOwner {
+        wards[usr] = false;
+    }
+
+    modifier auth() {
+        require(wards[msg.sender], "BO: not-authorized");
+        _;
+    }
+
     struct LocalVariables_adjustTrove {
         uint256 price;
         uint256 totalPricedCollateral;
@@ -639,5 +655,14 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
     function getGlobalSystemBalances() external returns (uint256 totalPricedCollateral, uint256 totalDebt) {
         Balances memory balances = fetchBalances();
         (, totalPricedCollateral, totalDebt) = _getTCRData(balances);
+    }
+
+    function mint(address account, uint256 amount) external auth {
+        debtToken.mint(account, amount);
+    }
+
+    function burn(address account, uint256 amount) external auth {
+        debtToken.mintWithGasCompensation(address(debtToken.gasPool()), 0);
+        debtToken.burnWithGasCompensation(account, amount);
     }
 }

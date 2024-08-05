@@ -32,6 +32,7 @@ interface IRewardManager is ISatoshiOwnable {
     event StakerSnapshotsUpdated(address, uint256[], uint256);
     event F_COLLUpdated(address, uint256);
     event F_SATUpdated(uint256);
+    event WhitelistCallerSet(address, bool);
 
     error NativeTokenTransferFailed();
 
@@ -85,4 +86,6 @@ interface IRewardManager is ISatoshiOwnable {
     function getUserStakes(address _user, uint256 _index) external view returns (Stake[] memory);
     function getStakeData(address _user) external view returns (StakeData memory);
     function isTroveManagerRegistered(address) external view returns (bool);
+    function setWhitelistCaller(address _caller, bool _status) external;
+    function whitelistCaller(address) external view returns (bool);
 }

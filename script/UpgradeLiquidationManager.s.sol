@@ -22,7 +22,7 @@ contract UpgradeLiquidationManagerScript is Script {
         // upgrade to new LiquidationManager implementation
         LiquidationManager liquidationManagerProxy = LiquidationManager(liquidationManagerProxyAddr);
         liquidationManagerProxy.upgradeTo(address(newLiquidationManagerImpl));
-        
+
         console.log("new LiquidationManager Impl is deployed at", address(newLiquidationManagerImpl));
         bytes32 s = vm.load(
             address(liquidationManagerProxy), LiquidationManager(address(newLiquidationManagerImpl)).proxiableUUID()

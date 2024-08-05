@@ -79,13 +79,12 @@ contract UpgradteContractTest is Test, DeployBase, TestConfig, Events {
         // upgrade to new stability pool implementation
         StabilityPool stabilityPoolProxy = StabilityPool(address(stabilityPoolProxy));
         stabilityPoolProxy.upgradeTo(address(newStabilityPoolImpl));
-        bytes32 s = vm.load(
-            address(stabilityPoolProxy), BorrowerOperations(address(newStabilityPoolImpl)).proxiableUUID()
-        );
+        bytes32 s =
+            vm.load(address(stabilityPoolProxy), BorrowerOperations(address(newStabilityPoolImpl)).proxiableUUID());
         // `0x000...address` << 96 -> `0xaddress000...000`
         s <<= 96;
         assertEq(s, bytes32(bytes20(address(newStabilityPoolImpl))));
-        
+
         vm.stopPrank();
     }
 }

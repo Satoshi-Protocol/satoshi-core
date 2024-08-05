@@ -33,6 +33,7 @@ import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {ReferralManager} from "../../src/helpers/ReferralManager.sol";
 import {VestingManager} from "../../src/OSHI/VestingManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
+import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -52,6 +53,7 @@ import {ISatoshiBORouter} from "../../src/helpers/interfaces/ISatoshiBORouter.so
 import {IReferralManager} from "../../src/helpers/interfaces/IReferralManager.sol";
 import {IVestingManager} from "../../src/interfaces/OSHI/IVestingManager.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
+import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -120,6 +122,7 @@ abstract contract DeployBase is Test {
     ISortedTroves sortedTrovesImpl;
     ITroveManager troveManagerImpl;
     IRewardManager rewardManagerImpl;
+    INexusYieldManager nexusYieldImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
@@ -135,6 +138,7 @@ abstract contract DeployBase is Test {
     ILiquidationManager liquidationManagerProxy;
     IStabilityPool stabilityPoolProxy;
     IRewardManager rewardManagerProxy;
+    INexusYieldManager nexusYieldProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
@@ -465,6 +469,18 @@ abstract contract DeployBase is Test {
         assert(rewardManagerProxy == IRewardManager(address(0))); // check if proxy contract is not deployed
         bytes memory data = abi.encodeCall(IRewardManager.initialize, (ISatoshiCore(cpSatoshiCoreAddr)));
         rewardManagerProxy = IRewardManager(address(new ERC1967Proxy(address(rewardManagerImpl), data)));
+        vm.stopPrank();
+    }
+
+    function _deployNexusYieldProxy(address deployer) internal {
+        vm.startPrank(deployer);
+        nexusYieldImpl = new NexusYieldManager();
+        assert(nexusYieldProxy == INexusYieldManager(address(0)));
+        bytes memory data = abi.encodeCall(
+            INexusYieldManager.initialize,
+            (satoshiCore, cpDebtTokenAddr, address(rewardManagerProxy), cpBorrowerOperationsProxyAddr)
+        );
+        nexusYieldProxy = INexusYieldManager(address(new ERC1967Proxy(address(nexusYieldImpl), data)));
         vm.stopPrank();
     }
 

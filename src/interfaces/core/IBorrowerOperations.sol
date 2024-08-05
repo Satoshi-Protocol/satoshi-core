@@ -125,4 +125,12 @@ interface IBorrowerOperations is ISatoshiOwnable, ISatoshiBase, IDelegatedOps {
         external
         view
         returns (IERC20 collateralToken, uint16 index);
+
+    function mint(address account, uint256 amount) external;
+
+    function burn(address account, uint256 amount) external;
+
+    function rely(address usr) external;
+
+    function deny(address usr) external;
 }
