@@ -649,7 +649,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;
 
-        emit Redemption(_debtAmount, totals.totalDebtToRedeem, totals.totalCollateralDrawn, totals.collateralFee);
+        emit Redemption(msg.sender, _debtAmount, totals.totalDebtToRedeem, totals.totalCollateralDrawn, totals.collateralFee);
 
         // Burn the total debt that is cancelled with debt, and send the redeemed collateral to msg.sender
         debtToken.burn(msg.sender, totals.totalDebtToRedeem);
