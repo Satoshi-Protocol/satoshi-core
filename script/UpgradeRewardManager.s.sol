@@ -16,13 +16,13 @@ contract UpgradeRMScript is Script {
     function run() public {
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
-        uint256 f_coll_before = rewardManagerProxy.F_COLL();
+        RewardManager rewardManagerProxy = RewardManager(rewardManagerProxyAddr);
+        uint256 f_coll_before = rewardManagerProxy.F_SAT();
 
         IRewardManager rewardManagerImpl = new RewardManager();
-        RewardManager rewardManagerProxy = RewardManager(rewardManagerProxyAddr);
         rewardManagerProxy.upgradeTo(address(rewardManagerImpl));
 
-        assert(rewardManagerProxy.F_COLL() == f_coll_before);
+        assert(rewardManagerProxy.F_SAT() == f_coll_before);
 
         console.log("new RewardManager Impl is deployed at", address(rewardManagerImpl));
 
