@@ -661,6 +661,8 @@ contract BorrowerOperations is UUPSUpgradeable, SatoshiOwnable, SatoshiBase, Del
         debtToken.mint(account, amount);
     }
 
+    // As the debtToken is non-upgradeable and BO only can call burnWithGasCompensation
+    // we need to mint the gas compensation to the gasPool first
     function burn(address account, uint256 amount) external auth {
         debtToken.mintWithGasCompensation(address(debtToken.gasPool()), 0);
         debtToken.burnWithGasCompensation(account, amount);
