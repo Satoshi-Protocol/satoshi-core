@@ -1,6 +1,6 @@
 ![Banner](https://i.imgur.com/QhKQ20H.png)
 
-Satoshi Protocol is a revolutionary "universal" stablecoin protocol backed by Bitcoin. It allows users to deposit assets as collateral to mint the stablecoin $SAT on both Bitcoin mainnet and multiple L2s.
+Satoshi Protocol is a revolutionary "universal" stablecoin protocol backed by Bitcoin. It allows users to deposit assets as collateral to mint the stablecoin $satUSD on both Bitcoin mainnet and multiple L2s.
 
 ## Documentation
 
