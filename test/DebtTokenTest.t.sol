@@ -120,11 +120,11 @@ contract DebtTokenTest is Test, DeployBase, TroveBase, TestConfig, Events {
     }
 
     function testTokenName() public {
-        assertEq(debtToken.name(), "TEST_TOKEN_NAME");
+        assertEq(debtToken.name(), "Satoshi Stablecoin");
     }
 
     function testSymbol() public {
-        assertEq(debtToken.symbol(), "TEST_TOKEN_SYMBOL");
+        assertEq(debtToken.symbol(), "satUSD");
     }
 
     function testDecimals() public {

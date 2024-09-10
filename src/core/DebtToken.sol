@@ -244,4 +244,12 @@ contract DebtToken is IDebtToken, SatoshiOwnable, UUPSUpgradeable, ERC20Upgradea
             "Debt: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
         );
     }
+
+    function name() public view override(ERC20Upgradeable) returns (string memory) {
+        return "Satoshi Stablecoin";
+    }
+
+    function symbol() public view override(ERC20Upgradeable) returns (string memory) {
+        return "satUSD";
+    }
 }
