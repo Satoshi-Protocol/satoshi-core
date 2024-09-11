@@ -629,11 +629,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
         // Use the saved total debt supply value, from before it was reduced by the redemption.
-        _updateBaseRateFromRedemption(
-            totals.totalCollateralDrawn,
-            totals.price,
-            totals.totalDebtSupplyAtStart
-        );
+        _updateBaseRateFromRedemption(totals.totalCollateralDrawn, totals.price, totals.totalDebtSupplyAtStart);
 
         // Calculate the collateral fee
         totals.collateralFee = sunsetting ? 0 : _calcRedemptionFee(getRedemptionRate(), totals.totalCollateralDrawn);
@@ -649,7 +645,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;
 
-        emit Redemption(msg.sender, _debtAmount, totals.totalDebtToRedeem, totals.totalCollateralDrawn, totals.collateralFee);
+        emit Redemption(
+            msg.sender, _debtAmount, totals.totalDebtToRedeem, totals.totalCollateralDrawn, totals.collateralFee
+        );
 
         // Burn the total debt that is cancelled with debt, and send the redeemed collateral to msg.sender
         debtToken.burn(msg.sender, totals.totalDebtToRedeem);

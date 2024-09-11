@@ -74,7 +74,11 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     event LTermsUpdated(uint256 _L_collateral, uint256 _L_debt);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event Redemption(
-        address _user, uint256 _attemptedDebtAmount, uint256 _actualDebtAmount, uint256 _collateralSent, uint256 _collateralFee
+        address _user,
+        uint256 _attemptedDebtAmount,
+        uint256 _actualDebtAmount,
+        uint256 _collateralSent,
+        uint256 _collateralFee
     );
     event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
     event TotalStakesUpdated(uint256 _newTotalStakes);
