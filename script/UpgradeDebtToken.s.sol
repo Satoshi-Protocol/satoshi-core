@@ -7,7 +7,7 @@ import {IDebtToken} from "../src/interfaces/core/IDebtToken.sol";
 
 contract UpgradeDebtTokenScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
-    address constant debtTokenAddr = 0x78Fea795cBFcC5fFD6Fb5B845a4f53d25C283bDB;
+    address constant debtTokenAddr = 0xa1e63CB2CE698CfD3c2Ac6704813e3b870FEDADf;
     string constant DEBT_TOKEN_NAME = "Satoshi Stablecoin";
     string constant DEBT_TOKEN_SYMBOL = "satUSD";
 

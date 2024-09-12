@@ -47,6 +47,9 @@ contract DebtToken is IDebtToken, SatoshiOwnable, UUPSUpgradeable, ERC20Upgradea
     // --- Auth ---
     mapping(address => bool) public wards;
 
+    string internal constant _NAME = "Satoshi Stablecoin";
+    string internal constant _SYMBOL = "satUSD";
+
     function rely(address usr) external onlyOwner {
         wards[usr] = true;
     }
@@ -243,5 +246,13 @@ contract DebtToken is IDebtToken, SatoshiOwnable, UUPSUpgradeable, ERC20Upgradea
                 && _recipient != address(borrowerOperations),
             "Debt: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
         );
+    }
+
+    function name() public view override(ERC20Upgradeable) returns (string memory) {
+        return _NAME;
+    }
+
+    function symbol() public view override(ERC20Upgradeable) returns (string memory) {
+        return _SYMBOL;
     }
 }
