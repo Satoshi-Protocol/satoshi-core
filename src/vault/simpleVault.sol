@@ -28,15 +28,9 @@ contract SimpleVault is VaultCore {
     }
 
     // todo
-    function exitStrategy(bytes calldata data) external override onlyWhitelisted returns (uint256) {
+    function exitStrategy(bytes calldata data) external view override onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
-        IERC20(STABLE_TOKEN_ADDRESS).transfer(msg.sender, amount);
         return amount;
-    }
-
-    function setWhitelist(address account, bool status) external onlyOwner {
-        whitelist[account] = status;
-        emit WhitelistSet(account, status);
     }
 
     function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
