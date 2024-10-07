@@ -36,7 +36,7 @@ contract UniV2Vault is VaultCore {
         );
     }
 
-    function exitStrategy(bytes calldata data) external override onlyOwner {
+    function exitStrategy(bytes calldata data) external override onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
         IERC20(PAIR_ADDRESS).approve(strategyAddr, amount);
         // remove liquidity from dex
@@ -47,7 +47,18 @@ contract UniV2Vault is VaultCore {
         uint256 previewAmount = INexusYieldManager(nymAddr).convertDebtTokenToAssetAmount(
             STABLE_TOKEN_ADDRESS, IERC20(SAT_ADDRESS).balanceOf(address(this))
         );
-        INexusYieldManager(nymAddr).swapOutPrivileged(STABLE_TOKEN_ADDRESS, address(this), previewAmount);
+        uint256 swapOutAmount =
+            INexusYieldManager(nymAddr).swapOutPrivileged(STABLE_TOKEN_ADDRESS, address(this), previewAmount);
+
+        return swapOutAmount;
+    }
+
+    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
+    }
+
+    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
     }
 
     function _decodeInitializeData(bytes calldata data)

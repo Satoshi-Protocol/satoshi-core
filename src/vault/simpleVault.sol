@@ -21,8 +21,17 @@ contract SimpleVault is VaultCore {
     }
 
     // todo
-    function exitStrategy(bytes calldata data) external override onlyOwner {
+    function exitStrategy(bytes calldata data) external view override onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
+        return amount;
+    }
+
+    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
+    }
+
+    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
     }
 
     function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {

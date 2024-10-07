@@ -21,10 +21,20 @@ contract AAVEVault is VaultCore {
         ILendingPool(strategyAddr).deposit(STABLE_TOKEN_ADDRESS, amount, address(this), 0);
     }
 
-    function exitStrategy(bytes calldata data) external override onlyOwner {
+    function exitStrategy(bytes calldata data) external override onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
         // withdraw token from lending
         ILendingPool(strategyAddr).withdraw(STABLE_TOKEN_ADDRESS, amount, nymAddr);
+
+        return amount;
+    }
+
+    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
+    }
+
+    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
     }
 
     function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
