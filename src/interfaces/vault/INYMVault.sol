@@ -14,6 +14,8 @@ interface INYMVault {
     function setNYMAddr(address _nymAddr) external;
     function transferTokenToNYM(uint256 amount) external;
     function executeStrategy(bytes calldata data) external;
-    function exitStrategy(bytes calldata data) external;
+    function exitStrategy(bytes calldata data) external returns (uint256);
     function initialize(bytes calldata data) external;
+    function constructExecuteStrategyData(uint256 amount) external pure returns (bytes memory);
+    function constructExitStrategyData(uint256 amount) external pure returns (bytes memory);
 }

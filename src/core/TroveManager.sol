@@ -24,10 +24,13 @@ import {
     VolumeData,
     RedemptionTotals,
     SingleRedemptionValues,
-    RewardSnapshot
+    RewardSnapshot,
+    FarmingParams
 } from "../interfaces/core/ITroveManager.sol";
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
+import {IVaultManager} from "../interfaces/vault/IVaultManager.sol";
+
 /**
  * @title Trove Manager Contract (Upgradeable)
  *        Mutated from:
@@ -35,7 +38,6 @@ import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
  *        https://github.com/liquity/dev/blob/main/packages/contracts/contracts/TroveManager.sol
  *
  */
-
 contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     using SafeERC20 for IERC20;
     using SafeERC20Upgradeable for IDebtToken;
@@ -145,6 +147,13 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     // Array of all active trove addresses - used to to compute an approximate hint off-chain, for the sorted list insertion
     address[] TroveOwners;
+
+    // CDP Farming
+    uint256 public constant FARMING_PRECISION = 1e5;
+    uint256 public collateralOutput;
+    FarmingParams public farmingParams;
+    IVaultManager public vaultManager;
+    mapping(address => bool) public isPrivileged;
 
     modifier whenNotPaused() {
         require(!paused, "Collateral Paused");
@@ -629,11 +638,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
         // Use the saved total debt supply value, from before it was reduced by the redemption.
-        _updateBaseRateFromRedemption(
-            totals.totalCollateralDrawn,
-            totals.price,
-            totals.totalDebtSupplyAtStart
-        );
+        _updateBaseRateFromRedemption(totals.totalCollateralDrawn, totals.price, totals.totalDebtSupplyAtStart);
 
         // Calculate the collateral fee
         totals.collateralFee = sunsetting ? 0 : _calcRedemptionFee(getRedemptionRate(), totals.totalCollateralDrawn);
@@ -649,7 +654,9 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
         totals.collateralToSendToRedeemer = totals.totalCollateralDrawn - totals.collateralFee;
 
-        emit Redemption(msg.sender, _debtAmount, totals.totalDebtToRedeem, totals.totalCollateralDrawn, totals.collateralFee);
+        emit Redemption(
+            msg.sender, _debtAmount, totals.totalDebtToRedeem, totals.totalCollateralDrawn, totals.collateralFee
+        );
 
         // Burn the total debt that is cancelled with debt, and send the redeemed collateral to msg.sender
         debtToken.burn(msg.sender, totals.totalDebtToRedeem);
@@ -1136,6 +1143,14 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     // --- Trove property setters ---
 
     function _sendCollateral(address _account, uint256 _amount) private {
+        uint256 boundary = totalActiveCollateral * farmingParams.retainPercentage / FARMING_PRECISION;
+        if (totalActiveCollateral - _amount - collateralOutput < boundary) {
+            uint256 target = totalActiveCollateral * farmingParams.refillPercentage / FARMING_PRECISION;
+            uint256 refillAmount = _amount + target - (totalActiveCollateral - collateralOutput);
+            // refill
+            vaultManager.exitStrategyByTroveManager(refillAmount);
+        }
+
         if (_amount > 0) {
             totalActiveCollateral = totalActiveCollateral - _amount;
             emit CollateralSent(_account, _amount);
@@ -1318,5 +1333,40 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function _requireCallerIsLM() internal view {
         require(msg.sender == address(liquidationManager), "Not Liquidation Manager");
+    }
+
+    // --- CDP Farming ---
+
+    function setPrivileged(address account, bool isPrivileged_) external onlyOwner {
+        isPrivileged[account] = isPrivileged_;
+        emit PrivilegedSet(account, isPrivileged_);
+    }
+
+    function transerCollToPrivilegedVault(address vault, uint256 amount) external onlyOwner {
+        if (!isPrivileged[vault]) {
+            revert NotPrivileged(vault);
+        }
+
+        // check the output amount does not exceed the limit
+        require(
+            collateralOutput + amount <= getEntireSystemColl() * farmingParams.retainPercentage / FARMING_PRECISION,
+            "TroveManager: Exceed the collateral transfer limit"
+        );
+
+        // record the collateral output
+        collateralOutput += amount;
+        collateralToken.transfer(vault, amount);
+        emit CollateralTransferred(vault, amount);
+    }
+
+    function receiveCollFromPrivilegedVault(uint256 amount) external {
+        if (!isPrivileged[msg.sender]) {
+            revert NotPrivileged(msg.sender);
+        }
+
+        // record the collateral input
+        collateralToken.safeTransferFrom(msg.sender, address(this), amount);
+        collateralOutput -= amount;
+        emit CollateralReceived(msg.sender, amount);
     }
 }

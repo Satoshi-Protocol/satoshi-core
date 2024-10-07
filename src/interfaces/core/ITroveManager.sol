@@ -68,13 +68,22 @@ struct RewardSnapshot {
     uint256 debt;
 }
 
+struct FarmingParams {
+    uint256 retainPercentage;
+    uint256 refillPercentage;
+}
+
 interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     event BaseRateUpdated(uint256 _baseRate);
     event CollateralSent(address _to, uint256 _amount);
     event LTermsUpdated(uint256 _L_collateral, uint256 _L_debt);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event Redemption(
-        address _user, uint256 _attemptedDebtAmount, uint256 _actualDebtAmount, uint256 _collateralSent, uint256 _collateralFee
+        address _user,
+        uint256 _attemptedDebtAmount,
+        uint256 _actualDebtAmount,
+        uint256 _collateralSent,
+        uint256 _collateralFee
     );
     event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
     event TotalStakesUpdated(uint256 _newTotalStakes);
@@ -94,6 +103,11 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
     event ClaimStartTimeSet(uint32 _startTime);
     event InterestCollected(address _troveManager, uint256 _amount);
+    event PrivilegedSet(address, bool);
+    event CollateralTransferred(address indexed _recipient, uint256 _amount);
+    event CollateralReceived(address indexed _sender, uint256 _amount);
+
+    error NotPrivileged(address);
 
     function initialize(
         ISatoshiCore _satoshiCore,
@@ -337,4 +351,10 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function lastUpdate() external view returns (uint256);
 
     function claimStartTime() external view returns (uint32);
+
+    function setPrivileged(address account, bool isPrivileged_) external;
+
+    function transerCollToPrivilegedVault(address vault, uint256 amount) external;
+
+    function receiveCollFromPrivilegedVault(uint256 amount) external;
 }

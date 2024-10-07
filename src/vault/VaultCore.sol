@@ -20,7 +20,11 @@ abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
 
     function executeStrategy(bytes calldata data) external virtual;
 
-    function exitStrategy(bytes calldata data) external virtual;
+    function exitStrategy(bytes calldata data) external virtual returns (uint256);
+
+    function constructExecuteStrategyData(uint256 amount) external pure virtual returns (bytes memory);
+
+    function constructExitStrategyData(uint256 amount) external pure virtual returns (bytes memory);
 
     /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
     // solhint-disable-next-line no-empty-blocks
