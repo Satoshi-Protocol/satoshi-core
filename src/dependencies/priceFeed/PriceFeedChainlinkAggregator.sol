@@ -14,16 +14,16 @@ import {SatoshiOwnable} from "../SatoshiOwnable.sol";
 contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
     AggregatorV3Interface[] internal _sources;
     uint256[] public maxTimeThresholds;
-    uint256[] public ratio;
+    uint256[] public weight;
 
     constructor(
         AggregatorV3Interface[] memory sources_,
         ISatoshiCore _satoshiCore,
         uint256[] memory _maxTimeThreshold,
-        uint256[] memory _ratio
+        uint256[] memory _weight
     ) {
         require(
-            sources_.length == _ratio.length && _maxTimeThreshold.length == sources_.length,
+            sources_.length == _weight.length && _maxTimeThreshold.length == sources_.length,
             "PriceFeedChainlinkAggregator: Invalid length"
         );
         __SatoshiOwnable_init(_satoshiCore);
@@ -31,12 +31,12 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
         for (uint256 i; i < length; ++i) {
             _sources.push(sources_[i]);
             maxTimeThresholds.push(_maxTimeThreshold[i]);
-            ratio.push(_ratio[i]);
+            weight.push(_weight[i]);
         }
     }
 
     function fetchPrice() external view returns (uint256 finalPrice) {
-        uint256 ratioSum;
+        uint256 weightSum;
         for (uint256 i; i < _sources.length; ++i) {
             (, int256 price,, uint256 updatedAt,) = _sources[i].latestRoundData();
 
@@ -45,32 +45,32 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
                 revert PriceTooOld();
             }
 
-            finalPrice += uint256(price) * ratio[i];
-            ratioSum += ratio[i];
+            finalPrice += uint256(price) * weight[i];
+            weightSum += weight[i];
         }
 
-        finalPrice /= ratioSum;
+        finalPrice /= weightSum;
 
         return finalPrice;
     }
 
     function fetchPriceUnsafe() external view returns (uint256 finalPrice, uint256 updatedAt) {
-        uint256 ratioSum;
+        uint256 weightSum;
         uint256 length = _sources.length;
         for (uint256 i; i < length; ++i) {
             (, int256 price,, uint256 updatedAt0,) = _sources[i].latestRoundData();
 
             if (price <= 0) revert InvalidPriceInt256(price);
 
-            finalPrice += uint256(price) * ratio[i];
-            ratioSum += ratio[i];
+            finalPrice += uint256(price) * weight[i];
+            weightSum += weight[i];
 
             if (updatedAt0 > updatedAt) {
                 updatedAt = updatedAt0;
             }
         }
 
-        finalPrice /= ratioSum;
+        finalPrice /= weightSum;
     }
 
     function decimals() external view returns (uint8) {
@@ -99,13 +99,13 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
         emit MaxTimeThresholdsUpdated(_maxTimeThreshold);
     }
 
-    function setRatio(uint256[] calldata ratio_) external onlyOwner {
-        require(ratio_.length == _sources.length, "PriceFeedChainlinkAggregator: Invalid length");
-        delete ratio;
-        for (uint256 i; i < ratio_.length; ++i) {
-            ratio.push(ratio_[i]);
+    function setWeight(uint256[] calldata weight_) external onlyOwner {
+        require(weight_.length == _sources.length, "PriceFeedChainlinkAggregator: Invalid length");
+        delete weight;
+        for (uint256 i; i < weight_.length; ++i) {
+            weight.push(weight_[i]);
         }
-        emit RatioUpdated(ratio_);
+        emit WeightUpdated(weight_);
     }
 
     // retain for backward compatibility

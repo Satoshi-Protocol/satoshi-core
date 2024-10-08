@@ -16,7 +16,7 @@ interface IPriceFeed is ISatoshiOwnable {
     event MaxTimeThresholdUpdated(uint256 newMaxTimeThreshold);
     event MaxTimeThresholdsUpdated(uint256[] newMaxTimeThreshold);
     event PriceIDUpdated(bytes32 newPriceID);
-    event RatioUpdated(uint256[] newRatio);
+    event WeightUpdated(uint256[] newWeight);
 
     function fetchPrice() external returns (uint256);
 
