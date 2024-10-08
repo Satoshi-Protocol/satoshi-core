@@ -12,56 +12,69 @@ import {SatoshiOwnable} from "../SatoshiOwnable.sol";
  *        Aggregate multiple Chainlink price feeds
  */
 contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
-    AggregatorV3Interface internal immutable _source;
-    AggregatorV3Interface internal immutable _source1;
-    uint256 public maxTimeThreshold;
-    uint256 public ratio1;
-    uint256 public ratio2;
+    AggregatorV3Interface[] internal _sources;
+    uint256[] public maxTimeThresholds;
+    uint256[] public ratio;
 
     constructor(
-        AggregatorV3Interface source_,
-        AggregatorV3Interface source1_,
+        AggregatorV3Interface[] memory sources_,
         ISatoshiCore _satoshiCore,
-        uint256 _maxTimeThreshold,
-        uint256 _ratio1,
-        uint256 _ratio2
+        uint256[] memory _maxTimeThreshold,
+        uint256[] memory _ratio
     ) {
+        require(
+            sources_.length == _ratio.length && _maxTimeThreshold.length == sources_.length,
+            "PriceFeedChainlinkAggregator: Invalid length"
+        );
         __SatoshiOwnable_init(_satoshiCore);
-        _source = source_;
-        _source1 = source1_;
-        maxTimeThreshold = _maxTimeThreshold;
-        ratio1 = _ratio1;
-        ratio2 = _ratio2;
-        emit MaxTimeThresholdUpdated(_maxTimeThreshold);
+        uint256 length = sources_.length;
+        for (uint256 i; i < length; ++i) {
+            _sources.push(sources_[i]);
+            maxTimeThresholds.push(_maxTimeThreshold[i]);
+            ratio.push(_ratio[i]);
+        }
     }
 
-    function fetchPrice() external view returns (uint256) {
-        (, int256 price0,, uint256 updatedAt0,) = _source.latestRoundData();
-        (, int256 price1,, uint256 updatedAt1,) = _source1.latestRoundData();
-        if (price0 <= 0) revert InvalidPriceInt256(price0);
-        if (price1 <= 0) revert InvalidPriceInt256(price1);
-        if (block.timestamp - updatedAt0 > maxTimeThreshold || block.timestamp - updatedAt1 > maxTimeThreshold) {
-            revert PriceTooOld();
+    function fetchPrice() external view returns (uint256 finalPrice) {
+        uint256 ratioSum;
+        for (uint256 i; i < _sources.length; ++i) {
+            (, int256 price,, uint256 updatedAt,) = _sources[i].latestRoundData();
+
+            if (price <= 0) revert InvalidPriceInt256(price);
+            if (block.timestamp - updatedAt > maxTimeThresholds[i]) {
+                revert PriceTooOld();
+            }
+
+            finalPrice += uint256(price) * ratio[i];
+            ratioSum += ratio[i];
         }
 
-        uint256 price = (uint256(price0) * ratio1 + uint256(price1) * ratio2) / (ratio1 + ratio2);
+        finalPrice /= ratioSum;
 
-        return uint256(price);
+        return finalPrice;
     }
 
-    function fetchPriceUnsafe() external view returns (uint256, uint256) {
-        (, int256 price0,, uint256 updatedAt0,) = _source.latestRoundData();
-        (, int256 price1,,,) = _source1.latestRoundData();
-        if (price0 <= 0) revert InvalidPriceInt256(price0);
-        if (price1 <= 0) revert InvalidPriceInt256(price1);
+    function fetchPriceUnsafe() external view returns (uint256 finalPrice, uint256 updatedAt) {
+        uint256 ratioSum;
+        uint256 length = _sources.length;
+        for (uint256 i; i < length; ++i) {
+            (, int256 price,, uint256 updatedAt0,) = _sources[i].latestRoundData();
 
-        uint256 price = (uint256(price0) * ratio1 + uint256(price1) * ratio2) / (ratio1 + ratio2);
+            if (price <= 0) revert InvalidPriceInt256(price);
 
-        return (uint256(price), updatedAt0);
+            finalPrice += uint256(price) * ratio[i];
+            ratioSum += ratio[i];
+
+            if (updatedAt0 > updatedAt) {
+                updatedAt = updatedAt0;
+            }
+        }
+
+        finalPrice /= ratioSum;
     }
 
     function decimals() external view returns (uint8) {
-        return _source.decimals();
+        return _sources[0].decimals();
     }
 
     function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external onlyOwner {
@@ -69,21 +82,43 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
             revert InvalidMaxTimeThreshold();
         }
 
-        maxTimeThreshold = _maxTimeThreshold;
+        maxTimeThresholds[0] = _maxTimeThreshold;
         emit MaxTimeThresholdUpdated(_maxTimeThreshold);
     }
 
-    function setRatio(uint256 _ratio1, uint256 _ratio2) external onlyOwner {
-        ratio1 = _ratio1;
-        ratio2 = _ratio2;
-        emit RatioUpdated(_ratio1, _ratio2);
+    function updateMaxTimeThresholds(uint256[] memory _maxTimeThreshold) external onlyOwner {
+        require(_maxTimeThreshold.length == _sources.length, "PriceFeedChainlinkAggregator: Invalid length");
+        uint256 length = _maxTimeThreshold.length;
+        delete maxTimeThresholds;
+        for (uint256 i; i < length; ++i) {
+            if (_maxTimeThreshold[i] <= 120) {
+                revert InvalidMaxTimeThreshold();
+            }
+            maxTimeThresholds.push(_maxTimeThreshold[i]);
+        }
+        emit MaxTimeThresholdsUpdated(_maxTimeThreshold);
     }
 
+    function setRatio(uint256[] calldata ratio_) external onlyOwner {
+        require(ratio_.length == _sources.length, "PriceFeedChainlinkAggregator: Invalid length");
+        delete ratio;
+        for (uint256 i; i < ratio_.length; ++i) {
+            ratio.push(ratio_[i]);
+        }
+        emit RatioUpdated(ratio_);
+    }
+
+    // retain for backward compatibility
+    function maxTimeThreshold() external view returns (uint256) {
+        return maxTimeThresholds[0];
+    }
+
+    // retain for backward compatibility
     function source() external view returns (address) {
-        return address(_source);
+        return address(_sources[0]);
     }
 
-    function source1() external view returns (address) {
-        return address(_source1);
+    function sources(uint256 i) external view returns (address) {
+        return address(_sources[i]);
     }
 }

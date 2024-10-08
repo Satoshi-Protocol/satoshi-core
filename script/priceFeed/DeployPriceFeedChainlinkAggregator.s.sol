@@ -26,18 +26,20 @@ contract DeployPriceFeedChainlinkAggregatorScript is Script {
 
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
+        uint256[] memory ratio = new uint256[](2);
+        ratio[0] = CHAINLINK_SOURCE_RATIO_0;
+        ratio[1] = CHAINLINK_SOURCE_RATIO_1;
 
-        AggregatorV3Interface source0 = AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0);
-        AggregatorV3Interface source1 = AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1);
+        AggregatorV3Interface[] memory sources = new AggregatorV3Interface[](2);
+        sources[0] = AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0);
+        sources[1] = AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1);
+
+        uint256[] memory threshold = new uint256[](2);
+        threshold[0] = CHAINLINK_MAX_TIME_THRESHOLD;
+        threshold[1] = CHAINLINK_MAX_TIME_THRESHOLD;
+
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
-        priceFeedChainlink = new PriceFeedChainlinkAggregator(
-            source0,
-            source1,
-            satoshiCore,
-            CHAINLINK_MAX_TIME_THRESHOLD,
-            CHAINLINK_SOURCE_RATIO_0,
-            CHAINLINK_SOURCE_RATIO_1
-        );
+        priceFeedChainlink = new PriceFeedChainlinkAggregator(sources, satoshiCore, threshold, ratio);
         assert(priceFeedChainlink.fetchPrice() > 0);
         console.log("PriceFeedChainlink deployed at:", address(priceFeedChainlink));
 
