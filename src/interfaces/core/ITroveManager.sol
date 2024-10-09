@@ -103,9 +103,10 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     event RewardClaimed(address indexed account, address indexed recipient, uint256 claimed);
     event ClaimStartTimeSet(uint32 _startTime);
     event InterestCollected(address _troveManager, uint256 _amount);
-    event PrivilegedSet(address, bool);
     event CollateralTransferred(address indexed _recipient, uint256 _amount);
     event CollateralReceived(address indexed _sender, uint256 _amount);
+    event FarmingParamsSet(uint256 _retainPercentage, uint256 _refillPercentage);
+    event VaultManagerSet(address _vaultManager);
 
     error NotPrivileged(address);
 
@@ -352,9 +353,17 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
 
     function claimStartTime() external view returns (uint32);
 
-    function setPrivileged(address account, bool isPrivileged_) external;
-
     function transerCollToPrivilegedVault(address vault, uint256 amount) external;
 
     function receiveCollFromPrivilegedVault(uint256 amount) external;
+
+    function setFarmingParams(uint256 retainPercentage, uint256 refillPercentage) external;
+
+    function setVaultManager(address vaultManager_) external;
+
+    function retainPercentage() external view returns (uint256);
+
+    function refillPercentage() external view returns (uint256);
+
+    function FARMING_PRECISION() external view returns (uint256);
 }
