@@ -52,6 +52,8 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         bytes memory data = INYMVault(vault).constructExecuteStrategyData(amount);
         collateralToken.transfer(vault, amount);
         INYMVault(vault).executeStrategy(data);
+
+        emit ExecuteStrategy(vault, amount);
     }
 
     function exitStrategy(address vault, uint256 amount) external onlyOwner {
@@ -61,6 +63,8 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         INYMVault(vault).exitStrategy(data);
 
         collateralAmounts[vault] -= amount;
+
+        emit ExitStrategy(vault, amount);
     }
 
     function exitStrategyByTroveManager(uint256 amount) external {
@@ -78,6 +82,8 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
             collateralAmounts[address(vault)] -= exitAmount;
             withdrawAmount -= exitAmount;
             balanceAfter = collateralToken.balanceOf(address(this));
+
+            emit ExitStrategy(address(vault), exitAmount);
         }
 
         // if the balance is still not enough

@@ -1146,13 +1146,14 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint256 remianColl = totalActiveCollateral - collateralOutput;
         uint256 target = (totalActiveCollateral - _amount) * farmingParams.refillPercentage / FARMING_PRECISION;
 
+        // remain collateral is not enough, must refill
         if (_amount > remianColl) {
             vaultManager.exitStrategyByTroveManager(_amount - remianColl);
             // refill to target
             uint256 refillAmount = SatoshiMath._min(target, collateralOutput);
             if (refillAmount != 0) vaultManager.exitStrategyByTroveManager(refillAmount);
         } else if (remianColl - _amount < boundary) {
-            uint256 refillAmount = _amount + target - (totalActiveCollateral - collateralOutput);
+            uint256 refillAmount = _amount + target - remianColl;
             vaultManager.exitStrategyByTroveManager(refillAmount);
         }
 

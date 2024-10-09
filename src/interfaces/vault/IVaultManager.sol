@@ -8,6 +8,8 @@ interface IVaultManager {
     event WhiteListVaultSet(address vault, bool isWhitelisted);
     event PrioritySet(INYMVault[] priority);
     event CollateralTransferredToTroveManager(uint256 amount);
+    event ExecuteStrategy(address vault, uint256 amount);
+    event ExitStrategy(address vault, uint256 amount);
 
     function executeStrategy(address, uint256) external;
     function exitStrategy(address, uint256) external;
