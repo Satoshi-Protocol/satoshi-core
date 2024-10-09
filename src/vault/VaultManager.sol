@@ -9,12 +9,12 @@ import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {INYMVault} from "../interfaces/vault/INYMVault.sol";
 import {IVaultManager} from "../interfaces/vault/IVaultManager.sol";
 import {ITroveManager} from "../interfaces/core/ITroveManager.sol";
-
 /* 
     * @title VaultManager
     * @dev The contract is responsible for managing the vaults
     * Each TroveManager has a VaultManager
     */
+
 contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     address public troveManager;
     IERC20 public collateralToken;
@@ -29,9 +29,11 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(ISatoshiCore _satoshiCore) external override initializer {
+    function initialize(ISatoshiCore _satoshiCore, address troveManager_) external override initializer {
         __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
+        troveManager = troveManager_;
+        collateralToken = ITroveManager(troveManager_).collateralToken();
     }
 
     /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
@@ -48,6 +50,7 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         collateralAmounts[vault] += amount;
 
         bytes memory data = INYMVault(vault).constructExecuteStrategyData(amount);
+        collateralToken.transfer(vault, amount);
         INYMVault(vault).executeStrategy(data);
     }
 
@@ -62,17 +65,19 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
 
     function exitStrategyByTroveManager(uint256 amount) external {
         require(msg.sender == troveManager, "VaultManager: Caller is not TroveManager");
+        if (amount == 0) return;
 
-        uint256 balanceAfter;
+        // assign a value to balanceAfter to prevent the priority being empty
+        uint256 balanceAfter = collateralToken.balanceOf(address(this));
         uint256 withdrawAmount = amount;
         for (uint256 i; i < priority.length; i++) {
+            if (balanceAfter >= amount) break;
             INYMVault vault = priority[i];
             bytes memory data = vault.constructExitStrategyData(withdrawAmount);
             uint256 exitAmount = vault.exitStrategy(data);
             collateralAmounts[address(vault)] -= exitAmount;
-            balanceAfter = collateralToken.balanceOf(address(this));
-            if (balanceAfter >= amount) break;
             withdrawAmount -= exitAmount;
+            balanceAfter = collateralToken.balanceOf(address(this));
         }
 
         // if the balance is still not enough
@@ -88,11 +93,19 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         for (uint256 i; i < _priority.length; i++) {
             priority.push(_priority[i]);
         }
+        emit PrioritySet(_priority);
+    }
+
+    function setWhiteListVault(address vault, bool status) external onlyOwner {
+        whitelistVaults[vault] = status;
+        emit WhiteListVaultSet(vault, status);
     }
 
     function transferCollToTroveManager(uint256 amount) external onlyOwner {
         collateralToken.approve(troveManager, amount);
         ITroveManager(troveManager).receiveCollFromPrivilegedVault(amount);
+
+        emit CollateralTransferredToTroveManager(amount);
     }
 
     // --- Internal functions ---

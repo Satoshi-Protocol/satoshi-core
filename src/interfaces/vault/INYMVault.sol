@@ -9,6 +9,7 @@ interface INYMVault {
     event TokenTransferredToStrategy(uint256 amount);
     event TokenTransferredToNYM(uint256 amount);
     event TokenTransferred(address token, address to, uint256 amount);
+    event WhitelistSet(address account, bool status);
 
     function setStrategyAddr(address _strategyAddr) external;
     function setNYMAddr(address _nymAddr) external;
