@@ -20,8 +20,8 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
         uint256 length = _sources.length;
         for (uint256 i; i < length; ++i) {
             sources.push(_sources[i]);
+            emit ConfigSet(_sources[i]);
         }
-        emit ConfigSet(_sources);
     }
 
     // --- External Functions ---
@@ -115,7 +115,7 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
         uint256 length = _sources.length;
         for (uint256 i; i < length; ++i) {
             sources.push(_sources[i]);
+            emit ConfigSet(_sources[i]);
         }
-        emit ConfigSet(_sources);
     }
 }
