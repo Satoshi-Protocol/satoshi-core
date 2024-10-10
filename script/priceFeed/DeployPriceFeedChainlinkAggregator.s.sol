@@ -5,6 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {PriceFeedChainlinkAggregator} from "../../src/dependencies/priceFeed/PriceFeedChainlinkAggregator.sol";
 import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
+import {SourceConfig} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {
     CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0,
     CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1,
@@ -26,20 +27,20 @@ contract DeployPriceFeedChainlinkAggregatorScript is Script {
 
     function run() public {
         vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
-        uint256[] memory weight = new uint256[](2);
-        weight[0] = CHAINLINK_SOURCE_WEIGHT_0;
-        weight[1] = CHAINLINK_SOURCE_WEIGHT_1;
-
-        AggregatorV3Interface[] memory sources = new AggregatorV3Interface[](2);
-        sources[0] = AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0);
-        sources[1] = AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1);
-
-        uint256[] memory threshold = new uint256[](2);
-        threshold[0] = CHAINLINK_MAX_TIME_THRESHOLD;
-        threshold[1] = CHAINLINK_MAX_TIME_THRESHOLD;
+        SourceConfig[] memory sources = new SourceConfig[](2);
+        sources[0] = SourceConfig({
+            source: AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0),
+            maxTimeThreshold: CHAINLINK_MAX_TIME_THRESHOLD,
+            weight: CHAINLINK_SOURCE_WEIGHT_0
+        });
+        sources[1] = SourceConfig({
+            source: AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1),
+            maxTimeThreshold: CHAINLINK_MAX_TIME_THRESHOLD,
+            weight: CHAINLINK_SOURCE_WEIGHT_1
+        });
 
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
-        priceFeedChainlink = new PriceFeedChainlinkAggregator(sources, satoshiCore, threshold, weight);
+        priceFeedChainlink = new PriceFeedChainlinkAggregator(satoshiCore, sources);
         assert(priceFeedChainlink.fetchPrice() > 0);
         console.log("PriceFeedChainlink deployed at:", address(priceFeedChainlink));
 
