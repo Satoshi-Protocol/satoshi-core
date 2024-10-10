@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
-import {IPriceFeed} from "../../interfaces/dependencies/IPriceFeed.sol";
+import {IPriceFeed, SourceConfig} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {AggregatorV3Interface} from "../../interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
 
@@ -12,78 +12,110 @@ import {SatoshiOwnable} from "../SatoshiOwnable.sol";
  *        Aggregate multiple Chainlink price feeds
  */
 contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
-    AggregatorV3Interface internal immutable _source;
-    AggregatorV3Interface internal immutable _source1;
-    uint256 public maxTimeThreshold;
-    uint256 public ratio1;
-    uint256 public ratio2;
+    uint8 public constant TARGET_DIGITS = 18;
+    SourceConfig[] public sources;
 
-    constructor(
-        AggregatorV3Interface source_,
-        AggregatorV3Interface source1_,
-        ISatoshiCore _satoshiCore,
-        uint256 _maxTimeThreshold,
-        uint256 _ratio1,
-        uint256 _ratio2
-    ) {
+    constructor(ISatoshiCore _satoshiCore, SourceConfig[] memory _sources) {
         __SatoshiOwnable_init(_satoshiCore);
-        _source = source_;
-        _source1 = source1_;
-        maxTimeThreshold = _maxTimeThreshold;
-        ratio1 = _ratio1;
-        ratio2 = _ratio2;
-        emit MaxTimeThresholdUpdated(_maxTimeThreshold);
+        uint256 length = _sources.length;
+        for (uint256 i; i < length; ++i) {
+            sources.push(_sources[i]);
+            emit ConfigSet(_sources[i]);
+        }
     }
 
-    function fetchPrice() external view returns (uint256) {
-        (, int256 price0,, uint256 updatedAt0,) = _source.latestRoundData();
-        (, int256 price1,, uint256 updatedAt1,) = _source1.latestRoundData();
-        if (price0 <= 0) revert InvalidPriceInt256(price0);
-        if (price1 <= 0) revert InvalidPriceInt256(price1);
-        if (block.timestamp - updatedAt0 > maxTimeThreshold || block.timestamp - updatedAt1 > maxTimeThreshold) {
-            revert PriceTooOld();
+    // --- External Functions ---
+    function fetchPrice() external view returns (uint256 finalPrice) {
+        uint256 weightSum;
+        for (uint256 i; i < sources.length; ++i) {
+            (, int256 price,, uint256 updatedAt,) = sources[i].source.latestRoundData();
+
+            if (price <= 0) revert InvalidPriceInt256(price);
+            if (block.timestamp - updatedAt > sources[i].maxTimeThreshold) {
+                revert PriceTooOld();
+            }
+
+            uint256 scaledPrice = getScaledPrice(uint256(price), sources[i].source.decimals());
+
+            finalPrice += scaledPrice * sources[i].weight;
+            weightSum += sources[i].weight;
         }
 
-        uint256 price = (uint256(price0) * ratio1 + uint256(price1) * ratio2) / (ratio1 + ratio2);
+        finalPrice /= weightSum;
 
-        return uint256(price);
+        return finalPrice;
     }
 
-    function fetchPriceUnsafe() external view returns (uint256, uint256) {
-        (, int256 price0,, uint256 updatedAt0,) = _source.latestRoundData();
-        (, int256 price1,,,) = _source1.latestRoundData();
-        if (price0 <= 0) revert InvalidPriceInt256(price0);
-        if (price1 <= 0) revert InvalidPriceInt256(price1);
+    function fetchPriceUnsafe() external view returns (uint256 finalPrice, uint256 updatedAt) {
+        uint256 weightSum;
+        uint256 length = sources.length;
+        for (uint256 i; i < length; ++i) {
+            (, int256 price,, uint256 updatedAt0,) = sources[i].source.latestRoundData();
 
-        uint256 price = (uint256(price0) * ratio1 + uint256(price1) * ratio2) / (ratio1 + ratio2);
+            if (price <= 0) revert InvalidPriceInt256(price);
 
-        return (uint256(price), updatedAt0);
-    }
+            uint256 scaledPrice = getScaledPrice(uint256(price), sources[i].source.decimals());
 
-    function decimals() external view returns (uint8) {
-        return _source.decimals();
-    }
+            finalPrice += scaledPrice * sources[i].weight;
+            weightSum += sources[i].weight;
 
-    function updateMaxTimeThreshold(uint256 _maxTimeThreshold) external onlyOwner {
-        if (_maxTimeThreshold <= 120) {
-            revert InvalidMaxTimeThreshold();
+            if (updatedAt0 > updatedAt) {
+                updatedAt = updatedAt0;
+            }
         }
 
-        maxTimeThreshold = _maxTimeThreshold;
-        emit MaxTimeThresholdUpdated(_maxTimeThreshold);
+        finalPrice /= weightSum;
     }
 
-    function setRatio(uint256 _ratio1, uint256 _ratio2) external onlyOwner {
-        ratio1 = _ratio1;
-        ratio2 = _ratio2;
-        emit RatioUpdated(_ratio1, _ratio2);
+    // --- View Functions ---
+    
+    function decimals() external pure returns (uint8) {
+        return TARGET_DIGITS;
     }
 
-    function source() external view returns (address) {
-        return address(_source);
+    function source(uint256 i) external view returns (address) {
+        return address(sources[i].source);
     }
 
-    function source1() external view returns (address) {
-        return address(_source1);
+    function maxTimeThresholds(uint256 i) external view returns (uint256) {
+        return sources[i].maxTimeThreshold;
+    }
+
+    function getScaledPrice(uint256 _rawPrice, uint8 _decimals) public pure returns (uint256) {
+        uint256 scaledPrice;
+        if (_decimals == TARGET_DIGITS) {
+            scaledPrice = _rawPrice;
+        } else if (_decimals < TARGET_DIGITS) {
+            scaledPrice = _rawPrice * (10 ** (TARGET_DIGITS - _decimals));
+        } else {
+            scaledPrice = _rawPrice / (10 ** (_decimals - TARGET_DIGITS));
+        }
+
+        return scaledPrice;
+    }
+
+    // --- Retained for backward compatibility ---
+
+    function updateMaxTimeThreshold(uint256) external pure {
+        revert Deprecated();
+    }
+
+    function maxTimeThreshold() external pure returns (uint256) {
+        revert Deprecated();
+    }
+
+    function source() external pure returns (address) {
+        revert Deprecated();
+    }
+
+    // --- Owner Functions ---
+
+    function setConfig(SourceConfig[] memory _sources) external onlyOwner {
+        delete sources;
+        uint256 length = _sources.length;
+        for (uint256 i; i < length; ++i) {
+            sources.push(_sources[i]);
+            emit ConfigSet(_sources[i]);
+        }
     }
 }
