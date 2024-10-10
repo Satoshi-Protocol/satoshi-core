@@ -2,6 +2,13 @@
 pragma solidity 0.8.19;
 
 import {ISatoshiOwnable} from "./ISatoshiOwnable.sol";
+import {AggregatorV3Interface} from "../../interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
+
+struct SourceConfig {
+    AggregatorV3Interface source;
+    uint256 maxTimeThreshold;
+    uint256 weight;
+}
 
 interface IPriceFeed is ISatoshiOwnable {
     // invalid price error for different types of price sources
@@ -11,10 +18,13 @@ interface IPriceFeed is ISatoshiOwnable {
     error InvalidPriceUInt256(uint256 price);
     error PriceTooOld();
     error InvalidMaxTimeThreshold();
+    error Deprecated();
 
     // Events
     event MaxTimeThresholdUpdated(uint256 newMaxTimeThreshold);
+    event MaxTimeThresholdsUpdated(uint256[] newMaxTimeThreshold);
     event PriceIDUpdated(bytes32 newPriceID);
+    event ConfigSet(SourceConfig sources);
 
     function fetchPrice() external returns (uint256);
 
