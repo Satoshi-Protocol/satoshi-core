@@ -16,18 +16,18 @@ import {
     CHAINLINK_SOURCE_WEIGHT_1
 } from "./DeployPriceFeedConfig.sol";
 
-contract DeployPriceFeedChainlinkAggregatorScript is Script {
+contract SetConfigPriceFeedChainlinkAggregatorScript is Script {
     PriceFeedChainlinkAggregator internal priceFeedChainlink;
-    uint256 internal DEPLOYMENT_PRIVATE_KEY;
-    address public deployer;
+    uint256 internal OWNER_PRIVATE_KEY;
+    address public owner;
 
     function setUp() public {
-        DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
-        deployer = vm.addr(DEPLOYMENT_PRIVATE_KEY);
+        OWNER_PRIVATE_KEY = uint256(vm.envBytes32("OWNER_PRIVATE_KEY"));
+        owner = vm.addr(OWNER_PRIVATE_KEY);
     }
 
     function run() public {
-        vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
+        vm.startBroadcast(OWNER_PRIVATE_KEY);
         SourceConfig[] memory sources = new SourceConfig[](2);
         sources[0] = SourceConfig({
             source: AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0),
@@ -40,10 +40,10 @@ contract DeployPriceFeedChainlinkAggregatorScript is Script {
             weight: CHAINLINK_SOURCE_WEIGHT_1
         });
 
-        ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
-        priceFeedChainlink = new PriceFeedChainlinkAggregator(satoshiCore, sources);
-        // assert(priceFeedChainlink.fetchPrice() > 0);
-        console.log("PriceFeedChainlink deployed at:", address(priceFeedChainlink));
+        priceFeedChainlink = PriceFeedChainlinkAggregator(0xE3cD7A8AEb9c1305162b216aB93Ef98EfC0e451c);
+        priceFeedChainlink.setConfig(sources);
+        assert(priceFeedChainlink.fetchPrice()/1e18 > 60000);
+        console.log(priceFeedChainlink.fetchPrice()/1e18);
 
         vm.stopBroadcast();
     }
