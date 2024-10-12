@@ -87,11 +87,11 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         }
 
         // if the balance is still not enough
-        uint256 acutalTransferAmount = balanceAfter >= amount ? amount : balanceAfter;
+        uint256 actualTransferAmount = balanceAfter >= amount ? amount : balanceAfter;
 
         // transfer token to TroveManager
-        collateralToken.approve(troveManager, acutalTransferAmount);
-        ITroveManager(troveManager).receiveCollFromPrivilegedVault(acutalTransferAmount);
+        collateralToken.approve(troveManager, actualTransferAmount);
+        ITroveManager(troveManager).receiveCollFromPrivilegedVault(actualTransferAmount);
     }
 
     function setPriority(INYMVault[] memory _priority) external onlyOwner {

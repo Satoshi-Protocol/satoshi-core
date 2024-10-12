@@ -1143,17 +1143,17 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function _sendCollateral(address _account, uint256 _amount) private {
         uint256 boundary = totalActiveCollateral * farmingParams.retainPercentage / FARMING_PRECISION;
-        uint256 remianColl = totalActiveCollateral - collateralOutput;
+        uint256 remainColl = totalActiveCollateral - collateralOutput;
         uint256 target = (totalActiveCollateral - _amount) * farmingParams.refillPercentage / FARMING_PRECISION;
 
         // remain collateral is not enough, must refill
-        if (_amount > remianColl) {
-            vaultManager.exitStrategyByTroveManager(_amount - remianColl);
+        if (_amount > remainColl) {
+            vaultManager.exitStrategyByTroveManager(_amount - remainColl);
             // refill to target
             uint256 refillAmount = SatoshiMath._min(target, collateralOutput);
             if (refillAmount != 0) vaultManager.exitStrategyByTroveManager(refillAmount);
-        } else if (remianColl - _amount < boundary) {
-            uint256 refillAmount = _amount + target - remianColl;
+        } else if (remainColl - _amount < boundary) {
+            uint256 refillAmount = _amount + target - remainColl;
             vaultManager.exitStrategyByTroveManager(refillAmount);
         }
 
@@ -1354,7 +1354,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         emit FarmingParamsSet(retainPercentage_, refillPercentage_);
     }
 
-    function transerCollToPrivilegedVault(address vault, uint256 amount) external onlyOwner {
+    function transferCollToPrivilegedVault(address vault, uint256 amount) external onlyOwner {
         // check the output amount does not exceed the limit
         require(
             collateralOutput + amount

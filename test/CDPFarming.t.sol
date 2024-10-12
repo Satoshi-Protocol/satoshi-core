@@ -96,17 +96,17 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertEq(troveManagerBeaconProxy.getTotalActiveCollateral(), 1e18);
     }
 
-    function test_transerCollToPrivilegedVault() public {
+    function test_transferCollToPrivilegedVault() public {
         // open trove
         _openTrove(OWNER, 1e18, 1000e18);
 
         vm.startPrank(OWNER);
-        troveManagerBeaconProxy.transerCollToPrivilegedVault(address(vaultManagerProxy), 0.7e18);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), 0.7e18);
 
         assertEq(collateralMock.balanceOf(address(troveManagerBeaconProxy)), 0.3e18);
 
         vm.expectRevert("TroveManager: Exceed the collateral transfer limit");
-        troveManagerBeaconProxy.transerCollToPrivilegedVault(address(vaultManagerProxy), 1);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), 1);
 
         // transfer funds back
         vaultManagerProxy.transferCollToTroveManager(0.7e18);
@@ -125,7 +125,7 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
         deal(address(debtTokenProxy), OWNER, 2000e18);
 
         vm.startPrank(OWNER);
-        troveManagerBeaconProxy.transerCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
         assertEq(collateralMock.balanceOf(address(troveManagerBeaconProxy)), collAmount - farmingAmount);
         assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
         vm.stopPrank();
@@ -148,7 +148,7 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
         deal(address(debtTokenProxy), OWNER, 2000e18);
 
         vm.startPrank(OWNER);
-        troveManagerBeaconProxy.transerCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
         assertEq(collateralMock.balanceOf(address(troveManagerBeaconProxy)), collAmount - farmingAmount);
         assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
         vm.stopPrank();
@@ -188,7 +188,7 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
         deal(address(debtTokenProxy), OWNER, 2000e18);
 
         vm.startPrank(OWNER);
-        troveManagerBeaconProxy.transerCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
         assertEq(collateralMock.balanceOf(address(troveManagerBeaconProxy)), collAmount - farmingAmount);
         assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
         vm.stopPrank();
@@ -227,7 +227,7 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
         deal(address(debtTokenProxy), OWNER, 2000e18);
 
         vm.startPrank(OWNER);
-        troveManagerBeaconProxy.transerCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
         assertEq(collateralMock.balanceOf(address(troveManagerBeaconProxy)), collAmount - farmingAmount);
         assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
 
