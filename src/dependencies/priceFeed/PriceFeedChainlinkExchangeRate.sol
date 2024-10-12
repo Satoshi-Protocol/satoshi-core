@@ -5,66 +5,52 @@ import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeed, SourceConfig} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {AggregatorV3Interface} from "../../interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title PriceFeed Contract to integrate with Chainlink
  *        Convert data from interface of Chainlink to Satoshi's IPriceFeed
- *        Aggregate multiple Chainlink price feeds
+ *        Price * Exchange Rate
  */
-contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
+contract PriceFeedChainlinkExchangeRate is SatoshiOwnable {
+    error InvalidPriceInt256(int256 price);
+    error PriceTooOld();
+    error Deprecated();
+
+    event ConfigSet(SourceConfig sources);
+
     uint8 public constant TARGET_DIGITS = 18;
     SourceConfig[] public sources;
 
     constructor(ISatoshiCore _satoshiCore, SourceConfig[] memory _sources) {
         __SatoshiOwnable_init(_satoshiCore);
-        uint256 length = _sources.length;
-        for (uint256 i; i < length; ++i) {
+        require(_sources.length == 2, "PriceFeedChainlinkExchangeRate: Invalid sources length");
+        for (uint256 i; i < _sources.length; ++i) {
             sources.push(_sources[i]);
             emit ConfigSet(_sources[i]);
         }
     }
 
     // --- External Functions ---
-    function fetchPrice() external view returns (uint256 finalPrice) {
-        uint256 weightSum;
-        for (uint256 i; i < sources.length; ++i) {
-            (, int256 price,, uint256 updatedAt,) = sources[i].source.latestRoundData();
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
+        // fetch the price
+        (, int256 price,, uint256 updatedAt,) = sources[0].source.latestRoundData();
+        if (price <= 0) revert InvalidPriceInt256(price);
 
-            if (price <= 0) revert InvalidPriceInt256(price);
-            if (block.timestamp - updatedAt > sources[i].maxTimeThreshold) {
-                revert PriceTooOld();
-            }
+        uint256 scaledPrice = getScaledPrice(uint256(price), sources[0].source.decimals());
 
-            uint256 scaledPrice = getScaledPrice(uint256(price), sources[i].source.decimals());
-
-            finalPrice += scaledPrice * sources[i].weight;
-            weightSum += sources[i].weight;
+        // fetch the exchange rate
+        (, int256 rate,, uint256 rateUpdatedAt,) = sources[1].source.latestRoundData();
+        if (rate <= 0) revert InvalidPriceInt256(rate);
+        if (block.timestamp - rateUpdatedAt > sources[1].maxTimeThreshold) {
+            revert PriceTooOld();
         }
 
-        finalPrice /= weightSum;
+        uint256 scaledRate = getScaledPrice(uint256(rate), sources[1].source.decimals());
 
-        return finalPrice;
-    }
+        uint256 finalPrice = Math.mulDiv(scaledPrice, scaledRate, 10 ** TARGET_DIGITS);
 
-    function fetchPriceUnsafe() external view returns (uint256 finalPrice, uint256 updatedAt) {
-        uint256 weightSum;
-        uint256 length = sources.length;
-        for (uint256 i; i < length; ++i) {
-            (, int256 price,, uint256 updatedAt0,) = sources[i].source.latestRoundData();
-
-            if (price <= 0) revert InvalidPriceInt256(price);
-
-            uint256 scaledPrice = getScaledPrice(uint256(price), sources[i].source.decimals());
-
-            finalPrice += scaledPrice * sources[i].weight;
-            weightSum += sources[i].weight;
-
-            if (updatedAt0 > updatedAt) {
-                updatedAt = updatedAt0;
-            }
-        }
-
-        finalPrice /= weightSum;
+        return (0, int256(finalPrice), 0, updatedAt, 0);
     }
 
     // --- View Functions ---
@@ -94,23 +80,10 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
         return scaledPrice;
     }
 
-    // --- Retained for backward compatibility ---
-
-    function updateMaxTimeThreshold(uint256) external pure {
-        revert Deprecated();
-    }
-
-    function maxTimeThreshold() external pure returns (uint256) {
-        revert Deprecated();
-    }
-
-    function source() external pure returns (address) {
-        revert Deprecated();
-    }
-
     // --- Owner Functions ---
 
     function setConfig(SourceConfig[] memory _sources) external onlyOwner {
+        require(_sources.length == 2, "PriceFeedChainlinkExchangeRate: Invalid sources length");
         delete sources;
         uint256 length = _sources.length;
         for (uint256 i; i < length; ++i) {
