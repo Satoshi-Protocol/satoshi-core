@@ -5,6 +5,7 @@ import {ISatoshiCore} from "../../interfaces/core/ISatoshiCore.sol";
 import {IPriceFeed, SourceConfig} from "../../interfaces/dependencies/IPriceFeed.sol";
 import {AggregatorV3Interface} from "../../interfaces/dependencies/priceFeed/AggregatorV3Interface.sol";
 import {SatoshiOwnable} from "../SatoshiOwnable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title PriceFeed Contract to integrate with Chainlink
@@ -12,7 +13,6 @@ import {SatoshiOwnable} from "../SatoshiOwnable.sol";
  *        Price * Exchange Rate
  */
 contract PriceFeedChainlinkExchangeRate is SatoshiOwnable {
-
     error InvalidPriceInt256(int256 price);
     error PriceTooOld();
     error Deprecated();
@@ -48,7 +48,7 @@ contract PriceFeedChainlinkExchangeRate is SatoshiOwnable {
 
         uint256 scaledRate = getScaledPrice(uint256(rate), sources[1].source.decimals());
 
-        uint256 finalPrice = scaledPrice * scaledRate / 10 ** TARGET_DIGITS;
+        uint256 finalPrice = Math.mulDiv(scaledPrice, scaledRate, 10 ** TARGET_DIGITS);
 
         return (0, int256(finalPrice), 0, updatedAt, 0);
     }

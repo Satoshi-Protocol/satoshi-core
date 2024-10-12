@@ -68,7 +68,7 @@ contract PriceFeedChainlinkAggregator is IPriceFeed, SatoshiOwnable {
     }
 
     // --- View Functions ---
-    
+
     function decimals() external pure returns (uint8) {
         return TARGET_DIGITS;
     }

@@ -194,6 +194,26 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         assertEq(PriceFeedChainlinkAggregator(priceFeed).maxTimeThresholds(0), 7200);
         assertEq(PriceFeedChainlinkAggregator(priceFeed).maxTimeThresholds(1), 7200);
 
+        // aggregate
+        uint256 answer2 = 50000e8;
+        roundData = RoundData({
+            answer: int256(answer2),
+            startedAt: block.timestamp,
+            updatedAt: block.timestamp,
+            answeredInRound: 1
+        });
+
+        address oracleMockAddr2 = _deployOracleMock(DEPLOYER, decimals, ORACLE_MOCK_VERSION);
+        _updateRoundData(DEPLOYER, oracleMockAddr2, roundData);
+
+        sources[0] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr2), maxTimeThreshold: 3600, weight: 1});
+        sources[1] = SourceConfig({source: AggregatorV3Interface(priceFeed), maxTimeThreshold: 3600, weight: 1});
+
+        // deploy chainlink aggregator
+        address priceFeedAgg = _deployPriceFeedChainlinkAggregator(DEPLOYER, satoshiCore, sources);
+
+        assertEq(IPriceFeed(priceFeedAgg).fetchPrice(), (answer0 + answer2) * 10 ** (18 - decimals) / 2);
+
         vm.stopPrank();
     }
 
