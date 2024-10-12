@@ -10,7 +10,8 @@ import {
     CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0,
     CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1,
     SATOSHI_CORE_ADDRESS,
-    CHAINLINK_MAX_TIME_THRESHOLD
+    CHAINLINK_MAX_TIME_THRESHOLD_0,
+    CHAINLINK_MAX_TIME_THRESHOLD_1
 } from "./DeployPriceFeedConfig.sol";
 
 contract DeployPriceFeedChainlinkExchangeRateScript is Script {
@@ -28,12 +29,12 @@ contract DeployPriceFeedChainlinkExchangeRateScript is Script {
         SourceConfig[] memory sources = new SourceConfig[](2);
         sources[0] = SourceConfig({
             source: AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_0),
-            maxTimeThreshold: CHAINLINK_MAX_TIME_THRESHOLD,
+            maxTimeThreshold: CHAINLINK_MAX_TIME_THRESHOLD_0,
             weight: 0
         });
         sources[1] = SourceConfig({
             source: AggregatorV3Interface(CHAINLINK_PRICE_FEED_SOURCE_ADDRESS_1),
-            maxTimeThreshold: CHAINLINK_MAX_TIME_THRESHOLD,
+            maxTimeThreshold: CHAINLINK_MAX_TIME_THRESHOLD_1,
             weight: 0
         });
 
