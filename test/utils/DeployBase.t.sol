@@ -36,6 +36,7 @@ import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
 import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
 import {PriceFeedChainlinkAggregator} from "../../src/dependencies/priceFeed/PriceFeedChainlinkAggregator.sol";
+import {PriceFeedChainlinkExchangeRate} from "../../src/dependencies/priceFeed/PriceFeedChainlinkExchangeRate.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -575,14 +576,26 @@ abstract contract DeployBase is Test {
         return priceFeedChainlinkAddr;
     }
 
-    function _deployPriceFeedChainlinkAggregator(address deployer, ISatoshiCore _satoshiCore, SourceConfig[] memory sources)
-        internal
-        returns (address)
-    {
+    function _deployPriceFeedChainlinkAggregator(
+        address deployer,
+        ISatoshiCore _satoshiCore,
+        SourceConfig[] memory sources
+    ) internal returns (address) {
         vm.startPrank(deployer);
         address priceFeedChainlinkAggregatorAddr = address(new PriceFeedChainlinkAggregator(_satoshiCore, sources));
         vm.stopPrank();
         return priceFeedChainlinkAggregatorAddr;
+    }
+
+    function _deployPriceFeedChainlinkExchangeRate(
+        address deployer,
+        ISatoshiCore _satoshiCore,
+        SourceConfig[] memory sources
+    ) internal returns (address) {
+        vm.startPrank(deployer);
+        address priceFeedChainlinkExchangeRateAddr = address(new PriceFeedChainlinkExchangeRate(_satoshiCore, sources));
+        vm.stopPrank();
+        return priceFeedChainlinkExchangeRateAddr;
     }
 
     function _deployPriceFeedDIA(
