@@ -28,6 +28,7 @@ import {IProxy} from "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.s
 import {PriceFeedAPI3Oracle} from "../src/dependencies/priceFeed/PriceFeedAPI3Oracle.sol";
 import {PriceFeedChainlink} from "../src/dependencies/priceFeed/PriceFeedChainlink.sol";
 import {PriceFeedChainlinkAggregator} from "../src/dependencies/priceFeed/PriceFeedChainlinkAggregator.sol";
+import {PriceFeedChainlinkExchangeRate} from "../src/dependencies/priceFeed/PriceFeedChainlinkExchangeRate.sol";
 import {PriceFeedDIAOracle} from "../src/dependencies/priceFeed/PriceFeedDIAOracle.sol";
 import {PriceFeedPythOracle} from "../src/dependencies/priceFeed/PriceFeedPythOracle.sol";
 import {RoundData, OracleMock} from "../src/mocks/OracleMock.sol";
@@ -128,22 +129,11 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         _updateRoundData(DEPLOYER, oracleMockAddr1, roundData);
 
         SourceConfig[] memory sources = new SourceConfig[](2);
-        sources[0] = SourceConfig({
-            source: AggregatorV3Interface(oracleMockAddr),
-            maxTimeThreshold: 3600,
-            weight: 1
-        });
-        sources[1] = SourceConfig({
-            source: AggregatorV3Interface(oracleMockAddr1),
-            maxTimeThreshold: 3600,
-            weight: 1
-        });
-        
-        // deploy chainlink aggregator
-        address priceFeed = _deployPriceFeedChainlinkAggregator(
-            DEPLOYER, satoshiCore, sources
-        );
+        sources[0] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr), maxTimeThreshold: 3600, weight: 1});
+        sources[1] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr1), maxTimeThreshold: 3600, weight: 1});
 
+        // deploy chainlink aggregator
+        address priceFeed = _deployPriceFeedChainlinkAggregator(DEPLOYER, satoshiCore, sources);
 
         assertEq(IPriceFeed(priceFeed).fetchPrice(), (answer0 + answer1) / 2);
         (uint256 price, uint256 time) = IPriceFeed(priceFeed).fetchPriceUnsafe();
@@ -152,21 +142,58 @@ contract PriceFeedAggregatorTest is Test, DeployBase, TroveBase, TestConfig, Eve
         assertEq(IPriceFeed(priceFeed).decimals(), 18);
 
         vm.startPrank(OWNER);
-        sources[0] = SourceConfig({
-            source: AggregatorV3Interface(oracleMockAddr),
-            maxTimeThreshold: 7200,
-            weight: 2
-        });
-        sources[1] = SourceConfig({
-            source: AggregatorV3Interface(oracleMockAddr1),
-            maxTimeThreshold: 7200,
-            weight: 1
-        });
+        sources[0] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr), maxTimeThreshold: 7200, weight: 2});
+        sources[1] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr1), maxTimeThreshold: 7200, weight: 1});
         PriceFeedChainlinkAggregator(priceFeed).setConfig(sources);
         assertEq(IPriceFeed(priceFeed).fetchPrice(), (answer0 * 2 + answer1) / 3);
         assertEq(PriceFeedChainlinkAggregator(priceFeed).maxTimeThresholds(0), 7200);
         assertEq(PriceFeedChainlinkAggregator(priceFeed).maxTimeThresholds(1), 7200);
-        
+
+        vm.stopPrank();
+    }
+
+    function testPriceFeedChainlinkExchangeRate() public {
+        uint256 answer0 = 50000e8;
+        uint8 decimals = 8;
+        roundData = RoundData({
+            answer: int256(answer0),
+            startedAt: block.timestamp,
+            updatedAt: block.timestamp,
+            answeredInRound: 1
+        });
+
+        oracleMockAddr = _deployOracleMock(DEPLOYER, decimals, ORACLE_MOCK_VERSION);
+        _updateRoundData(DEPLOYER, oracleMockAddr, roundData);
+
+        uint256 answer1 = 1e8;
+        roundData = RoundData({
+            answer: int256(answer1),
+            startedAt: block.timestamp,
+            updatedAt: block.timestamp,
+            answeredInRound: 1
+        });
+        address oracleMockAddr1 = _deployOracleMock(DEPLOYER, decimals, ORACLE_MOCK_VERSION);
+        _updateRoundData(DEPLOYER, oracleMockAddr1, roundData);
+
+        SourceConfig[] memory sources = new SourceConfig[](2);
+        sources[0] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr), maxTimeThreshold: 3600, weight: 1});
+        sources[1] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr1), maxTimeThreshold: 3600, weight: 1});
+
+        // deploy chainlink aggregator
+        address priceFeed = _deployPriceFeedChainlinkExchangeRate(DEPLOYER, satoshiCore, sources);
+
+        (, int256 price,, uint256 time,) = PriceFeedChainlinkExchangeRate(priceFeed).latestRoundData();
+        assertEq(uint256(price), answer0 * 10 ** (18 - decimals));
+        assertEq(time, block.timestamp);
+        assertEq(PriceFeedChainlinkExchangeRate(priceFeed).decimals(), 18);
+
+        vm.startPrank(OWNER);
+        sources[0] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr), maxTimeThreshold: 7200, weight: 1});
+        sources[1] = SourceConfig({source: AggregatorV3Interface(oracleMockAddr1), maxTimeThreshold: 7200, weight: 1});
+        PriceFeedChainlinkAggregator(priceFeed).setConfig(sources);
+        assertEq(PriceFeedChainlinkAggregator(priceFeed).maxTimeThresholds(0), 7200);
+        assertEq(PriceFeedChainlinkAggregator(priceFeed).maxTimeThresholds(1), 7200);
+
         vm.stopPrank();
     }
 

@@ -11,7 +11,14 @@ import {SatoshiOwnable} from "../SatoshiOwnable.sol";
  *        Convert data from interface of Chainlink to Satoshi's IPriceFeed
  *        Price * Exchange Rate
  */
-contract PriceFeedChainlinkExchangeRate is IPriceFeed, SatoshiOwnable {
+contract PriceFeedChainlinkExchangeRate is SatoshiOwnable {
+
+    error InvalidPriceInt256(int256 price);
+    error PriceTooOld();
+    error Deprecated();
+
+    event ConfigSet(SourceConfig sources);
+
     uint8 public constant TARGET_DIGITS = 18;
     SourceConfig[] public sources;
 
@@ -25,50 +32,29 @@ contract PriceFeedChainlinkExchangeRate is IPriceFeed, SatoshiOwnable {
     }
 
     // --- External Functions ---
-    function fetchPrice() external view returns (uint256 finalPrice) {
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         // fetch the price
         (, int256 price,, uint256 updatedAt,) = sources[0].source.latestRoundData();
         if (price <= 0) revert InvalidPriceInt256(price);
-        if (block.timestamp - updatedAt > sources[0].maxTimeThreshold) {
-            revert PriceTooOld();
-        }
 
-        uint256 scaledPrice = getScaledPrice(uint256(price), sources[i].source.decimals());
+        uint256 scaledPrice = getScaledPrice(uint256(price), sources[0].source.decimals());
 
         // fetch the exchange rate
         (, int256 rate,, uint256 rateUpdatedAt,) = sources[1].source.latestRoundData();
         if (rate <= 0) revert InvalidPriceInt256(rate);
-        if (block.timestamp - updatedAt > sources[1].maxTimeThreshold) {
+        if (block.timestamp - rateUpdatedAt > sources[1].maxTimeThreshold) {
             revert PriceTooOld();
         }
 
         uint256 scaledRate = getScaledPrice(uint256(rate), sources[1].source.decimals());
 
-        finalPrice = scaledPrice * scaledRate / 10 ** TARGET_DIGITS;
+        uint256 finalPrice = scaledPrice * scaledRate / 10 ** TARGET_DIGITS;
 
-        return finalPrice;
-    }
-
-    function fetchPriceUnsafe() external view returns (uint256, uint256) {
-        // fetch the price
-        (, int256 price,, uint256 updatedAt,) = sources[0].source.latestRoundData();
-        if (price <= 0) revert InvalidPriceInt256(price);
-
-        uint256 scaledPrice = getScaledPrice(uint256(price), sources[i].source.decimals());
-
-        // fetch the exchange rate
-        (, int256 rate,,,) = sources[1].source.latestRoundData();
-        if (rate <= 0) revert InvalidPriceInt256(rate);
-
-        uint256 scaledRate = getScaledPrice(uint256(rate), sources[1].source.decimals());
-
-        finalPrice = scaledPrice * scaledRate / 10 ** TARGET_DIGITS;
-
-        return (finalPrice, updatedAt);
+        return (0, int256(finalPrice), 0, updatedAt, 0);
     }
 
     // --- View Functions ---
-    
+
     function decimals() external pure returns (uint8) {
         return TARGET_DIGITS;
     }
@@ -92,20 +78,6 @@ contract PriceFeedChainlinkExchangeRate is IPriceFeed, SatoshiOwnable {
         }
 
         return scaledPrice;
-    }
-
-    // --- Retained for backward compatibility ---
-
-    function updateMaxTimeThreshold(uint256) external pure {
-        revert Deprecated();
-    }
-
-    function maxTimeThreshold() external pure returns (uint256) {
-        revert Deprecated();
-    }
-
-    function source() external pure returns (address) {
-        revert Deprecated();
     }
 
     // --- Owner Functions ---
