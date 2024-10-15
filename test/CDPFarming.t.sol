@@ -259,4 +259,46 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
                 / troveManagerBeaconProxy.FARMING_PRECISION()
         );
     }
+
+    function test_refillPercentage() public {
+        assertEq(troveManagerBeaconProxy.refillPercentage(), 3500);
+    }
+
+    function test_retainPercentage() public {
+        assertEq(troveManagerBeaconProxy.retainPercentage(), 3000);
+    }
+
+    function test_Revert_receiveCollFromPrivilegedVault_NotVault() public {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(ITroveManager.NotPrivileged.selector, user1));
+        troveManagerBeaconProxy.receiveCollFromPrivilegedVault(1e18);
+    }
+
+    function test_Revert_executeStrategy_NotWhitelist() public {
+        vm.startPrank(OWNER);
+        vm.expectRevert("VaultManager: Vault is not whitelisted");
+        vaultManagerProxy.executeStrategy(user1, 1e18);
+    }
+
+    function test_Revert_NotOwner() public {
+        vm.expectRevert("Only owner");
+        vaultManagerProxy.executeStrategy(user1, 1e18);
+
+        vm.expectRevert("Only owner");
+        vaultManagerProxy.exitStrategy(user1, 1e18);
+
+        vm.expectRevert("Only owner");
+        vaultManagerProxy.setPriority(new INYMVault[](0));
+
+        vm.expectRevert("Only owner");
+        vaultManagerProxy.setWhiteListVault(user1, true);
+
+        vm.expectRevert("Only owner");
+        vaultManagerProxy.transferCollToTroveManager(1e18);
+    }
+
+    function test_Revert_exitStrategyByTroveManager_NotTroveManager() public {
+        vm.expectRevert("VaultManager: Caller is not TroveManager");
+        vaultManagerProxy.exitStrategyByTroveManager(1e18);
+    }
 }
