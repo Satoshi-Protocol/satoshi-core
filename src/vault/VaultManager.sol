@@ -59,7 +59,7 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     function exitStrategy(address vault, uint256 amount) external onlyOwner {
         _checkWhitelistedVault(vault);
 
-        bytes memory data;
+        bytes memory data = INYMVault(vault).constructExitStrategyData(amount);
         INYMVault(vault).exitStrategy(data);
 
         collateralAmounts[vault] -= amount;
@@ -115,18 +115,6 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     }
 
     // --- Internal functions ---
-
-    function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
-        return abi.decode(data, (ISatoshiCore, address));
-    }
-
-    function _decodeExecuteData(bytes calldata data) internal pure returns (uint256) {
-        return abi.decode(data, (uint256));
-    }
-
-    function _decodeExitData(bytes calldata data) internal pure returns (uint256) {
-        return abi.decode(data, (uint256));
-    }
 
     function _checkWhitelistedVault(address _vault) internal view {
         require(whitelistVaults[_vault], "VaultManager: Vault is not whitelisted");

@@ -260,6 +260,27 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
         );
     }
 
+    function test_executeAndExit_SimpleVault() public {
+        uint256 collAmount = 1e18;
+        uint256 debtAmount = 1000e18;
+        uint256 farmingAmount = 0.7e18;
+        // open trove
+        _openTrove(OWNER, collAmount, debtAmount);
+        deal(address(debtTokenProxy), OWNER, 2000e18);
+
+        vm.startPrank(OWNER);
+        troveManagerBeaconProxy.transferCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
+        assertEq(collateralMock.balanceOf(address(troveManagerBeaconProxy)), collAmount - farmingAmount);
+        assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
+
+        vaultManagerProxy.executeStrategy(address(simpleVaultProxy), farmingAmount);
+        assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), 0);
+        
+        vaultManagerProxy.exitStrategy(address(simpleVaultProxy), farmingAmount);
+        assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
+        vm.stopPrank();
+    }
+
     function test_refillPercentage() public {
         assertEq(troveManagerBeaconProxy.refillPercentage(), 3500);
     }
