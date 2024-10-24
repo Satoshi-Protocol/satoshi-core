@@ -35,6 +35,8 @@ import {AggregatorV3Interface} from "../../src/interfaces/dependencies/priceFeed
 import {RewardManager} from "../../src/OSHI/RewardManager.sol";
 import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
 import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
+import {VaultManager} from "../../src/vault/VaultManager.sol";
+import {SimpleVault} from "../../src/vault/simpleVault.sol";
 import {PriceFeedChainlinkAggregator} from "../../src/dependencies/priceFeed/PriceFeedChainlinkAggregator.sol";
 import {PriceFeedChainlinkExchangeRate} from "../../src/dependencies/priceFeed/PriceFeedChainlinkExchangeRate.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
@@ -58,6 +60,8 @@ import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.s
 import {IDIAOracleV2} from "../../src/interfaces/dependencies/priceFeed/IDIAOracleV2.sol";
 import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {IProxy} from "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.sol";
+import {IVaultManager} from "../../src/interfaces/vault/IVaultManager.sol";
+import {INYMVault} from "../../src/interfaces/vault/INYMVault.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -140,6 +144,7 @@ abstract contract DeployBase is Test {
     IOSHIToken oshiTokenImpl;
     ISatoshiLPFactory satoshiLPFactoryImpl;
     INexusYieldManager nexusYieldImpl;
+    IVaultManager vaultManagerImpl;
     /* non-upgradeable contracts */
     IGasPool gasPool;
     ISatoshiCore satoshiCore;
@@ -155,6 +160,7 @@ abstract contract DeployBase is Test {
     IOSHIToken oshiTokenProxy;
     ISatoshiLPFactory satoshiLPFactoryProxy;
     INexusYieldManager nexusYieldProxy;
+    IVaultManager vaultManagerProxy;
     /* Beacon contracts */
     IBeacon sortedTrovesBeacon;
     IBeacon troveManagerBeacon;
@@ -788,6 +794,22 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
+    function _setCDPFarming(ITroveManager troveManagerBeaconProxy) internal {
+        vm.startPrank(OWNER);
+        troveManagerBeaconProxy.setFarmingParams(3000, 3500);
+        troveManagerBeaconProxy.setVaultManager(address(vaultManagerProxy));
+        vm.stopPrank();
+    }
+
+    function _setVaultManagerWL(INYMVault[] memory vaults) internal {
+        vm.startPrank(OWNER);
+        for (uint256 i = 0; i < vaults.length; i++) {
+            vaultManagerProxy.setWhiteListVault(address(vaults[i]), true);
+        }
+        vaultManagerProxy.setPriority(vaults);
+        vm.stopPrank();
+    }
+
     /* ============ Deploy DebtTokenTester Contracts ============ */
 
     function _deploySLPTokenTester(IERC20 lpToken) internal {
@@ -806,5 +828,26 @@ abstract contract DeployBase is Test {
         vm.startPrank(OWNER);
         slpTokenAddr = satoshiLPFactoryProxy.createSLP("SLP", "SLP", lpToken, 100);
         vm.stopPrank();
+    }
+
+    function _deployVaultManager(ITroveManager troveManagerBeaconProxy) internal returns (address) {
+        vm.startPrank(DEPLOYER);
+        vaultManagerImpl = new VaultManager();
+        assert(vaultManagerProxy == IVaultManager(address(0)));
+        bytes memory data = abi.encodeCall(IVaultManager.initialize, (satoshiCore, address(troveManagerBeaconProxy)));
+        vaultManagerProxy = IVaultManager(address(new ERC1967Proxy(address(vaultManagerImpl), data)));
+        vm.stopPrank();
+
+        return address(vaultManagerProxy);
+    }
+
+    function _deploySimpleVault(address token) internal returns (address) {
+        vm.startPrank(DEPLOYER);
+        SimpleVault simpleVaultImpl = new SimpleVault();
+        bytes memory data = abi.encodeCall(SimpleVault.initialize, (abi.encode(satoshiCore, token)));
+        address simpleVaultAddr = address(new ERC1967Proxy(address(simpleVaultImpl), data));
+        vm.stopPrank();
+
+        return simpleVaultAddr;
     }
 }
