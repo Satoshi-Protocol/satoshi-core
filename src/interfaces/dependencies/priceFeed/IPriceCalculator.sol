@@ -15,7 +15,7 @@ interface IPriceCalculator {
 
     function priceOfBTC() external view returns (uint256);
 
-    function getTimestampFromLatestUpdate(address asset) external view returns (uint256);
+    function getTimestampFromLatestUpdate() external view returns (uint256);
 
     function getLatestRoundParams() external view returns (uint256, uint128, uint256);
 }
