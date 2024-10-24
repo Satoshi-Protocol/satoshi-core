@@ -6,6 +6,8 @@ import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {VaultCore} from "./VaultCore.sol";
 
 contract SimpleVault is VaultCore {
+    mapping(address => bool) public whitelist;
+
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
         (ISatoshiCore _satoshiCore, address stableTokenAddress_) = _decodeInitializeData(data);
@@ -13,17 +15,28 @@ contract SimpleVault is VaultCore {
         STABLE_TOKEN_ADDRESS = stableTokenAddress_;
     }
 
-    function executeStrategy(bytes calldata data) external override onlyOwner {
+    modifier onlyWhitelisted() {
+        require(msg.sender == owner() || whitelist[msg.sender], "SimpleVault: caller is not whitelisted");
+        _;
+    }
+
+    function executeStrategy(bytes calldata data) external override onlyWhitelisted {
         uint256 amount = _decodeExecuteData(data);
         // execute strategy: transfer token to ceffu
-        IERC20(STABLE_TOKEN_ADDRESS).transfer(strategyAddr, amount);
+        // IERC20(STABLE_TOKEN_ADDRESS).transfer(strategyAddr, amount);
         emit TokenTransferredToStrategy(amount);
     }
 
     // todo
-    function exitStrategy(bytes calldata data) external view override onlyOwner returns (uint256) {
+    function exitStrategy(bytes calldata data) external override onlyWhitelisted returns (uint256) {
         uint256 amount = _decodeExitData(data);
+        IERC20(STABLE_TOKEN_ADDRESS).transfer(msg.sender, amount);
         return amount;
+    }
+
+    function setWhitelist(address account, bool status) external onlyOwner {
+        whitelist[account] = status;
+        emit WhitelistSet(account, status);
     }
 
     function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
