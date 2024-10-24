@@ -37,6 +37,8 @@ import {SatoshiLPFactory} from "../../src/SLP/SatoshiLPFactory.sol";
 import {NexusYieldManager} from "../../src/core/NexusYieldManager.sol";
 import {VaultManager} from "../../src/vault/VaultManager.sol";
 import {SimpleVault} from "../../src/vault/simpleVault.sol";
+import {PriceFeedChainlinkAggregator} from "../../src/dependencies/priceFeed/PriceFeedChainlinkAggregator.sol";
+import {PriceFeedChainlinkExchangeRate} from "../../src/dependencies/priceFeed/PriceFeedChainlinkExchangeRate.sol";
 import {IWETH} from "../../src/helpers/interfaces/IWETH.sol";
 import {ISortedTroves} from "../../src/interfaces/core/ISortedTroves.sol";
 import {IPriceFeedAggregator} from "../../src/interfaces/core/IPriceFeedAggregator.sol";
@@ -50,7 +52,7 @@ import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
 import {IOSHIToken} from "../../src/interfaces/core/IOSHIToken.sol";
 import {IFactory} from "../../src/interfaces/core/IFactory.sol";
 import {ICommunityIssuance} from "../../src/interfaces/core/ICommunityIssuance.sol";
-import {IPriceFeed} from "../../src/interfaces/dependencies/IPriceFeed.sol";
+import {IPriceFeed, SourceConfig} from "../../src/interfaces/dependencies/IPriceFeed.sol";
 import {IRewardManager} from "../../src/interfaces/core/IRewardManager.sol";
 import {ISatoshiPeriphery} from "../../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../../src/interfaces/core/ISatoshiLPFactory.sol";
@@ -341,7 +343,7 @@ abstract contract DeployBase is Test {
         internal
         returns (address)
     {
-        // deploy oracle mock contract to mcok price feed source
+        // deploy oracle mock contract to mock price feed source
         oracleMockAddr = _deployOracleMock(deployer, decimals, version);
         // update data to the oracle mock
         _updateRoundData(deployer, oracleMockAddr, roundData);
@@ -578,6 +580,28 @@ abstract contract DeployBase is Test {
         address priceFeedChainlinkAddr = address(new PriceFeedChainlink(oracle, _satoshiCore));
         vm.stopPrank();
         return priceFeedChainlinkAddr;
+    }
+
+    function _deployPriceFeedChainlinkAggregator(
+        address deployer,
+        ISatoshiCore _satoshiCore,
+        SourceConfig[] memory sources
+    ) internal returns (address) {
+        vm.startPrank(deployer);
+        address priceFeedChainlinkAggregatorAddr = address(new PriceFeedChainlinkAggregator(_satoshiCore, sources));
+        vm.stopPrank();
+        return priceFeedChainlinkAggregatorAddr;
+    }
+
+    function _deployPriceFeedChainlinkExchangeRate(
+        address deployer,
+        ISatoshiCore _satoshiCore,
+        SourceConfig[] memory sources
+    ) internal returns (address) {
+        vm.startPrank(deployer);
+        address priceFeedChainlinkExchangeRateAddr = address(new PriceFeedChainlinkExchangeRate(_satoshiCore, sources));
+        vm.stopPrank();
+        return priceFeedChainlinkExchangeRateAddr;
     }
 
     function _deployPriceFeedDIA(
