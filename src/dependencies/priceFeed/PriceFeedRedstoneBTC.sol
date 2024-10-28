@@ -26,7 +26,7 @@ contract PriceFeedRedstoneBTC is IPriceFeed, SatoshiOwnable {
     function fetchPrice() external view returns (uint256) {
         uint256 price = _source.priceOfBTC();
         if (price <= 0) revert InvalidPriceUInt256(price);
-        uint256 updatedAt = _source.getTimestampFromLatestUpdate() / 1e3;
+        uint256 updatedAt = _source.getDataTimestampFromLatestUpdate() / 1e3;
         if (block.timestamp - updatedAt > maxTimeThreshold) {
             revert PriceTooOld();
         }
@@ -36,7 +36,7 @@ contract PriceFeedRedstoneBTC is IPriceFeed, SatoshiOwnable {
     function fetchPriceUnsafe() external view returns (uint256, uint256) {
         uint256 price = _source.priceOfBTC();
         if (price <= 0) revert InvalidPriceUInt256(price);
-        uint256 updatedAt = _source.getTimestampFromLatestUpdate() / 1e3;
+        uint256 updatedAt = _source.getDataTimestampFromLatestUpdate() / 1e3;
         return (price, updatedAt);
     }
 
