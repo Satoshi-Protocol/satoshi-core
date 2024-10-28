@@ -1343,47 +1343,47 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     // --- CDP Farming ---
 
-    function setVaultManager(address vaultManager_) external onlyOwner {
-        vaultManager = IVaultManager(vaultManager_);
-        emit VaultManagerSet(vaultManager_);
-    }
+    // function setVaultManager(address vaultManager_) external onlyOwner {
+    //     vaultManager = IVaultManager(vaultManager_);
+    //     emit VaultManagerSet(vaultManager_);
+    // }
 
-    function setFarmingParams(uint256 retainPercentage_, uint256 refillPercentage_) external onlyOwner {
-        farmingParams.retainPercentage = retainPercentage_;
-        farmingParams.refillPercentage = refillPercentage_;
-        emit FarmingParamsSet(retainPercentage_, refillPercentage_);
-    }
+    // function setFarmingParams(uint256 retainPercentage_, uint256 refillPercentage_) external onlyOwner {
+    //     farmingParams.retainPercentage = retainPercentage_;
+    //     farmingParams.refillPercentage = refillPercentage_;
+    //     emit FarmingParamsSet(retainPercentage_, refillPercentage_);
+    // }
 
-    function transferCollToPrivilegedVault(address vault, uint256 amount) external onlyOwner {
-        // check the output amount does not exceed the limit
-        require(
-            collateralOutput + amount
-                <= getEntireSystemColl() * (FARMING_PRECISION - farmingParams.retainPercentage) / FARMING_PRECISION,
-            "TroveManager: Exceed the collateral transfer limit"
-        );
+    // function transferCollToPrivilegedVault(address vault, uint256 amount) external onlyOwner {
+    //     // check the output amount does not exceed the limit
+    //     require(
+    //         collateralOutput + amount
+    //             <= getEntireSystemColl() * (FARMING_PRECISION - farmingParams.retainPercentage) / FARMING_PRECISION,
+    //         "TroveManager: Exceed the collateral transfer limit"
+    //     );
 
-        // record the collateral output
-        collateralOutput += amount;
-        collateralToken.transfer(address(vaultManager), amount);
-        emit CollateralTransferred(vault, amount);
-    }
+    //     // record the collateral output
+    //     collateralOutput += amount;
+    //     collateralToken.transfer(address(vaultManager), amount);
+    //     emit CollateralTransferred(vault, amount);
+    // }
 
-    function receiveCollFromPrivilegedVault(uint256 amount) external {
-        if (msg.sender != address(vaultManager)) {
-            revert NotPrivileged(msg.sender);
-        }
+    // function receiveCollFromPrivilegedVault(uint256 amount) external {
+    //     if (msg.sender != address(vaultManager)) {
+    //         revert NotPrivileged(msg.sender);
+    //     }
 
-        // record the collateral input
-        collateralToken.safeTransferFrom(msg.sender, address(this), amount);
-        collateralOutput -= amount;
-        emit CollateralReceived(msg.sender, amount);
-    }
+    //     // record the collateral input
+    //     collateralToken.safeTransferFrom(msg.sender, address(this), amount);
+    //     collateralOutput -= amount;
+    //     emit CollateralReceived(msg.sender, amount);
+    // }
 
-    function retainPercentage() external view returns (uint256) {
-        return farmingParams.retainPercentage;
-    }
+    // function retainPercentage() external view returns (uint256) {
+    //     return farmingParams.retainPercentage;
+    // }
 
-    function refillPercentage() external view returns (uint256) {
-        return farmingParams.refillPercentage;
-    }
+    // function refillPercentage() external view returns (uint256) {
+    //     return farmingParams.refillPercentage;
+    // }
 }

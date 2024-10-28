@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 /* Satoshi Core Address */
-address constant SATOSHI_CORE_ADDRESS = 0xA8480eBe583D597C34a8B4B831EFDbe2fe0a10B3;
+address constant SATOSHI_CORE_ADDRESS = 0x2c929d8DFC5915Af4115f158CcaFf5dcA41F5feD;
 
 /* Chainlink Integration Config */
 //NOTE: chainlink price feed source address
@@ -49,4 +49,4 @@ uint256 constant SUPRA_MAX_TIME_THRESHOLD = 21600;
 /* Redstone Oracle Integration Config */
 address constant REDSTONE_ORACLE_PRICE_FEED_SOURCE_ADDRESS = 0xfcd454d19f9B8806F8908e99d85b8eA17b3c7346;
 uint8 constant REDSTONE_ORACLE_PRICE_FEED_DECIMAL = 18;
-uint256 constant REDSTONE_MAX_TIME_THRESHOLD = 21600;
+uint256 constant REDSTONE_MAX_TIME_THRESHOLD = 86400;

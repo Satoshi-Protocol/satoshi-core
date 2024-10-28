@@ -353,17 +353,17 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
 
     function claimStartTime() external view returns (uint32);
 
-    function transferCollToPrivilegedVault(address vault, uint256 amount) external;
+    // function transferCollToPrivilegedVault(address vault, uint256 amount) external;
 
-    function receiveCollFromPrivilegedVault(uint256 amount) external;
+    // function receiveCollFromPrivilegedVault(uint256 amount) external;
 
-    function setFarmingParams(uint256 retainPercentage, uint256 refillPercentage) external;
+    // function setFarmingParams(uint256 retainPercentage, uint256 refillPercentage) external;
 
-    function setVaultManager(address vaultManager_) external;
+    // function setVaultManager(address vaultManager_) external;
 
-    function retainPercentage() external view returns (uint256);
+    // function retainPercentage() external view returns (uint256);
 
-    function refillPercentage() external view returns (uint256);
+    // function refillPercentage() external view returns (uint256);
 
     function FARMING_PRECISION() external view returns (uint256);
 }
