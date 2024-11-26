@@ -1,3 +1,19 @@
 {
-  "solidity.compileUsingRemoteVersion": "v0.8.13+commit.a1b79de6"
+  "solidity.compileUsingRemoteVersion": "v0.8.13+commit.a1b79de6",
+  "wake.compiler.solc.remappings": [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "@layerzerolabs/solidity-examples/=lib/solidity-examples/",
+    "@pythnetwork/pyth-sdk-solidity/=lib/pyth-sdk-solidity/",
+    "@api3/contracts/=lib/contracts/contracts/",
+    "solmate/=lib/solmate/src/",
+    "ds-test/=lib/forge-std/lib/ds-test/src/",
+    "erc4626-tests/=lib/openzeppelin-contracts-upgradeable/lib/erc4626-tests/",
+    "forge-std/=lib/forge-std/src/",
+    "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+    "openzeppelin/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "pyth-sdk-solidity/=lib/pyth-sdk-solidity/",
+    "solmate/=lib/solmate/src/"
+  ]
 }

@@ -42,8 +42,8 @@ contract SetConfigPriceFeedChainlinkAggregatorScript is Script {
 
         priceFeedChainlink = PriceFeedChainlinkAggregator(0xE3cD7A8AEb9c1305162b216aB93Ef98EfC0e451c);
         priceFeedChainlink.setConfig(sources);
-        assert(priceFeedChainlink.fetchPrice()/1e18 > 60000);
-        console.log(priceFeedChainlink.fetchPrice()/1e18);
+        assert(priceFeedChainlink.fetchPrice() / 1e18 > 60000);
+        console.log(priceFeedChainlink.fetchPrice() / 1e18);
 
         vm.stopBroadcast();
     }

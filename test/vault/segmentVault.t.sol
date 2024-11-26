@@ -54,7 +54,7 @@ contract SegmentVaultTest is Test {
     }
 
     function test_NYMFarming() public {
-        uint256 amount = 100e8;
+        uint256 amount = 8000e6;
 
         vm.startPrank(owner);
         INexusYieldManager(nexusYieldManager).setPrivileged(address(segmentVault), true);
