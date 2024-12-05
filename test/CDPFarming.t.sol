@@ -275,7 +275,7 @@ contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
 
         vaultManagerProxy.executeStrategy(address(simpleVaultProxy), farmingAmount);
         assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), 0);
-        
+
         vaultManagerProxy.exitStrategy(address(simpleVaultProxy), farmingAmount);
         assertEq(collateralMock.balanceOf(address(vaultManagerProxy)), farmingAmount);
         vm.stopPrank();
