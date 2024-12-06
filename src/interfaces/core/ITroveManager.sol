@@ -12,6 +12,7 @@ import {ISatoshiBase} from "../dependencies/ISatoshiBase.sol";
 import {ISatoshiOwnable} from "../dependencies/ISatoshiOwnable.sol";
 import {IGasPool} from "../core/IGasPool.sol";
 import {ICommunityIssuance} from "../core/ICommunityIssuance.sol";
+import {IVaultManager} from "../vault/IVaultManager.sol";
 
 enum Status {
     nonExistent,
@@ -366,4 +367,18 @@ interface ITroveManager is ISatoshiOwnable, ISatoshiBase {
     function refillPercentage() external view returns (uint256);
 
     function FARMING_PRECISION() external view returns (uint256);
+
+    function totalActiveDebt() external view returns (uint256);
+
+    function rewardIntegralFor(address) external view returns (uint256);
+
+    function getStoredPendingReward(address) external view returns (uint256);
+
+    function rewardIntegral() external view returns (uint256);
+
+    function collateralOutput() external view returns (uint256);
+
+    function vaultManager() external view returns (IVaultManager);
+
+    function INTEREST_PRECISION() external view returns (uint256);
 }

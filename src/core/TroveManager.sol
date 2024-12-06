@@ -30,6 +30,7 @@ import {
 import {ICommunityIssuance} from "../interfaces/core/ICommunityIssuance.sol";
 import {IRewardManager} from "../interfaces/core/IRewardManager.sol";
 import {IVaultManager} from "../interfaces/vault/IVaultManager.sol";
+import {TroveManagerLogic} from "../logic/TroveManagerLogic.sol";
 
 /**
  * @title Trove Manager Contract (Upgradeable)
@@ -60,10 +61,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     // Minimum collateral ratio for individual troves
     uint256 public MCR;
 
-    uint256 constant SECONDS_IN_ONE_MINUTE = 60;
-    uint256 constant INTEREST_PRECISION = 1e27;
-    uint256 constant SECONDS_IN_YEAR = 365 days;
-    uint256 constant OSHI_EMISSION_DURATION = 5 * SECONDS_IN_YEAR; // 5 years
+    uint256 public constant SECONDS_IN_ONE_MINUTE = 60;
+    uint256 public constant INTEREST_PRECISION = 1e27;
+    uint256 public constant SECONDS_IN_YEAR = 365 days;
+    uint256 public constant OSHI_EMISSION_DURATION = 5 * SECONDS_IN_YEAR; // 5 years
 
     // Maximum interest rate must be lower than the minimum LST staking yield
     // so that over time the actual TCR becomes greater than the calculated TCR.
@@ -124,7 +125,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     uint256 public lastDebtError_Redistribution;
 
     uint256 internal totalActiveCollateral;
-    uint256 internal totalActiveDebt;
+    uint256 public totalActiveDebt;
     uint256 public interestPayable;
 
     uint256 public defaultedCollateral;
@@ -379,6 +380,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
 
     function getEntireSystemBalances() external returns (uint256, uint256, uint256) {
         return (getEntireSystemColl(), getEntireSystemDebt(), fetchPrice());
+    }
+
+    function getStoredPendingReward(address account) external view returns (uint256) {
+        return storedPendingReward[account];
     }
 
     // --- Helper functions ---
@@ -1142,20 +1147,11 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     // --- Trove property setters ---
 
     function _sendCollateral(address _account, uint256 _amount) private {
-        uint256 boundary = totalActiveCollateral * farmingParams.retainPercentage / FARMING_PRECISION;
+        uint256 boundary = Math.mulDiv(totalActiveCollateral, farmingParams.retainPercentage, FARMING_PRECISION);
         uint256 remainColl = totalActiveCollateral - collateralOutput;
-        uint256 target = (totalActiveCollateral - _amount) * farmingParams.refillPercentage / FARMING_PRECISION;
+        uint256 target = Math.mulDiv(totalActiveCollateral - _amount, farmingParams.refillPercentage, FARMING_PRECISION);
 
-        // remain collateral is not enough, must refill
-        if (_amount > remainColl) {
-            vaultManager.exitStrategyByTroveManager(_amount - remainColl);
-            // refill to target
-            uint256 refillAmount = SatoshiMath._min(target, collateralOutput);
-            if (refillAmount != 0) vaultManager.exitStrategyByTroveManager(refillAmount);
-        } else if (remainColl - _amount < boundary) {
-            uint256 refillAmount = _amount + target - remainColl;
-            vaultManager.exitStrategyByTroveManager(refillAmount);
-        }
+        TroveManagerLogic.collateralRefill(_amount, boundary, remainColl, target);
 
         if (_amount > 0) {
             totalActiveCollateral = totalActiveCollateral - _amount;
@@ -1210,21 +1206,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     }
 
     function _calculateInterestIndex() internal view returns (uint256 currentInterestIndex, uint256 interestFactor) {
-        uint256 lastIndexUpdateCached = lastActiveIndexUpdate;
-        // Short circuit if we updated in the current block
-        if (lastIndexUpdateCached == block.timestamp) return (activeInterestIndex, 0);
-        uint256 currentInterest = interestRate;
-        currentInterestIndex = activeInterestIndex; // we need to return this if it's already up to date
-        if (currentInterest > 0) {
-            /*
-             * Calculate the interest accumulated and the new index:
-             * We compound the index and increase the debt accordingly
-             */
-            uint256 deltaT = block.timestamp - lastIndexUpdateCached;
-            interestFactor = deltaT * currentInterest;
-            currentInterestIndex =
-                currentInterestIndex + Math.mulDiv(currentInterestIndex, interestFactor, INTEREST_PRECISION);
-        }
+        (currentInterestIndex, interestFactor) = TroveManagerLogic.calculateInterestIndex();
     }
 
     // --- Reward Emission ---
@@ -1293,31 +1275,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     }
 
     function claimableReward(address account) external view returns (uint256) {
-        // previously calculated rewards
-        uint256 amount = storedPendingReward[account];
-
-        // pending active debt rewards
-        uint256 duration = block.timestamp - lastUpdate;
-        uint256 integral = rewardIntegral;
-        if (duration > 0) {
-            uint256 supply = totalActiveDebt;
-            if (supply > 0) {
-                uint256 releasedToken = duration * rewardRate;
-                uint256 allocatedToken = communityIssuance.allocated(address(this));
-                // check the allocated token in community issuance
-                if (releasedToken > allocatedToken) {
-                    releasedToken = allocatedToken;
-                }
-                integral += releasedToken * 1e18 / supply;
-            }
-        }
-        uint256 integralFor = rewardIntegralFor[account];
-
-        if (integral > integralFor) {
-            amount += (troves[account].debt * (integral - integralFor)) / 1e18;
-        }
-
-        return amount;
+        return TroveManagerLogic.claimableReward(account);
     }
 
     // set the time when the OSHI claim starts
