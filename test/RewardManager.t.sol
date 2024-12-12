@@ -431,7 +431,9 @@ contract RewardManagerTest is Test, DeployBase, TroveBase, TestConfig, Events {
         assertApproxEqAbs(pendingCollGain, expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100);
 
         uint256 pendingCollForFeeReceiver = rewardManagerProxy.collForFeeReceiver(0);
-        assertApproxEqAbs(pendingCollForFeeReceiver, expectedToRM - expectedToRM, 100);
+        assertApproxEqAbs(
+            pendingCollForFeeReceiver, expectedToRM - expectedToRM * REWARD_MANAGER_GAIN / REWARD_MANAGER_PRECISION, 100
+        );
     }
 
     // test owner can increase coll to reward manager

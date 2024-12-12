@@ -21,10 +21,10 @@ contract SegmentVault is VaultCore {
         ISeBep20(strategyAddr).mint(amount);
     }
 
-    function exitStrategy(bytes calldata data) external override onlyOwner {
+    function exitStrategy(bytes calldata data) external override onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
         // withdraw token from lending
-        ISeBep20(strategyAddr).redeem(amount);
+        return ISeBep20(strategyAddr).redeem(amount);
     }
 
     function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
@@ -37,5 +37,13 @@ contract SegmentVault is VaultCore {
 
     function _decodeExitData(bytes calldata data) internal pure returns (uint256 amount) {
         return abi.decode(data, (uint256));
+    }
+
+    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
+    }
+
+    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+        return abi.encode(amount);
     }
 }
