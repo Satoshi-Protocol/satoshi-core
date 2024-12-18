@@ -24,6 +24,7 @@ contract DeployPriceFeedChainlinkScript is Script {
         ISatoshiCore satoshiCore = ISatoshiCore(SATOSHI_CORE_ADDRESS);
         priceFeedChainlink = new PriceFeedChainlink(source, satoshiCore);
         assert(priceFeedChainlink.fetchPrice() > 0);
+        console.log(priceFeedChainlink.fetchPrice());
         console.log("PriceFeedChainlink deployed at:", address(priceFeedChainlink));
 
         vm.stopBroadcast();

@@ -9,8 +9,8 @@ address constant OSHI_TOKEN_ADDRESS = 0x72DE12FC8316f51ea6C87796eDbE2EEC70C34c14
 address constant REWARD_MANAGER_ADDRESS = 0x383ad59B94eA267D6FF2CB5DFA052Af0d2BBe691;
 
 //NOTE: custom `PriceFeed.sol` contract for the collateral should be deploy first
-address constant PRICE_FEED_ADDRESS = 0x18aE7635a91886C592001178DF2472B09d906B39;
-address constant COLLATERAL_ADDRESS = 0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2;
+address constant PRICE_FEED_ADDRESS = 0x5CFd971FC0A5ba61D79AeC6B37724307867FEED7;
+address constant COLLATERAL_ADDRESS = 0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e;
 
 uint256 constant MINUTE_DECAY_FACTOR = 999037758833783500; //  (half life of 12 hours)
 uint256 constant REDEMPTION_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
@@ -19,7 +19,7 @@ uint256 constant BORROWING_FEE_FLOOR = 1e18 / 1000 * 5; //  (0.5%)
 uint256 constant MAX_BORROWING_FEE = 1e18 / 100 * 5; //  (5%)
 uint256 constant INTEREST_RATE_IN_BPS = 0; //  (4.5%)
 uint256 constant MAX_DEBT = 1e18 * 1000000000; //  (1 billion)
-uint256 constant MCR = 11 * 1e17; //  (110%)
+uint256 constant MCR = 12 * 1e17; //  (110%)
 
 // OSHI token configuration
 uint256 constant TM_ALLOCATION = 0; //  10,000,000 OSHI (10% of total supply)

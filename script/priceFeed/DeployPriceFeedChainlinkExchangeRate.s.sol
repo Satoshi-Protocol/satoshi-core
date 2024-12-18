@@ -42,7 +42,7 @@ contract DeployPriceFeedChainlinkExchangeRateScript is Script {
         priceFeedChainlink = new PriceFeedChainlinkExchangeRate(satoshiCore, sources);
         (, int256 answer,,,) = priceFeedChainlink.latestRoundData();
         assert(answer > 0);
-        console.log("PriceFeedChainlink deployed at:", address(priceFeedChainlink));
+        console.log("PriceFeedChainlinkExchangeRate deployed at:", address(priceFeedChainlink));
 
         vm.stopBroadcast();
     }
