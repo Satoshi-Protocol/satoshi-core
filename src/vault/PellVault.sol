@@ -76,4 +76,8 @@ contract PellVault is CDPVaultCore {
     function _decodeExitData(bytes calldata data) internal pure returns (uint256 amount) {
         return abi.decode(data, (uint256));
     }
+
+    function getPosition() external view override returns (address, uint256) {
+        return (pellStrategy, IStrategy(pellStrategy).userUnderlyingView(address(this)));
+    }
 }

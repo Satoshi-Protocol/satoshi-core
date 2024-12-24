@@ -41,4 +41,6 @@ abstract contract CDPVaultCore is ICDPVault, SatoshiOwnable, UUPSUpgradeable {
         IERC20(token).transfer(to, amount);
         emit TokenTransferred(token, to, amount);
     }
+
+    function getPosition() external view virtual returns (address, uint256);
 }
