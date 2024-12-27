@@ -86,6 +86,9 @@ contract PellVaultTest is Test {
 
         vaultManagerProxy.executeStrategy(address(pellVault), farmingAmount);
         assertEq(IERC20(tokenAddress).balanceOf(address(vaultManagerProxy)), 0);
+        (address asset, uint256 balance) = pellVault.getPosition();
+        assertEq(balance, farmingAmount);
+        assertEq(asset, tokenAddress);
 
         vaultManagerProxy.exitStrategy(address(pellVault), farmingAmount);
         // assertEq(IERC20(tokenAddress).balanceOf(address(vaultManagerProxy)), farmingAmount);

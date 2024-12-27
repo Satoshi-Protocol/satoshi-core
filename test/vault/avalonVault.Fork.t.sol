@@ -97,7 +97,10 @@ contract AvalonVaultTest is Test {
         assertEq(IERC20(tokenAddress).balanceOf(address(vaultManagerProxy)), farmingAmount);
 
         vaultManagerProxy.executeStrategy(address(avalonVault), farmingAmount);
+        (address asset, uint256 balance) = avalonVault.getPosition();
         assertEq(IERC20(tokenAddress).balanceOf(address(vaultManagerProxy)), 0);
+        assertEq(balance, farmingAmount);
+        assertEq(asset, tokenAddress);
 
         vaultManagerProxy.exitStrategy(address(avalonVault), farmingAmount);
         assertEq(IERC20(tokenAddress).balanceOf(address(vaultManagerProxy)), farmingAmount);

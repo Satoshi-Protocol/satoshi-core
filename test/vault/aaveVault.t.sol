@@ -40,6 +40,9 @@ contract AAVEVaultTest is Test {
         vm.startPrank(owner);
         bytes memory data = abi.encode(100);
         aaveVault.executeStrategy(data);
+        (address asset, uint256 balance) = aaveVault.getPosition();
+        assertEq(balance, 100);
+        assertEq(asset, stableTokenAddress);
         aaveVault.exitStrategy(data);
         assertEq(IERC20(stableTokenAddress).balanceOf(owner), 100);
         vm.stopPrank();

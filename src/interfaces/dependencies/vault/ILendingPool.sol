@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {DataTypes} from '../../../dependencies/vault/DataTypes.sol';
+
 interface ILendingPool {
     /**
      * @dev Deposits an `amount` of underlying asset into the reserve, receiving in return overlying aTokens.
@@ -29,4 +31,12 @@ interface ILendingPool {
      *
      */
     function withdraw(address asset, uint256 amount, address to) external returns (uint256);
+
+    /**
+     * @notice Returns the state and configuration of the reserve
+     * @param asset The address of the underlying asset of the reserve
+     * @return The state and configuration data of the reserve
+     */
+    function getReserveData(address asset) external view returns (DataTypes.ReserveData memory);
+
 }

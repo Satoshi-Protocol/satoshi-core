@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {DataTypes} from '../dependencies/vault/DataTypes.sol';
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {ILendingPool} from "../interfaces/dependencies/vault/ILendingPool.sol";
 import {VaultCore} from "./VaultCore.sol";
@@ -47,5 +48,10 @@ contract AAVEVault is VaultCore {
 
     function _decodeExitData(bytes calldata data) internal pure returns (uint256 amount) {
         return abi.decode(data, (uint256));
+    }
+
+    function getPosition() external view override returns (address, uint256) {
+        DataTypes.ReserveData memory data = ILendingPool(strategyAddr).getReserveData(STABLE_TOKEN_ADDRESS);
+        return (STABLE_TOKEN_ADDRESS, IERC20(data.aTokenAddress).balanceOf(address(this)));
     }
 }

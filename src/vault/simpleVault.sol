@@ -58,4 +58,8 @@ contract SimpleVault is VaultCore {
     function _decodeExitData(bytes calldata data) internal pure returns (uint256) {
         return abi.decode(data, (uint256));
     }
+
+    function getPosition() external view override returns (address, uint256) {
+        return (STABLE_TOKEN_ADDRESS, IERC20(STABLE_TOKEN_ADDRESS).balanceOf(address(this)));
+    }
 }

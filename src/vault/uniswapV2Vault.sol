@@ -76,4 +76,9 @@ contract UniV2Vault is VaultCore {
     function _decodeExitData(bytes calldata data) internal pure returns (uint256) {
         return abi.decode(data, (uint256));
     }
+
+    function getPosition() external view override returns (address, uint256) {
+        return (PAIR_ADDRESS, IERC20(PAIR_ADDRESS).balanceOf(address(this)));
+    }
+
 }
