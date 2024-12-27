@@ -33,7 +33,7 @@ contract PellVaultTest is Test {
         vm.startPrank(deployer);
         _deployPellVault();
         vm.stopPrank();
-        
+
         vm.startPrank(OWNER);
 
         pellVault.setStrategyAddr(lendingPool);

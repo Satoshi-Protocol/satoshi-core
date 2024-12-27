@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,9 +8,10 @@ import {INYMVault} from "../interfaces/vault/INYMVault.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 
 abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
-    address public strategyAddr;
-    address public nymAddr;
-    address public STABLE_TOKEN_ADDRESS;
+    address public strategy;
+    address public nym;
+    address public underlyingToken;
+    address public vaultManager;
 
     constructor() {
         _disableInitializers();
@@ -32,18 +33,18 @@ abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
         // No additional authorization logic is needed for this contract
     }
 
-    function setStrategyAddr(address _strategyAddr) external virtual onlyOwner {
-        strategyAddr = _strategyAddr;
-        emit StrategyAddrSet(_strategyAddr);
+    function setStrategyAddr(address _strategy) external virtual onlyOwner {
+        strategy = _strategy;
+        emit StrategyAddrSet(_strategy);
     }
 
-    function setNYMAddr(address _nymAddr) external virtual onlyOwner {
-        nymAddr = _nymAddr;
-        emit NYMAddrSet(_nymAddr);
+    function setNYMAddr(address _nym) external virtual onlyOwner {
+        nym = _nym;
+        emit NYMAddrSet(_nym);
     }
 
     function transferTokenToNYM(uint256 amount) external virtual onlyOwner {
-        IERC20(STABLE_TOKEN_ADDRESS).transfer(nymAddr, amount);
+        IERC20(underlyingToken).transfer(nym, amount);
         emit TokenTransferredToNYM(amount);
     }
 

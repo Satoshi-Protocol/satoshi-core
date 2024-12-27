@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
@@ -10,9 +10,11 @@ import {CDPVaultCore} from "./CDPVaultCore.sol";
 
 contract PellVault is CDPVaultCore {
     address public pellStrategy;
+
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
-        (ISatoshiCore _satoshiCore, address tokenAddress_, address vaultManager_, address pellStrategy_) = _decodeInitializeData(data);
+        (ISatoshiCore _satoshiCore, address tokenAddress_, address vaultManager_, address pellStrategy_) =
+            _decodeInitializeData(data);
         __SatoshiOwnable_init(_satoshiCore);
         TOKEN_ADDRESS = tokenAddress_;
         vaultManager = vaultManager_;
@@ -40,11 +42,8 @@ contract PellVault is CDPVaultCore {
         shares[0] = amount;
 
         QueuedWithdrawalParams[] memory queuedWithdrawal = new QueuedWithdrawalParams[](1);
-        queuedWithdrawal[0] = QueuedWithdrawalParams({
-            strategies: strategies,
-            shares: shares,
-            withdrawer: address(this)
-        });
+        queuedWithdrawal[0] =
+            QueuedWithdrawalParams({strategies: strategies, shares: shares, withdrawer: address(this)});
 
         // withdraw token from lending
         IDelegationManager(0x230B442c0802fE83DAf3d2656aaDFD16ca1E1F66).queueWithdrawals(queuedWithdrawal);
@@ -65,7 +64,11 @@ contract PellVault is CDPVaultCore {
         return abi.encode(amount);
     }
 
-    function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address, address, address) {
+    function _decodeInitializeData(bytes calldata data)
+        internal
+        pure
+        returns (ISatoshiCore, address, address, address)
+    {
         return abi.decode(data, (ISatoshiCore, address, address, address));
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
@@ -23,6 +23,7 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     INYMVault[] public priority;
 
     mapping(address => bool) public whitelistVaults;
+    // vault => collateralAmount
     mapping(address => uint256) public collateralAmounts;
 
     constructor() {
@@ -68,7 +69,7 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     }
 
     function exitStrategyByTroveManager(uint256 amount) external {
-        require(msg.sender == troveManager, "VaultManager: Caller is not TroveManager");
+        if (msg.sender != troveManager) revert CallerIsNotTroveManager();
         if (amount == 0) return;
 
         // assign a value to balanceAfter to prevent the priority being empty
@@ -114,9 +115,19 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         emit CollateralTransferredToTroveManager(amount);
     }
 
+    function mintDebtToken(uint256 amount) external {
+        _checkWhitelistedVault(msg.sender);
+        ITroveManager(troveManager).debtToken().mint(msg.sender, amount);
+    }
+
+    function burnDebtToken(uint256 amount) external {
+        _checkWhitelistedVault(msg.sender);
+        ITroveManager(troveManager).debtToken().burn(msg.sender, amount);
+    }
+
     // --- Internal functions ---
 
     function _checkWhitelistedVault(address _vault) internal view {
-        require(whitelistVaults[_vault], "VaultManager: Vault is not whitelisted");
+        if (!whitelistVaults[_vault]) revert VaultNotWhitelisted();
     }
 }

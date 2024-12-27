@@ -39,7 +39,7 @@ contract AvalonVaultTest is Test {
         _deployVaultManager();
         _deployAvalonVault();
         vm.stopPrank();
-        
+
         vm.startPrank(OWNER);
 
         _setCDPFarming();

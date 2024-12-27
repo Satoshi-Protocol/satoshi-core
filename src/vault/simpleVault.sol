@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
@@ -10,9 +10,9 @@ contract SimpleVault is VaultCore {
 
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
-        (ISatoshiCore _satoshiCore, address stableTokenAddress_) = _decodeInitializeData(data);
+        (ISatoshiCore _satoshiCore, address underlyingToken_) = _decodeInitializeData(data);
         __SatoshiOwnable_init(_satoshiCore);
-        STABLE_TOKEN_ADDRESS = stableTokenAddress_;
+        underlyingToken = underlyingToken_;
     }
 
     modifier onlyWhitelisted() {
@@ -30,8 +30,13 @@ contract SimpleVault is VaultCore {
     // todo
     function exitStrategy(bytes calldata data) external override onlyWhitelisted returns (uint256) {
         uint256 amount = _decodeExitData(data);
-        IERC20(STABLE_TOKEN_ADDRESS).transfer(msg.sender, amount);
+        IERC20(underlyingToken).transfer(msg.sender, amount);
         return amount;
+    }
+
+    function executeCall(address dest, bytes calldata data) external onlyOwner {
+        (bool success, bytes memory res) = dest.call(data);
+        require(success, string(res));
     }
 
     function setWhitelist(address account, bool status) external onlyOwner {
