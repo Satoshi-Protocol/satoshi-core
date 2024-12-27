@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {IPool} from "../interfaces/dependencies/vault/IPool.sol";
+import {DataTypes} from '../dependencies/vault/DataTypes.sol';
+
 import {CDPVaultCore} from "./CDPVaultCore.sol";
 
 contract AvalonVault is CDPVaultCore {
@@ -53,5 +55,10 @@ contract AvalonVault is CDPVaultCore {
 
     function _decodeExitData(bytes calldata data) internal pure returns (uint256 amount) {
         return abi.decode(data, (uint256));
+    }
+
+    function getPosition() external view override returns (address, uint256) {
+        DataTypes.ReserveData memory data = IPool(strategyAddr).getReserveData(TOKEN_ADDRESS);
+        return (TOKEN_ADDRESS, IERC20(data.aTokenAddress).balanceOf(address(this)));
     }
 }

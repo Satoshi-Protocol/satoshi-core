@@ -78,6 +78,6 @@ contract PellVault is CDPVaultCore {
     }
 
     function getPosition() external view override returns (address, uint256) {
-        return (pellStrategy, IStrategy(pellStrategy).userUnderlyingView(address(this)));
+        return (TOKEN_ADDRESS, IStrategy(pellStrategy).userUnderlyingView(address(this)));
     }
 }
