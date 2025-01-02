@@ -38,7 +38,8 @@ contract OkuVaultTest is Test {
 
     struct Vars {
         uint256 tokenId;
-        uint256 tokenAmount;
+        uint256 token0Amount;
+        uint256 token1Amount;
         int24 tickLower;
         int24 tickUpper;
     }
@@ -110,12 +111,13 @@ contract OkuVaultTest is Test {
         PositionVars memory positionVars;
         Vars memory vars;
         vm.startPrank(OWNER);
-        vars.tokenAmount = 1e6;
+        vars.token0Amount = 1e6;
+        vars.token1Amount = 1e18;
         vars.tickLower = 276300;
         vars.tickUpper = 276420;
 
         INexusYieldManager(nexusYieldManager).transerTokenToPrivilegedVault(
-            tokenAddress, address(vaultManagerProxy), vars.tokenAmount
+            tokenAddress, address(vaultManagerProxy), vars.token0Amount
         );
 
         bytes memory data = abi.encode(
@@ -123,8 +125,8 @@ contract OkuVaultTest is Test {
             TickHelper.FEE_MEDIUM,
             vars.tickLower,
             vars.tickUpper,
-            vars.tokenAmount,
-            vars.tokenAmount,
+            vars.token0Amount,
+            vars.token1Amount,
             0,
             0
         );
@@ -133,6 +135,7 @@ contract OkuVaultTest is Test {
         // check nft position
         assertEq(IERC721(nonFungiblePositionManager).balanceOf(address(okuVaultProxy)), 1);
         vars.tokenId = okuVaultProxy.tokenIds(0);
+        assertEq(IERC721(nonFungiblePositionManager).ownerOf(vars.tokenId), address(okuVaultProxy));
         (
             ,
             ,
@@ -151,6 +154,18 @@ contract OkuVaultTest is Test {
         assertEq(positionVars.tickUpper, vars.tickUpper);
         assertEq(positionVars.token0, tokenAddress);
         assertEq(positionVars.token1, debtToken);
+
+        // check the liquidity
+
+        // remove all liquidity
+        data = abi.encode(UniV3DexVault.Option.RemoveLiquidityFull, vars.tokenId, 0, 0);
+
+        vaultManagerProxy.executeStrategy(address(okuVaultProxy), data);
+
+        (,,,,,,, positionVars.liquidity,,,,) =
+            INonfungiblePositionManager(nonFungiblePositionManager).positions(vars.tokenId);
+
+        assertEq(positionVars.liquidity, 0);
 
         vm.stopPrank();
     }
