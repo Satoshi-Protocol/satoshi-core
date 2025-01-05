@@ -14,20 +14,23 @@ interface INYMVault {
     event TokenIdRemoved(uint256 tokenId);
     event createDeposit(uint256 tokenId);
     event FeeCollected(uint256 tokenId, uint256 amount0, uint256 amount1);
+    event StartegyManagerSet(address strategyManager);
+    event DelegationManagerSet(address delegationManager);
+    event VaultManagerSet(address vaultManager);
+    event TokenStrategySet(address token, address strategy);
 
     error DebtTokenBalanceUnexpectedChange(uint256 expect, uint256 actual);
     error InvalidOption(uint256 option);
     error ZeroLiquidity();
     error InvalidLiquidity(uint128 liquidity);
     error Unauthorized();
+    error WithdrawalTimeNotAvailable();
+    error IndexOutOfRange(uint256 index);
 
-    function setStrategyAddr(address _strategyAddr) external;
     function setNYMAddr(address _nymAddr) external;
-    function transferTokenToNYM(uint256 amount) external;
     function executeStrategy(bytes calldata data) external;
-    function exitStrategy(bytes calldata data) external returns (uint256);
     function executeCall(address dest, bytes calldata data) external;
     function initialize(bytes calldata data) external;
-    function constructExecuteStrategyData(uint256 amount) external pure returns (bytes memory);
-    function constructExitStrategyData(uint256 amount) external pure returns (bytes memory);
+    function tokenAmount(address token) external view returns (uint256);
+    function decodeTokenAddress(bytes calldata data) external pure returns (address);
 }

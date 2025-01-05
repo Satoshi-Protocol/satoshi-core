@@ -801,12 +801,12 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _setVaultManagerWL(INYMVault[] memory vaults) internal {
+    function _setVaultManagerWL(address token, INYMVault[] memory vaults) internal {
         vm.startPrank(OWNER);
         for (uint256 i = 0; i < vaults.length; i++) {
             vaultManagerProxy.setWhiteListVault(address(vaults[i]), true);
         }
-        vaultManagerProxy.setPriority(vaults);
+        vaultManagerProxy.setPriority(token, vaults);
         vm.stopPrank();
     }
 
@@ -830,11 +830,11 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _deployVaultManager(ITroveManager troveManagerBeaconProxy) internal returns (address) {
+    function _deployVaultManager() internal returns (address) {
         vm.startPrank(DEPLOYER);
         vaultManagerImpl = new VaultManager();
         assert(vaultManagerProxy == IVaultManager(address(0)));
-        bytes memory data = abi.encodeCall(IVaultManager.initialize, (satoshiCore, address(troveManagerBeaconProxy)));
+        bytes memory data = abi.encodeCall(IVaultManager.initialize, (satoshiCore));
         vaultManagerProxy = IVaultManager(address(new ERC1967Proxy(address(vaultManagerImpl), data)));
         vm.stopPrank();
 

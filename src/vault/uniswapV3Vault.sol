@@ -10,8 +10,11 @@ import {IDebtToken} from "../interfaces/core/IDebtToken.sol";
 import {INonfungiblePositionManager} from "../interfaces/dependencies/uniswapV3/INonfungiblePositionManager.sol";
 import {VaultCore} from "./VaultCore.sol";
 import {TickHelper} from "../dependencies/uniswapV3/TickHelper.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract UniV3DexVault is VaultCore {
+    using SafeERC20 for IERC20;
+
     enum Option {
         MintPosition,
         AddLiquidity,
@@ -26,36 +29,23 @@ contract UniV3DexVault is VaultCore {
         address token1;
     }
 
-    address public debtToken;
-    address public pair;
     INonfungiblePositionManager public nonfungiblePositionManager;
     /// @dev deposits[tokenId] => Deposit
     mapping(uint256 => Deposit) public deposits;
     uint256[] public tokenIds;
 
-    modifier onlyManager() {
-        if (msg.sender != vaultManager) revert Unauthorized();
-        _;
-    }
-
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
-        (
-            ISatoshiCore _satoshiCore,
-            address stableTokenAddress_,
-            address satAddress_,
-            address vaultManager_,
-            address nonfungiblePositionManager_
-        ) = _decodeInitializeData(data);
+        (ISatoshiCore _satoshiCore, address debtToken_, address vaultManager_, address nonfungiblePositionManager_) =
+            _decodeInitializeData(data);
         __SatoshiOwnable_init(_satoshiCore);
-        underlyingToken = stableTokenAddress_;
-        debtToken = satAddress_;
+        debtToken = debtToken_;
         vaultManager = vaultManager_;
         nonfungiblePositionManager = INonfungiblePositionManager(nonfungiblePositionManager_);
     }
 
     function executeStrategy(bytes calldata data) external override onlyManager {
-        (Option option) = _decodeExecuteData(data);
+        Option option = _decodeExecuteData(data);
 
         if (option == Option.MintPosition) {
             _executeMintPosition(data[32:]);
@@ -72,36 +62,21 @@ contract UniV3DexVault is VaultCore {
         }
     }
 
-    function exitStrategy(bytes calldata) external view override onlyManager returns (uint256) {
-        revert();
-    }
-
-    function executeCall(address dest, bytes calldata data) external onlyManager {
-        (bool success, bytes memory res) = dest.call(data);
-        require(success, string(res));
-    }
-
-    function constructExecuteStrategyData(uint256) external pure override returns (bytes memory) {
-        revert();
-    }
-
-    function constructExitStrategyData(uint256) external pure override returns (bytes memory) {
-        revert();
-    }
-
     // Implementing `onERC721Received` so this contract can receive custody of erc721 tokens
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
+
+    function decodeTokenAddress(bytes calldata data) external pure returns (address) {}
 
     // --- Internal functions ---
 
     function _decodeInitializeData(bytes calldata data)
         internal
         pure
-        returns (ISatoshiCore, address, address, address, address)
+        returns (ISatoshiCore, address, address, address)
     {
-        return abi.decode(data, (ISatoshiCore, address, address, address, address));
+        return abi.decode(data, (ISatoshiCore, address, address, address));
     }
 
     function _decodeExecuteData(bytes calldata data) internal pure returns (Option) {
@@ -115,9 +90,9 @@ contract UniV3DexVault is VaultCore {
     function _decodeMintPositionData(bytes memory data)
         internal
         pure
-        returns (uint24, int24, int24, uint256, uint256, uint256, uint256)
+        returns (address, address, uint24, int24, int24, uint256, uint256, uint256, uint256)
     {
-        return abi.decode(data, (uint24, int24, int24, uint256, uint256, uint256, uint256));
+        return abi.decode(data, (address, address, uint24, int24, int24, uint256, uint256, uint256, uint256));
     }
 
     function _decodeIncreaseLiquidityData(bytes memory data)
@@ -146,6 +121,8 @@ contract UniV3DexVault is VaultCore {
 
     function _executeMintPosition(bytes memory data) internal {
         (
+            address token0,
+            address token1,
             uint24 fee,
             int24 tickLower,
             int24 tickUpper,
@@ -156,19 +133,19 @@ contract UniV3DexVault is VaultCore {
         ) = _decodeMintPositionData(data);
 
         // check which token is token0 and token1
-        address token0 = underlyingToken;
-        address token1 = debtToken;
         (token0, token1) = token0 < token1 ? (token0, token1) : (token1, token0);
 
         IERC20(token0).approve(address(nonfungiblePositionManager), amount0ToMint);
         IERC20(token1).approve(address(nonfungiblePositionManager), amount1ToMint);
 
+        bool debtTokenFlag;
+        if (token0 == debtToken) debtTokenFlag == true;
         // mint some debtToken
-        _mintDebtToken(token0 == debtToken ? amount0ToMint : amount1ToMint);
+        _mintDebtToken(debtTokenFlag ? amount0ToMint : amount1ToMint);
         // transfer underlyingToken to this contract (from vaultManager)
-        IERC20(underlyingToken).transferFrom(
-            vaultManager, address(this), token0 == underlyingToken ? amount0ToMint : amount1ToMint
-        );
+        address nonDebtToken = debtTokenFlag ? token1 : token0;
+        uint256 nonDebtAmount = debtTokenFlag ? amount1ToMint : amount0ToMint;
+        IERC20(nonDebtToken).safeTransferFrom(vaultManager, address(this), nonDebtAmount);
 
         // add liquidity on dex
         (uint256 tokenId,,,) = _mintNewPosition(

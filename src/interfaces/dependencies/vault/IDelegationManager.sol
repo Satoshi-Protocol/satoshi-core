@@ -4,25 +4,25 @@ pragma solidity ^0.8.19;
 import "./IStrategy.sol";
 import "./IStrategyManager.sol";
 
-/**
- * @title DelegationManager
- * @notice  This is the contract for delegation in Pell. The main functionalities of this contract are
- * - enabling anyone to register as an operator in Pell
- * - allowing operators to specify parameters related to stakers who delegate to them
- * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
- */
-struct QueuedWithdrawalParams {
-    // Array of strategies that the QueuedWithdrawal contains
-    IStrategy[] strategies;
-    // Array containing the amount of shares in each Strategy in the `strategies` array
-    uint256[] shares;
-    // The address of the withdrawer
-    address withdrawer;
-}
-
 interface IDelegationManager {
+    /**
+     * @title DelegationManager
+     * @notice  This is the contract for delegation in Pell. The main functionalities of this contract are
+     * - enabling anyone to register as an operator in Pell
+     * - allowing operators to specify parameters related to stakers who delegate to them
+     * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
+     * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
+     */
+    struct QueuedWithdrawalParams {
+        // Array of strategies that the QueuedWithdrawal contains
+        IStrategy[] strategies;
+        // Array containing the amount of shares in each Strategy in the `strategies` array
+        uint256[] shares;
+        // The address of the withdrawer
+        address withdrawer;
+    }
     // @notice Struct used for storing information about a single operator who has registered with Pell
+
     struct OperatorDetails {
         // @notice address to receive the rewards that the operator earns via serving applications built on Pell.
         address earningsReceiver;

@@ -10,6 +10,8 @@ import {VaultCore} from "./VaultCore.sol";
 contract UniV2Vault is VaultCore {
     address public SAT_ADDRESS;
     address public PAIR_ADDRESS;
+    address public underlyingToken;
+    address public strategy;
 
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
@@ -23,9 +25,9 @@ contract UniV2Vault is VaultCore {
 
     function executeStrategy(bytes calldata data) external override onlyOwner {
         (uint256 amountA, uint256 amountB, uint256 minA, uint256 minB) = _decodeExecuteData(data);
-        // swap stable to sat in nym
-        IERC20(underlyingToken).approve(nym, amountA);
-        INexusYieldManager(nym).swapInPrivileged(underlyingToken, address(this), amountA);
+        // swap stable to sat in nexusYieldManager
+        IERC20(underlyingToken).approve(nexusYieldManager, amountA);
+        INexusYieldManager(nexusYieldManager).swapInPrivileged(underlyingToken, address(this), amountA);
         require(IERC20(SAT_ADDRESS).balanceOf(address(this)) == amountB, "balance not match");
 
         IERC20(underlyingToken).approve(strategy, amountA);
@@ -36,34 +38,32 @@ contract UniV2Vault is VaultCore {
         );
     }
 
-    function exitStrategy(bytes calldata data) external override onlyOwner returns (uint256) {
+    function exitStrategy(bytes calldata data) external onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
         IERC20(PAIR_ADDRESS).approve(strategy, amount);
         // remove liquidity from dex
         IUniswapV2Router01(strategy).removeLiquidity(
             underlyingToken, SAT_ADDRESS, amount, 0, 0, address(this), block.timestamp + 100
         );
-        // swap sat to stable in nym
-        uint256 previewAmount = INexusYieldManager(nym).convertDebtTokenToAssetAmount(
+        // swap sat to stable in nexusYieldManager
+        uint256 previewAmount = INexusYieldManager(nexusYieldManager).convertDebtTokenToAssetAmount(
             underlyingToken, IERC20(SAT_ADDRESS).balanceOf(address(this))
         );
-        uint256 swapOutAmount = INexusYieldManager(nym).swapOutPrivileged(underlyingToken, address(this), previewAmount);
+        uint256 swapOutAmount =
+            INexusYieldManager(nexusYieldManager).swapOutPrivileged(underlyingToken, address(this), previewAmount);
 
         return swapOutAmount;
     }
 
-    function executeCall(address dest, bytes calldata data) external onlyOwner {
-        (bool success, bytes memory res) = dest.call(data);
-        require(success, string(res));
-    }
-
-    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+    function constructExecuteStrategyData(uint256 amount) external pure returns (bytes memory) {
         return abi.encode(amount);
     }
 
-    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+    function constructExitStrategyData(uint256 amount) external pure returns (bytes memory) {
         return abi.encode(amount);
     }
+
+    function decodeTokenAddress(bytes calldata data) external pure returns (address) {}
 
     function _decodeInitializeData(bytes calldata data)
         internal

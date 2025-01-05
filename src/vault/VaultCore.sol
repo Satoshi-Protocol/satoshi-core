@@ -6,26 +6,35 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
 import {INYMVault} from "../interfaces/vault/INYMVault.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
-    address public strategy;
-    address public nym;
-    address public underlyingToken;
+    using SafeERC20 for IERC20;
+
+    address public nexusYieldManager;
     address public vaultManager;
+    address public debtToken;
+    // mapping (address => address) public token;
+    // output token amount
+    mapping(address => uint256) public tokenAmount;
 
     constructor() {
         _disableInitializers();
+    }
+
+    modifier onlyManager() {
+        if (msg.sender != vaultManager) revert Unauthorized();
+        _;
     }
 
     function initialize(bytes calldata data) external virtual;
 
     function executeStrategy(bytes calldata data) external virtual;
 
-    function exitStrategy(bytes calldata data) external virtual returns (uint256);
-
-    function constructExecuteStrategyData(uint256 amount) external pure virtual returns (bytes memory);
-
-    function constructExitStrategyData(uint256 amount) external pure virtual returns (bytes memory);
+    function executeCall(address dest, bytes calldata data) external virtual onlyManager {
+        (bool success, bytes memory res) = dest.call(data);
+        require(success, string(res));
+    }
 
     /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
     // solhint-disable-next-line no-empty-blocks
@@ -33,18 +42,14 @@ abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
         // No additional authorization logic is needed for this contract
     }
 
-    function setStrategyAddr(address _strategy) external virtual onlyOwner {
-        strategy = _strategy;
-        emit StrategyAddrSet(_strategy);
+    function setNYMAddr(address nexusYieldManager_) external virtual onlyOwner {
+        nexusYieldManager = nexusYieldManager_;
+        emit NYMAddrSet(nexusYieldManager_);
     }
 
-    function setNYMAddr(address _nym) external virtual onlyOwner {
-        nym = _nym;
-        emit NYMAddrSet(_nym);
-    }
-
-    function transferTokenToNYM(uint256 amount) external virtual onlyOwner {
-        IERC20(underlyingToken).transfer(nym, amount);
+    function transferTokenToNYM(address token, uint256 amount) external virtual onlyOwner {
+        // @todo check the transfer amount
+        IERC20(token).safeTransfer(nexusYieldManager, amount);
         emit TokenTransferredToNYM(amount);
     }
 

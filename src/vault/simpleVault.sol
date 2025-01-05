@@ -7,6 +7,7 @@ import {VaultCore} from "./VaultCore.sol";
 
 contract SimpleVault is VaultCore {
     mapping(address => bool) public whitelist;
+    address public underlyingToken;
 
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
@@ -28,15 +29,10 @@ contract SimpleVault is VaultCore {
     }
 
     // todo
-    function exitStrategy(bytes calldata data) external override onlyWhitelisted returns (uint256) {
+    function exitStrategy(bytes calldata data) external onlyWhitelisted returns (uint256) {
         uint256 amount = _decodeExitData(data);
         IERC20(underlyingToken).transfer(msg.sender, amount);
         return amount;
-    }
-
-    function executeCall(address dest, bytes calldata data) external onlyOwner {
-        (bool success, bytes memory res) = dest.call(data);
-        require(success, string(res));
     }
 
     function setWhitelist(address account, bool status) external onlyOwner {
@@ -44,13 +40,15 @@ contract SimpleVault is VaultCore {
         emit WhitelistSet(account, status);
     }
 
-    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+    function constructExecuteStrategyData(uint256 amount) external pure returns (bytes memory) {
         return abi.encode(amount);
     }
 
-    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+    function constructExitStrategyData(uint256 amount) external pure returns (bytes memory) {
         return abi.encode(amount);
     }
+
+    function decodeTokenAddress(bytes calldata data) external pure returns (address) {}
 
     function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
         return abi.decode(data, (ISatoshiCore, address));

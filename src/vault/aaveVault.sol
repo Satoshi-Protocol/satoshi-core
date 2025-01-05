@@ -7,6 +7,9 @@ import {ILendingPool} from "../interfaces/dependencies/vault/ILendingPool.sol";
 import {VaultCore} from "./VaultCore.sol";
 
 contract AAVEVault is VaultCore {
+    address public underlyingToken;
+    address public strategy;
+
     function initialize(bytes calldata data) external override initializer {
         __UUPSUpgradeable_init_unchained();
         (ISatoshiCore _satoshiCore, address stableTokenAddress_) = _decodeInitializeData(data);
@@ -21,26 +24,23 @@ contract AAVEVault is VaultCore {
         ILendingPool(strategy).deposit(underlyingToken, amount, address(this), 0);
     }
 
-    function exitStrategy(bytes calldata data) external override onlyOwner returns (uint256) {
+    function exitStrategy(bytes calldata data) external onlyOwner returns (uint256) {
         uint256 amount = _decodeExitData(data);
         // withdraw token from lending
-        ILendingPool(strategy).withdraw(underlyingToken, amount, nym);
+        ILendingPool(strategy).withdraw(underlyingToken, amount, nexusYieldManager);
 
         return amount;
     }
 
-    function executeCall(address dest, bytes calldata data) external onlyOwner {
-        (bool success, bytes memory res) = dest.call(data);
-        require(success, string(res));
-    }
-
-    function constructExecuteStrategyData(uint256 amount) external pure override returns (bytes memory) {
+    function constructExecuteStrategyData(uint256 amount) external pure returns (bytes memory) {
         return abi.encode(amount);
     }
 
-    function constructExitStrategyData(uint256 amount) external pure override returns (bytes memory) {
+    function constructExitStrategyData(uint256 amount) external pure returns (bytes memory) {
         return abi.encode(amount);
     }
+
+    function decodeTokenAddress(bytes calldata data) external pure returns (address) {}
 
     function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
         return abi.decode(data, (ISatoshiCore, address));
