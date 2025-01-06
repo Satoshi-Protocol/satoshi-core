@@ -49,7 +49,7 @@ contract PellVault is VaultCore {
         strategyManager = strategyManager_;
         delegationManager = delegationManager_;
 
-        emit StartegyManagerSet(strategyManager_);
+        emit StrategyManagerSet(strategyManager_);
         emit DelegationManagerSet(delegationManager_);
         emit VaultManagerSet(vaultManager_);
     }
@@ -92,7 +92,7 @@ contract PellVault is VaultCore {
      */
     function setStrategyManager(address strategyManager_) external onlyOwner {
         strategyManager = strategyManager_;
-        emit StartegyManagerSet(strategyManager_);
+        emit StrategyManagerSet(strategyManager_);
     }
 
     /**
@@ -120,7 +120,7 @@ contract PellVault is VaultCore {
         return abi.encode(Option.CompleteQueueWithdraw, token);
     }
 
-    function decodeTokenAddress(bytes calldata data) external pure returns (address) {
+    function decodeTokenAddress(bytes calldata data) external override pure returns (address) {
         address token;
         Option option = _decodeExecuteData(data);
         if (option == Option.Deposit) {
@@ -136,6 +136,10 @@ contract PellVault is VaultCore {
         return token;
     }
 
+    function getPosition(address token) external view override returns (uint256) {
+        return (IStrategy(strategy[token]).userUnderlyingView(address(this)));
+    }
+
     // --- Internal functions ---
 
     /**
@@ -145,10 +149,11 @@ contract PellVault is VaultCore {
     function _deposit(bytes calldata data) internal {
         (address token, uint256 amount) = _decodeDepositData(data);
         IERC20(token).safeTransferFrom(vaultManager, address(this), amount);
-        tokenAmount[token] += amount;
         IERC20(token).approve(strategyManager, amount);
         // deposit token to pell restake strategy
         IStrategyManager(strategyManager).depositIntoStrategy(IStrategy(strategy[token]), IERC20(token), amount);
+
+        emit DepositToPellStrategy(token, strategy[token], amount);
     }
 
     /**
@@ -175,17 +180,19 @@ contract PellVault is VaultCore {
 
         IDelegationManager(delegationManager).queueWithdrawals(queuedWithdrawal);
 
-        withdrawalQueue.push(
-            IDelegationManager.Withdrawal({
-                staker: address(this),
-                delegatedTo: address(0),
-                withdrawer: address(this),
-                nonce: nonce,
-                startTimestamp: uint32(block.timestamp),
-                strategies: strategies,
-                shares: shares
-            })
-        );
+        IDelegationManager.Withdrawal memory withdrawal = IDelegationManager.Withdrawal({
+            staker: address(this),
+            delegatedTo: address(0),
+            withdrawer: address(this),
+            nonce: nonce,
+            startTimestamp: uint32(block.timestamp),
+            strategies: strategies,
+            shares: shares
+        });
+
+        withdrawalQueue.push(withdrawal);
+
+        emit WithdrawQueuedOnPell(withdrawal);
     }
 
     /**
@@ -213,7 +220,10 @@ contract PellVault is VaultCore {
 
         _removeWithdrawalQueue(0);
 
-        IERC20(token).safeTransfer(vaultManager, IERC20(token).balanceOf(address(this)));
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(vaultManager, balance);
+
+        emit CompleteQueueWithdrawOnPell(withdrawals[0]);
     }
 
     /**

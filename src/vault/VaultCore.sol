@@ -57,4 +57,8 @@ abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
         IERC20(token).transfer(to, amount);
         emit TokenTransferred(token, to, amount);
     }
+
+    function decodeTokenAddress(bytes calldata data) external pure virtual returns (address);
+
+    function getPosition(address token) external view virtual returns (uint256);
 }

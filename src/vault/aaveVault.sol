@@ -40,7 +40,9 @@ contract AAVEVault is VaultCore {
         return abi.encode(amount);
     }
 
-    function decodeTokenAddress(bytes calldata data) external pure returns (address) {}
+    function decodeTokenAddress(bytes calldata data) external override pure returns (address) {}
+
+    function getPosition(address) external view override returns (uint256) {}
 
     function _decodeInitializeData(bytes calldata data) internal pure returns (ISatoshiCore, address) {
         return abi.decode(data, (ISatoshiCore, address));

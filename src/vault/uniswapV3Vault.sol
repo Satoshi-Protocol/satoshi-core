@@ -67,7 +67,9 @@ contract UniV3DexVault is VaultCore {
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function decodeTokenAddress(bytes calldata data) external pure returns (address) {}
+    function decodeTokenAddress(bytes calldata data) external override pure returns (address) {}
+
+    function getPosition(address) external view override returns (uint256) {}
 
     // --- Internal functions ---
 
@@ -291,7 +293,7 @@ contract UniV3DexVault is VaultCore {
         deposits[tokenId] = Deposit({liquidity: liquidity, token0: token0, token1: token1});
 
         _addTokenIdList(tokenId);
-        emit createDeposit(tokenId);
+        emit CreateDeposit(tokenId);
     }
 
     function _addTokenIdList(uint256 tokenId) internal {
