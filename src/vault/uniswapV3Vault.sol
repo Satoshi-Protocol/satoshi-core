@@ -67,9 +67,115 @@ contract UniV3DexVault is VaultCore {
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function decodeTokenAddress(bytes calldata data) external override pure returns (address) {}
+    function decodeTokenAddress(bytes calldata data) external view override returns (address) {
+        address token;
+        address token0;
+        address token1;
+        Option option = _decodeExecuteData(data);
+        if (option == Option.MintPosition) {
+            (token0, token1,,,,,,,) = _decodeMintPositionData(data[32:]);
+            token = token0 == debtToken ? token1 : token0;
+        } else if (option == Option.AddLiquidity) {
+            (uint256 tokenId,,,,) = _decodeIncreaseLiquidityData(data[32:]);
+            (,, token0, token1,,,,,,,,) = nonfungiblePositionManager.positions(tokenId);
+        } else if (option == Option.RemoveLiquidity) {
+            // do nothing
+        } else if (option == Option.RemoveLiquidityFull) {
+            // do nothing
+        } else if (option == Option.CollectFee) {
+            // do nothing
+        } else {
+            revert InvalidOption(uint256(option));
+        }
+        token = token0 == debtToken ? token1 : token0;
+        return token;
+    }
 
-    function getPosition(address) external view override returns (uint256) {}
+    function getPosition(address) external pure override returns (uint256) {
+        revert();
+    }
+
+    function getPosition(uint256 tokenId)
+        external
+        view
+        returns (
+            uint96 nonce,
+            address operator,
+            address token0,
+            address token1,
+            uint24 fee,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
+        )
+    {
+        return nonfungiblePositionManager.positions(tokenId);
+    }
+
+    function constructMintPositionData(
+        address token0,
+        address token1,
+        uint24 fee,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount0ToMint,
+        uint256 amount1ToMint,
+        uint256 amount0ToMin,
+        uint256 amount1ToMin
+    ) external pure returns (bytes memory) {
+        (token0, token1) = token0 < token1 ? (token0, token1) : (token1, token0);
+
+        return abi.encode(
+            Option.MintPosition,
+            token0,
+            token1,
+            fee,
+            tickLower,
+            tickUpper,
+            amount0ToMint,
+            amount1ToMint,
+            amount0ToMin,
+            amount1ToMin
+        );
+    }
+
+    function constructIncreaseLiquidityData(
+        uint256 tokenId,
+        uint256 amount0ToMint,
+        uint256 amount1ToMint,
+        uint256 amount0Min,
+        uint256 amount1Min
+    ) external pure returns (bytes memory) {
+        return abi.encode(Option.AddLiquidity, tokenId, amount0ToMint, amount1ToMint, amount0Min, amount1Min);
+    }
+
+    function constructDecreaseLiquidityData(uint256 tokenId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min)
+        external
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(Option.RemoveLiquidity, tokenId, liquidity, amount0Min, amount1Min);
+    }
+
+    function constructDecreaseLiquidityFullData(uint256 tokenId, uint256 amount0Min, uint256 amount1Min)
+        external
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(Option.RemoveLiquidityFull, tokenId, amount0Min, amount1Min);
+    }
+
+    function constructCollectData(uint256 tokenId) external pure returns (bytes memory) {
+        return abi.encode(Option.CollectFee, tokenId);
+    }
+
+    function constructExitByTroveManagerData(address, uint256) external pure override returns (bytes memory) {
+        revert();
+    }
 
     // --- Internal functions ---
 
@@ -83,10 +189,6 @@ contract UniV3DexVault is VaultCore {
 
     function _decodeExecuteData(bytes calldata data) internal pure returns (Option) {
         return abi.decode(data, (Option));
-    }
-
-    function _decodeExitData(bytes calldata data) internal pure returns (uint256) {
-        return abi.decode(data, (uint256));
     }
 
     function _decodeMintPositionData(bytes memory data)
@@ -178,7 +280,7 @@ contract UniV3DexVault is VaultCore {
             amount1Desired: amount1ToMint,
             amount0Min: amount0Min,
             amount1Min: amount1Min,
-            deadline: block.timestamp + 1000
+            deadline: block.timestamp
         });
 
         nonfungiblePositionManager.increaseLiquidity(params);
@@ -238,7 +340,7 @@ contract UniV3DexVault is VaultCore {
             amount1Desired: amount1ToMint,
             amount0Min: amount0ToMintMin,
             amount1Min: amount1ToMintMin,
-            deadline: block.timestamp + 1000
+            deadline: block.timestamp
         });
 
         return nonfungiblePositionManager.mint(liquidityParams);
@@ -254,7 +356,7 @@ contract UniV3DexVault is VaultCore {
             liquidity: liquidity,
             amount0Min: amount0Min,
             amount1Min: amount1Min,
-            deadline: block.timestamp + 1000
+            deadline: block.timestamp
         });
 
         nonfungiblePositionManager.decreaseLiquidity(params);

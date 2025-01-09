@@ -5,16 +5,15 @@ import {Test, console} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {PellVault} from "../../src/vault/PellVault.sol";
 import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
-import {DEXVaultManager} from "../../src/vault/DEXVaultManager.sol";
+import {VaultManager} from "../../src/vault/VaultManager.sol";
 import {TroveManager} from "../../src/core/TroveManager.sol";
-import {UniV3DexVault} from "../../src/vault/uniswapV3Vault.sol";
+import {UniV3DexVault} from "../../src/vault/UniswapV3Vault.sol";
 import {TickHelper} from "../../src/dependencies/uniswapV3/TickHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ICDPVault} from "../../src/interfaces/vault/ICDPVault.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
 import {INYMVault} from "../../src/interfaces/vault/INYMVault.sol";
-import {IDEXVaultManager} from "../../src/interfaces/vault/IDEXVaultManager.sol";
+import {IVaultManager} from "../../src/interfaces/vault/IVaultManager.sol";
 import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.sol";
 import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
 import {INonfungiblePositionManager} from "../../src/interfaces/dependencies/uniswapV3/INonfungiblePositionManager.sol";
@@ -51,16 +50,21 @@ contract OkuVaultTest is Test {
     address constant debtToken = 0x78Fea795cBFcC5fFD6Fb5B845a4f53d25C283bDB; // satUSD token1
     address constant nexusYieldManager = 0x7253493c3259137431a120752e410b38d0c715C2;
     address constant nonFungiblePositionManager = 0x743E03cceB4af2efA3CC76838f6E8B50B63F184c;
-    IDEXVaultManager vaultManagerProxy;
+    IVaultManager vaultManagerProxy;
     UniV3DexVault okuVaultProxy;
 
     function setUp() public {
         vm.createSelectFork(vm.envString("BOB_RPC_URL"));
 
         vm.startPrank(deployer);
-        _deployDEXVaultManager();
+        _deployVaultManager();
         _deployOkuVault();
         vm.stopPrank();
+
+        vm.label(address(vaultManagerProxy), "VaultManager");
+        vm.label(address(okuVaultProxy), "OkuVault");
+        vm.label(tokenAddress, "USDT");
+        vm.label(debtToken, "satUSD");
 
         vm.startPrank(OWNER);
 
@@ -72,11 +76,11 @@ contract OkuVaultTest is Test {
         vm.stopPrank();
     }
 
-    function _deployDEXVaultManager() internal returns (address) {
-        DEXVaultManager vaultManagerImpl = new DEXVaultManager();
-        assert(vaultManagerProxy == IDEXVaultManager(address(0)));
-        bytes memory data = abi.encodeCall(IDEXVaultManager.initialize, (satoshiCore, debtToken, tokenAddress));
-        vaultManagerProxy = IDEXVaultManager(address(new ERC1967Proxy(address(vaultManagerImpl), data)));
+    function _deployVaultManager() internal returns (address) {
+        VaultManager vaultManagerImpl = new VaultManager();
+        assert(vaultManagerProxy == IVaultManager(address(0)));
+        bytes memory data = abi.encodeCall(IVaultManager.initialize, (satoshiCore, debtToken));
+        vaultManagerProxy = IVaultManager(address(new ERC1967Proxy(address(vaultManagerImpl), data)));
 
         return address(vaultManagerProxy);
     }
@@ -84,7 +88,7 @@ contract OkuVaultTest is Test {
     function _deployOkuVault() internal returns (address) {
         UniV3DexVault uniV3DexVaultImpl = new UniV3DexVault();
         bytes memory initializeData =
-            abi.encode(satoshiCore, tokenAddress, debtToken, address(vaultManagerProxy), nonFungiblePositionManager);
+            abi.encode(satoshiCore, debtToken, address(vaultManagerProxy), nonFungiblePositionManager);
         bytes memory data = abi.encodeCall(INYMVault.initialize, (initializeData));
 
         address proxy = address(new ERC1967Proxy(address(uniV3DexVaultImpl), data));
@@ -120,8 +124,9 @@ contract OkuVaultTest is Test {
             tokenAddress, address(vaultManagerProxy), vars.token0Amount
         );
 
-        bytes memory data = abi.encode(
-            UniV3DexVault.Option.MintPosition,
+        bytes memory data = okuVaultProxy.constructMintPositionData(
+            tokenAddress,
+            debtToken,
             TickHelper.FEE_MEDIUM,
             vars.tickLower,
             vars.tickUpper,

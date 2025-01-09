@@ -14,9 +14,6 @@ abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
     address public nexusYieldManager;
     address public vaultManager;
     address public debtToken;
-    // mapping (address => address) public token;
-    // output token amount
-    mapping(address => uint256) public tokenAmount;
 
     constructor() {
         _disableInitializers();
@@ -58,7 +55,13 @@ abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
         emit TokenTransferred(token, to, amount);
     }
 
-    function decodeTokenAddress(bytes calldata data) external pure virtual returns (address);
+    function decodeTokenAddress(bytes calldata data) external virtual returns (address);
 
     function getPosition(address token) external view virtual returns (uint256);
+
+    function constructExitByTroveManagerData(address token, uint256 amount)
+        external
+        view
+        virtual
+        returns (bytes memory);
 }

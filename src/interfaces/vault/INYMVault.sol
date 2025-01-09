@@ -35,6 +35,6 @@ interface INYMVault {
     function executeStrategy(bytes calldata data) external;
     function executeCall(address dest, bytes calldata data) external;
     function initialize(bytes calldata data) external;
-    function tokenAmount(address token) external view returns (uint256);
-    function decodeTokenAddress(bytes calldata data) external pure returns (address);
+    function decodeTokenAddress(bytes calldata data) external returns (address);
+    function constructExitByTroveManagerData(address token, uint256 amount) external view returns (bytes memory);
 }

@@ -45,7 +45,8 @@ library TroveManagerLogic {
         if (_amount > remainColl) {
             troveManagerBeaconProxy.vaultManager().exitStrategyByTroveManager(_amount - remainColl);
             // refill to target
-            uint256 refillAmount = SatoshiMath._min(target, troveManagerBeaconProxy.collateralOutput());
+            uint256 refillAmount =
+                SatoshiMath._min(target + _amount - remainColl, troveManagerBeaconProxy.collateralOutput());
             if (refillAmount != 0) troveManagerBeaconProxy.vaultManager().exitStrategyByTroveManager(refillAmount);
         } else if (remainColl - _amount < boundary) {
             uint256 refillAmount = _amount + target - remainColl;

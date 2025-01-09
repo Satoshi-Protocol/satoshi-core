@@ -120,7 +120,11 @@ contract PellVault is VaultCore {
         return abi.encode(Option.CompleteQueueWithdraw, token);
     }
 
-    function decodeTokenAddress(bytes calldata data) external override pure returns (address) {
+    function constructExitByTroveManagerData(address, uint256) external pure override returns (bytes memory) {
+        revert();
+    }
+
+    function decodeTokenAddress(bytes calldata data) external pure override returns (address) {
         address token;
         Option option = _decodeExecuteData(data);
         if (option == Option.Deposit) {
@@ -200,7 +204,7 @@ contract PellVault is VaultCore {
      * @param data Encoded completion parameters (token)
      */
     function _completeQueueWithdraw(bytes calldata data) internal {
-        _checkWithdrawalTimeAvailable(0);
+        checkWithdrawalTimeAvailable(0);
 
         address token = _decodeCompleteQueueWithdrawData(data);
 
@@ -231,7 +235,7 @@ contract PellVault is VaultCore {
      * @param index Index of the withdrawal in the queue
      * @dev Reverts if withdrawal time is not yet available
      */
-    function _checkWithdrawalTimeAvailable(uint256 index) internal view {
+    function checkWithdrawalTimeAvailable(uint256 index) public view {
         if (
             uint256(withdrawalQueue[index].startTimestamp) + IDelegationManager(delegationManager).minWithdrawalDelay()
                 > block.timestamp

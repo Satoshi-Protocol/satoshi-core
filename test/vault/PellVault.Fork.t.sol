@@ -8,7 +8,6 @@ import {SatoshiCore} from "../../src/core/SatoshiCore.sol";
 import {VaultManager} from "../../src/vault/VaultManager.sol";
 import {TroveManager} from "../../src/core/TroveManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ICDPVault} from "../../src/interfaces/vault/ICDPVault.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
 import {INYMVault} from "../../src/interfaces/vault/INYMVault.sol";
@@ -23,6 +22,7 @@ contract PellVaultTest is Test {
     address constant delegationManager = 0x230B442c0802fE83DAf3d2656aaDFD16ca1E1F66; // DelegationManager
     address constant wbtcStrategy = 0x92D374dd17F8416c8129f5Efa81f28E0926a60B7;
     address constant avalonVault = 0x713dD0E14376a6d34D0Fde2783dca52c9fD852bA;
+    address constant debtToken = 0x78Fea795cBFcC5fFD6Fb5B845a4f53d25C283bDB; // satUSD
     ISatoshiCore satoshiCore = ISatoshiCore(0xd6dBF24f3516844b02Ad8d7DaC9656F2EC556639);
     ITroveManager troveManager = ITroveManager(whale);
     IVaultManager vaultManagerProxy;
@@ -56,7 +56,7 @@ contract PellVaultTest is Test {
 
     function _deployVaultManager() internal returns (address) {
         VaultManager vaultManagerImpl = new VaultManager();
-        bytes memory data = abi.encodeCall(IVaultManager.initialize, (satoshiCore));
+        bytes memory data = abi.encodeCall(IVaultManager.initialize, (satoshiCore, debtToken));
         vaultManagerProxy = IVaultManager(address(new ERC1967Proxy(address(vaultManagerImpl), data)));
 
         return address(vaultManagerProxy);

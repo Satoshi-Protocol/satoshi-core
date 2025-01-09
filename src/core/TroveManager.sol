@@ -1147,9 +1147,10 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
     // --- Trove property setters ---
 
     function _sendCollateral(address _account, uint256 _amount) private {
-        uint256 boundary = Math.mulDiv(totalActiveCollateral, farmingParams.retainPercentage, FARMING_PRECISION);
+        uint256 newTotal = totalActiveCollateral - _amount;
+        uint256 boundary = Math.mulDiv(newTotal, farmingParams.retainPercentage, FARMING_PRECISION);
         uint256 remainColl = totalActiveCollateral - collateralOutput;
-        uint256 target = Math.mulDiv(totalActiveCollateral - _amount, farmingParams.refillPercentage, FARMING_PRECISION);
+        uint256 target = Math.mulDiv(newTotal, farmingParams.refillPercentage, FARMING_PRECISION);
 
         TroveManagerLogic.collateralRefill(_amount, boundary, remainColl, target);
 

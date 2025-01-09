@@ -32,16 +32,14 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     // troveManager => vaults
     mapping(address => INYMVault[]) public priority;
 
-    // vault => collateralAmount
-    // mapping(address => uint256) public collateralAmounts;
-
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(ISatoshiCore _satoshiCore) external override initializer {
+    function initialize(ISatoshiCore _satoshiCore, address _debtToken) external override initializer {
         __UUPSUpgradeable_init_unchained();
         __SatoshiOwnable_init(_satoshiCore);
+        debtToken = IDebtToken(_debtToken);
     }
 
     /// @notice Override the _authorizeUpgrade function inherited from UUPSUpgradeable contract
@@ -54,7 +52,9 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     function executeStrategy(address vault, bytes calldata data) external onlyOwner {
         _checkWhitelistedVault(vault);
         address token = INYMVault(vault).decodeTokenAddress(data);
-        IERC20(token).approve(vault, type(uint256).max);
+        if (token != address(0)) {
+            IERC20(token).approve(vault, type(uint256).max);
+        }
         INYMVault(vault).executeStrategy(data);
         emit ExecuteStrategy(vault, data);
     }
@@ -76,15 +76,18 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
         uint256 withdrawAmount = amount;
         for (uint256 i; i < priority[msg.sender].length; i++) {
             if (balanceAfter >= amount) break;
+            uint256 balanceBefore = collateralToken.balanceOf(address(this));
             INYMVault vault = priority[msg.sender][i];
-            // @todo
-            bytes memory data; //= vault.constructExitStrategyData(withdrawAmount);
-            uint256 exitAmount; //= vault.exitStrategy(data);
-            // collateralAmounts[address(vault)] -= exitAmount;
-            withdrawAmount -= exitAmount;
-            balanceAfter = collateralToken.balanceOf(address(this));
+            bytes memory data = vault.constructExitByTroveManagerData(address(collateralToken), withdrawAmount);
+            try vault.executeStrategy(data) {
+                balanceAfter = collateralToken.balanceOf(address(this));
+                uint256 exitAmount = balanceAfter - balanceBefore;
+                withdrawAmount -= exitAmount;
+            } catch {
+                continue;
+            }
 
-            emit ExitStrategy(address(vault), exitAmount);
+            emit ExitStrategy(address(vault), data);
         }
 
         // if the balance is still not enough
@@ -124,10 +127,6 @@ contract VaultManager is IVaultManager, SatoshiOwnable, UUPSUpgradeable {
     function burnDebtToken(uint256 amount) external {
         _checkWhitelistedVault(msg.sender);
         debtToken.burn(msg.sender, amount);
-    }
-
-    function getDistributedTokenAmount(address vault_, address token_) external view returns (uint256) {
-        return INYMVault(vault_).tokenAmount(token_);
     }
 
     // --- Internal functions ---
