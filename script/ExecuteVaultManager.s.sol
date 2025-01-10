@@ -19,7 +19,7 @@ interface IBeacon {
     function implementation() external view returns (address);
 }
 
-contract DeployVaultManagerScript is Script {
+contract ExecuteVaultManagerScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
     uint256 internal DEPLOYMENT_PRIVATE_KEY;
     address constant tokenAddress = 0x03C7054BCB39f7b2e5B2c7AcB37583e32D70Cfa3; // WBTC
@@ -37,34 +37,25 @@ contract DeployVaultManagerScript is Script {
     IBeacon troveManagerBeacon = IBeacon(0x5360f7eC26F4d8EE3Ed69DF4ac45589c12b49696);
     ITroveManager troveManager = ITroveManager(uBTCTroveManager);
     AvalonVault avalonVault;
-    IVaultManager vaultManagerProxy;
-    PellVault pellVault;
+    IVaultManager vaultManagerProxy = IVaultManager(0x21d9a468196665AEc3d3c289EfF7BD5725507972);
+    PellVault pellVault = PellVault(0x1F745AEC91A7349E4F846Ae1D94915ec4f6cF053);
 
     function setUp() public {
         OWNER_PRIVATE_KEY = uint256(vm.envBytes32("OWNER_PRIVATE_KEY"));
         DEPLOYMENT_PRIVATE_KEY = uint256(vm.envBytes32("DEPLOYMENT_PRIVATE_KEY"));
+
+        vm.label(uBTCTroveManager, "uBTCTroveManager");
+        vm.label(uBTC, "uBTC");
+        vm.label(uBTCStrategy, "uBTCStrategy");
+        vm.label(OWNER, "OWNER");
+        vm.label(deployer, "deployer");
+        vm.label(address(vaultManagerProxy), "VaultManager");
+        vm.label(address(pellVault), "PellVault");
     }
 
     function run() public {
-        vm.startBroadcast(DEPLOYMENT_PRIVATE_KEY);
-
-        _deployVaultManager();
-        _deployPellVault();
-
-        console.log("VaultManager: ", address(vaultManagerProxy));
-        console.log("PellVault: ", address(pellVault));
-
-        vm.stopBroadcast();
-
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
-        troveManager.setVaultManager(address(vaultManagerProxy));
-
-        pellVault.setTokenStrategy(uBTC, uBTCStrategy);
-
-        INYMVault[] memory vaults = new INYMVault[](1);
-        vaults[0] = INYMVault(address(pellVault));
-        _setVaultManagerWL(uBTCTroveManager, vaults);
         _execute();
 
         console.log(pellVault.getPosition(uBTC));
@@ -126,12 +117,16 @@ contract DeployVaultManagerScript is Script {
     }
 
     function _execute() internal {
-        uint256 farmingAmount = 0.001e8;
+        uint256 farmingAmount = 1e18 - 1e8;
 
         troveManager.transferCollToPrivilegedVault(address(vaultManagerProxy), farmingAmount);
         assert(IERC20(uBTC).balanceOf(address(vaultManagerProxy)) == farmingAmount);
 
         bytes memory data = pellVault.constructDepositData(uBTC, farmingAmount);
         vaultManagerProxy.executeStrategy(address(pellVault), data);
+
+        // withdraw 0.001e8 uBTC
+        // data = pellVault.constructQueueWithdrawData(uBTC, 0.001e8);
+        // vaultManagerProxy.executeStrategy(address(pellVault), data);
     }
 }
