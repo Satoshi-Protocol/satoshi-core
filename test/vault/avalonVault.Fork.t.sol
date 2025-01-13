@@ -10,7 +10,7 @@ import {TroveManager} from "../../src/core/TroveManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
-import {INYMVault} from "../../src/interfaces/vault/INYMVault.sol";
+import {IVault} from "../../src/interfaces/vault/IVault.sol";
 import {IVaultManager} from "../../src/interfaces/vault/IVaultManager.sol";
 
 interface IBeacon {
@@ -50,8 +50,8 @@ contract AvalonVaultTest is Test {
 
         avalonVault.setTokenStrategy(tokenAddress, lendingPool);
 
-        INYMVault[] memory vaults = new INYMVault[](1);
-        vaults[0] = INYMVault(address(avalonVault));
+        IVault[] memory vaults = new IVault[](1);
+        vaults[0] = IVault(address(avalonVault));
         _setVaultManagerWL(vaults);
 
         vm.stopPrank();
@@ -74,7 +74,7 @@ contract AvalonVaultTest is Test {
     function _deployAvalonVault() internal returns (address) {
         AvalonVault avalonVaultImpl = new AvalonVault();
         bytes memory initializeData = abi.encode(satoshiCore, address(vaultManagerProxy));
-        bytes memory data = abi.encodeCall(INYMVault.initialize, (initializeData));
+        bytes memory data = abi.encodeCall(IVault.initialize, (initializeData));
         address proxy = address(new ERC1967Proxy(address(avalonVaultImpl), data));
         avalonVault = AvalonVault(proxy);
 
@@ -86,7 +86,7 @@ contract AvalonVaultTest is Test {
         troveManager.setVaultManager(address(vaultManagerProxy));
     }
 
-    function _setVaultManagerWL(INYMVault[] memory vaults) internal {
+    function _setVaultManagerWL(IVault[] memory vaults) internal {
         for (uint256 i = 0; i < vaults.length; i++) {
             vaultManagerProxy.setWhiteListVault(address(vaults[i]), true);
         }

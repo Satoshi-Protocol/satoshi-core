@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../interfaces/core/ISatoshiCore.sol";
-import {INYMVault} from "../interfaces/vault/INYMVault.sol";
+import {IVault} from "../interfaces/vault/IVault.sol";
 import {SatoshiOwnable} from "../dependencies/SatoshiOwnable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-abstract contract VaultCore is INYMVault, SatoshiOwnable, UUPSUpgradeable {
+abstract contract VaultCore is IVault, SatoshiOwnable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     address public nexusYieldManager;

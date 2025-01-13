@@ -12,7 +12,7 @@ import {TickHelper} from "../../src/dependencies/uniswapV3/TickHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../../src/interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../../src/interfaces/core/ITroveManager.sol";
-import {INYMVault} from "../../src/interfaces/vault/INYMVault.sol";
+import {IVault} from "../../src/interfaces/vault/IVault.sol";
 import {IVaultManager} from "../../src/interfaces/vault/IVaultManager.sol";
 import {INexusYieldManager} from "../../src/interfaces/core/INexusYieldManager.sol";
 import {IDebtToken} from "../../src/interfaces/core/IDebtToken.sol";
@@ -68,8 +68,8 @@ contract OkuVaultTest is Test {
 
         vm.startPrank(OWNER);
 
-        INYMVault[] memory vaults = new INYMVault[](1);
-        vaults[0] = INYMVault(address(okuVaultProxy));
+        IVault[] memory vaults = new IVault[](1);
+        vaults[0] = IVault(address(okuVaultProxy));
         _setVaultManagerWL(vaults);
         _setNYMPrivilegedVaults(address(vaultManagerProxy));
         _setDebtTokenRely(address(vaultManagerProxy));
@@ -89,7 +89,7 @@ contract OkuVaultTest is Test {
         UniV3DexVault uniV3DexVaultImpl = new UniV3DexVault();
         bytes memory initializeData =
             abi.encode(satoshiCore, debtToken, address(vaultManagerProxy), nonFungiblePositionManager);
-        bytes memory data = abi.encodeCall(INYMVault.initialize, (initializeData));
+        bytes memory data = abi.encodeCall(IVault.initialize, (initializeData));
 
         address proxy = address(new ERC1967Proxy(address(uniV3DexVaultImpl), data));
         okuVaultProxy = UniV3DexVault(proxy);
@@ -97,7 +97,7 @@ contract OkuVaultTest is Test {
         return address(okuVaultProxy);
     }
 
-    function _setVaultManagerWL(INYMVault[] memory vaults) internal {
+    function _setVaultManagerWL(IVault[] memory vaults) internal {
         for (uint256 i = 0; i < vaults.length; i++) {
             vaultManagerProxy.setWhiteListVault(address(vaults[i]), true);
         }

@@ -26,7 +26,7 @@
 // import {ITroveManager, TroveManagerOperation} from "../src/interfaces/core/ITroveManager.sol";
 // import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiCollateralHintHelpers.sol";
 // import {IVaultManager} from "../src/interfaces/vault/IVaultManager.sol";
-// import {INYMVault} from "../src/interfaces/vault/INYMVault.sol";
+// import {IVault} from "../src/interfaces/vault/IVault.sol";
 
 // contract CDPFarmingTest is Test, DeployBase, TroveBase, TestConfig, Events {
 //     ISortedTroves sortedTrovesBeaconProxy;
@@ -56,8 +56,8 @@
 //         hintHelpers = IMultiCollateralHintHelpers(_deployHintHelpers(DEPLOYER));
 
 //         simpleVaultProxy = SimpleVault(_deploySimpleVault(address(collateralMock)));
-//         INYMVault[] memory vaults = new INYMVault[](1);
-//         vaults[0] = INYMVault(address(simpleVaultProxy));
+//         IVault[] memory vaults = new IVault[](1);
+//         vaults[0] = IVault(address(simpleVaultProxy));
 //         _deployVaultManager(troveManagerBeaconProxy);
 //         _setCDPFarming(troveManagerBeaconProxy);
 //         _setVaultManagerWL(vaults);
@@ -312,7 +312,7 @@
 //         // vaultManagerProxy.exitStrategy(user1, 1e18);
 
 //         // vm.expectRevert("Only owner");
-//         // vaultManagerProxy.setPriority(new INYMVault[](0));
+//         // vaultManagerProxy.setPriority(new IVault[](0));
 
 //         vm.expectRevert("Only owner");
 //         vaultManagerProxy.setWhiteListVault(user1, true);

@@ -24,6 +24,7 @@ import {IMultiCollateralHintHelpers} from "../src/helpers/interfaces/IMultiColla
 import {IMultiTroveGetter} from "../src/helpers/interfaces/IMultiTroveGetter.sol";
 import {ISatoshiPeriphery} from "../src/helpers/interfaces/ISatoshiPeriphery.sol";
 import {ISatoshiLPFactory} from "../src/interfaces/core/ISatoshiLPFactory.sol";
+import {IVaultManager} from "../src/interfaces/vault/IVaultManager.sol";
 import {IWETH} from "../src/helpers/interfaces/IWETH.sol";
 import {SortedTroves} from "../src/core/SortedTroves.sol";
 import {SatoshiCore} from "../src/core/SatoshiCore.sol";
@@ -42,6 +43,7 @@ import {SatoshiLPFactory} from "../src/SLP/SatoshiLPFactory.sol";
 import {MultiCollateralHintHelpers} from "../src/helpers/MultiCollateralHintHelpers.sol";
 import {MultiTroveGetter} from "../src/helpers/MultiTroveGetter.sol";
 import {SatoshiPeriphery} from "../src/helpers/SatoshiPeriphery.sol";
+import {VaultManager} from "../src/vault/VaultManager.sol";
 import {
     SATOSHI_CORE_OWNER,
     SATOSHI_CORE_GUARDIAN,
@@ -79,6 +81,7 @@ contract DeploySetupScript is Script {
     ICommunityIssuance communityIssuanceImpl;
     IOSHIToken oshiTokenImpl;
     ISatoshiLPFactory satoshiLPFactoryImpl;
+    IVaultManager vaultManagerImpl;
     /* UUPS proxy contracts */
     IPriceFeedAggregator priceFeedAggregatorProxy;
     IBorrowerOperations borrowerOperationsProxy;
@@ -90,6 +93,7 @@ contract DeploySetupScript is Script {
     ICommunityIssuance communityIssuanceProxy;
     IOSHIToken oshiTokenProxy;
     ISatoshiLPFactory satoshiLPFactoryProxy;
+    IVaultManager vaultManagerProxy;
     /* Beacon contract */
     UpgradeableBeacon sortedTrovesBeacon;
     UpgradeableBeacon troveManagerBeacon;
@@ -126,6 +130,7 @@ contract DeploySetupScript is Script {
     address cpCommunityIssuanceProxyAddr;
     address cpOshiTokenProxyAddr;
     address cpSatoshiLPFactoryProxyAddr;
+    address cpVaultManagerProxyAddr;
     // Beacon contracts
     address cpSortedTrovesBeaconAddr;
     address cpTroveManagerBeaconAddr;
@@ -173,6 +178,7 @@ contract DeploySetupScript is Script {
         cpCommunityIssuanceProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpOshiTokenProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         cpSatoshiLPFactoryProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
+        cpVaultManagerProxyAddr = vm.computeCreateAddress(deployer, ++nonce);
         // Deploy implementation contracts
         priceFeedAggregatorImpl = new PriceFeedAggregator();
         borrowerOperationsImpl = new BorrowerOperations();
@@ -186,6 +192,7 @@ contract DeploySetupScript is Script {
         communityIssuanceImpl = new CommunityIssuance();
         oshiTokenImpl = new OSHIToken();
         satoshiLPFactoryImpl = new SatoshiLPFactory();
+        vaultManagerImpl = new VaultManager();
 
         // Deploy non-upgradeable contracts
         // GasPool
@@ -334,6 +341,12 @@ contract DeploySetupScript is Script {
         satoshiLPFactoryProxy = ISatoshiLPFactory(proxy);
         assert(proxy == cpSatoshiLPFactoryProxyAddr);
 
+        // VaultManager
+        data = abi.encodeCall(IVaultManager.initialize, (satoshiCore, cpDebtTokenProxyAddr));
+        proxy = address(new ERC1967Proxy(address(vaultManagerImpl), data));
+        vaultManagerProxy = IVaultManager(proxy);
+        assert(proxy == cpVaultManagerProxyAddr);
+
         // MultiCollateralHintHelpers
         hintHelpers = new MultiCollateralHintHelpers(borrowerOperationsProxy, GAS_COMPENSATION);
 
@@ -378,6 +391,7 @@ contract DeploySetupScript is Script {
         console.log("communityIssuanceProxy:", address(communityIssuanceProxy));
         console.log("oshiTokenProxy:", address(oshiTokenProxy));
         console.log("satoshiLPFactoryProxy:", address(satoshiLPFactoryProxy));
+        console.log("vaultManagerProxy:", address(vaultManagerProxy));
         console.log("hintHelpers:", address(hintHelpers));
         console.log("multiTroveGetter:", address(multiTroveGetter));
         console.log("satoshiPeriphery:", address(satoshiPeriphery));

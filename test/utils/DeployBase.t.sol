@@ -60,7 +60,7 @@ import {IDIAOracleV2} from "../../src/interfaces/dependencies/priceFeed/IDIAOrac
 import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {IProxy} from "@api3/contracts/api3-server-v1/proxies/interfaces/IProxy.sol";
 import {IVaultManager} from "../../src/interfaces/vault/IVaultManager.sol";
-import {INYMVault} from "../../src/interfaces/vault/INYMVault.sol";
+import {IVault} from "../../src/interfaces/vault/IVault.sol";
 import {
     DEPLOYER,
     OWNER,
@@ -800,7 +800,7 @@ abstract contract DeployBase is Test {
         vm.stopPrank();
     }
 
-    function _setVaultManagerWL(address token, INYMVault[] memory vaults) internal {
+    function _setVaultManagerWL(address token, IVault[] memory vaults) internal {
         vm.startPrank(OWNER);
         for (uint256 i = 0; i < vaults.length; i++) {
             vaultManagerProxy.setWhiteListVault(address(vaults[i]), true);

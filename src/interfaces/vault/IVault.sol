@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {ISatoshiCore} from "../core/ISatoshiCore.sol";
 import {IDelegationManager} from "../dependencies/vault/IDelegationManager.sol";
 
-interface INYMVault {
+interface IVault {
     event StrategyAddrSet(address strategyAddr);
     event NYMAddrSet(address nymAddr);
     event TokenTransferredToStrategy(uint256 amount);

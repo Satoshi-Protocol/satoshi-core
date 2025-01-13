@@ -11,7 +11,7 @@ import {PellVault} from "../src/vault/PellVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISatoshiCore} from "../src/interfaces/core/ISatoshiCore.sol";
 import {ITroveManager} from "../src/interfaces/core/ITroveManager.sol";
-import {INYMVault} from "../src/interfaces/vault/INYMVault.sol";
+import {IVault} from "../src/interfaces/vault/IVault.sol";
 import {IVaultManager} from "../src/interfaces/vault/IVaultManager.sol";
 
 interface IBeacon {
@@ -83,7 +83,7 @@ contract ExecuteVaultManagerScript is Script {
         AvalonVault avalonVaultImpl = new AvalonVault();
 
         bytes memory initializeData = abi.encode(satoshiCore, tokenAddress, address(vaultManagerProxy));
-        bytes memory data = abi.encodeCall(INYMVault.initialize, (initializeData));
+        bytes memory data = abi.encodeCall(IVault.initialize, (initializeData));
         address proxy = address(new ERC1967Proxy(address(avalonVaultImpl), data));
         avalonVault = AvalonVault(proxy);
 
@@ -97,7 +97,7 @@ contract ExecuteVaultManagerScript is Script {
 
         bytes memory initializeData =
             abi.encode(satoshiCore, address(vaultManagerProxy), strategyManager, delegationManager);
-        bytes memory data = abi.encodeCall(INYMVault.initialize, (initializeData));
+        bytes memory data = abi.encodeCall(IVault.initialize, (initializeData));
         address proxy = address(new ERC1967Proxy(address(pellVaultImpl), data));
         pellVault = PellVault(proxy);
 
@@ -109,7 +109,7 @@ contract ExecuteVaultManagerScript is Script {
         troveManager.setVaultManager(address(vaultManagerProxy));
     }
 
-    function _setVaultManagerWL(address troveManager_, INYMVault[] memory vaults) internal {
+    function _setVaultManagerWL(address troveManager_, IVault[] memory vaults) internal {
         for (uint256 i = 0; i < vaults.length; i++) {
             vaultManagerProxy.setWhiteListVault(address(vaults[i]), true);
         }
