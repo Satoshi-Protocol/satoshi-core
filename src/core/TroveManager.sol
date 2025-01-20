@@ -255,7 +255,7 @@ contract TroveManager is ITroveManager, SatoshiOwnable, SatoshiBase {
         uint32 _claimStartTime
     ) public {
         require(!sunsetting, "Cannot change after sunset");
-        require(_MCR <= CCR && _MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
+        require(_MCR >= 1100000000000000000, "MCR cannot be > CCR or < 110%");
         if (minuteDecayFactor != 0) {
             require(msg.sender == owner(), "Only owner");
         }
