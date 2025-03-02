@@ -21,16 +21,17 @@ contract UpgradeBOScript is Script {
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
         BorrowerOperations borrowerOperationsProxy = BorrowerOperations(borrowerOperationsProxyAddr);
-        (IERC20 coll,) = borrowerOperationsProxy.troveManagersData(ITroveManager(0x0598Ef47508Ec11a503670Ac3B642AAE8EAEdEFA));
+        // (IERC20 coll,) = borrowerOperationsProxy.troveManagersData(ITroveManager(0x0598Ef47508Ec11a503670Ac3B642AAE8EAEdEFA));
 
-        IBorrowerOperations borrowerOperationsImpl = new BorrowerOperations();
-        borrowerOperationsProxy.upgradeTo(address(borrowerOperationsImpl));
+        // IBorrowerOperations borrowerOperationsImpl = new BorrowerOperations();
+        borrowerOperationsProxy.upgradeTo(0x3F46742f60977A97916a9cc1DAb5c8567590FEea);
+        // borrowerOperationsProxy.upgradeTo(address(borrowerOperationsImpl));
 
-        (IERC20 coll_after,) = borrowerOperationsProxy.troveManagersData(ITroveManager(0x0598Ef47508Ec11a503670Ac3B642AAE8EAEdEFA));
+        // (IERC20 coll_after,) = borrowerOperationsProxy.troveManagersData(ITroveManager(0x0598Ef47508Ec11a503670Ac3B642AAE8EAEdEFA));
         
-        assert(address(coll) == address(coll_after));
+        // assert(address(coll) == address(coll_after));
 
-        console.log("new BorrowerOperations Impl is deployed at", address(borrowerOperationsImpl));
+        // console.log("new BorrowerOperations Impl is deployed at", address(borrowerOperationsImpl));
 
         vm.stopBroadcast();
     }

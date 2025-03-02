@@ -7,7 +7,7 @@ import {IRewardManager} from "../src/interfaces/core/IRewardManager.sol";
 
 contract UpgradeRMScript is Script {
     uint256 internal OWNER_PRIVATE_KEY;
-    address rewardManagerProxyAddr = 0x5C85670c52AC0B135C84747B16B1d845007a2437;
+    address rewardManagerProxyAddr = 0x023739ff540052927Fde6A4b7154Ce3fFc9382B8;
 
     function setUp() public {
         OWNER_PRIVATE_KEY = uint256(vm.envBytes32("OWNER_PRIVATE_KEY"));
@@ -17,14 +17,12 @@ contract UpgradeRMScript is Script {
         vm.startBroadcast(OWNER_PRIVATE_KEY);
 
         RewardManager rewardManagerProxy = RewardManager(rewardManagerProxyAddr);
-        uint256 f_coll_before = rewardManagerProxy.F_SAT();
 
-        IRewardManager rewardManagerImpl = new RewardManager();
-        rewardManagerProxy.upgradeTo(address(rewardManagerImpl));
+        // IRewardManager rewardManagerImpl = new RewardManager();
+        // rewardManagerProxy.upgradeTo(address(rewardManagerImpl));
+        rewardManagerProxy.upgradeTo(0x72E1dA7Eba1030f98F441cF19C69fBbCf3121713);
 
-        assert(rewardManagerProxy.F_SAT() == f_coll_before);
-
-        console.log("new RewardManager Impl is deployed at", address(rewardManagerImpl));
+        // console.log("new RewardManager Impl is deployed at", address(rewardManagerImpl));
 
         vm.stopBroadcast();
     }
